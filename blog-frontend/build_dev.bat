@@ -1,0 +1,3 @@
+@echo off
+echo 构建开发环境前端...
+npm run build:dev

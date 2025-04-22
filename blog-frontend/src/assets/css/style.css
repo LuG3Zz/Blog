@@ -1,0 +1,94 @@
+@import '../../../css/font.css';
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #e3e3db;
+  font-family: 'Saans TRIAL', sans-serif;
+}
+
+img {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  will-change: transform;
+}
+
+h1 {
+  text-transform: uppercase;
+  font-size: 72px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 0.9;
+}
+
+p {
+  text-transform: uppercase;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+section {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.intro, .outro {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.blog-posts {
+  min-height: 100vh;
+  height: max-content;
+}
+
+.blog-posts p {
+  padding: 5px 20px;
+}
+
+.posts-list {
+  border-top: 1px solid #000;
+}
+
+.post {
+  height: 80px;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+}
+
+.post-wrapper {
+  position: relative;
+  height: 240px;
+  will-change: transform;
+  transform: translateY(-160px);
+}
+
+.post-title, .post-content {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 80px;
+  padding: 5px 15px;
+  cursor: pointer;
+  border-bottom: 1px solid #000;
+}
+
+.post-title {
+  background-color: #e3e3db;
+  color: #000;
+}
+
+.post-content {
+  background-color: #000;
+  color: #e3e3db;
+}
+
+/* 样式已移至App.vue */

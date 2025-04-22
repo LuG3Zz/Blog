@@ -1,0 +1,156 @@
+@font-face {
+  font-family: 'Saans TRIAL';
+  src: url(../fonts/SaansTRIAL-BoldItalic.eot);
+  src: local('Saans TRIAL Bold Italic'), local('SaansTRIAL-BoldItalic'),
+      url(../fonts/SaansTRIAL-BoldItalic.eot?#iefix) format('embedded-opentype'),
+      url(../fonts/SaansTRIAL-BoldItalic.woff2) format('woff2'),
+      url(../fonts/SaansTRIAL-BoldItalic.woff) format('woff'),
+      url(../fonts/SaansTRIAL-BoldItalic.ttf) format('truetype');
+  font-weight: bold;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Saans TRIAL';
+  src: url(../fonts/SaansTRIAL-Heavy.eot);
+  src: local('Saans TRIAL Heavy'), local('SaansTRIAL-Heavy'),
+      url(../fonts/SaansTRIAL-Heavy.eot?#iefix) format('embedded-opentype'),
+      url(../fonts/SaansTRIAL-Heavy.woff2) format('woff2'),
+      url(../fonts/SaansTRIAL-Heavy.woff) format('woff'),
+      url(../fonts/SaansTRIAL-Heavy.ttf) format('truetype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Saans TRIAL';
+  src: url(../fonts/SaansTRIAL-Bold.eot);
+  src: local('Saans TRIAL Bold'), local('SaansTRIAL-Bold'),
+      url(../fonts/SaansTRIAL-Bold.eot?#iefix) format('embedded-opentype'),
+      url(../fonts/SaansTRIAL-Bold.woff2) format('woff2'),
+      url(../fonts/SaansTRIAL-Bold.woff) format('woff'),
+      url(../fonts/SaansTRIAL-Bold.ttf) format('truetype');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Saans TRIAL';
+  src: url(../fonts/SaansTRIAL-LightItalic.eot);
+  src: local('Saans TRIAL Light Italic'), local('SaansTRIAL-LightItalic'),
+      url(../fonts/SaansTRIAL-LightItalic.eot?#iefix) format('embedded-opentype'),
+      url(../fonts/SaansTRIAL-LightItalic.woff2) format('woff2'),
+      url(../fonts/SaansTRIAL-LightItalic.woff) format('woff'),
+      url(../fonts/SaansTRIAL-LightItalic.ttf) format('truetype');
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Saans TRIAL';
+  src: url(../fonts/SaansTRIAL-Light.eot);
+  src: local('Saans TRIAL Light'), local('SaansTRIAL-Light'),
+      url(../fonts/SaansTRIAL-Light.eot?#iefix) format('embedded-opentype'),
+      url(../fonts/SaansTRIAL-Light.woff2) format('woff2'),
+      url(../fonts/SaansTRIAL-Light.woff) format('woff'),
+      url(../fonts/SaansTRIAL-Light.ttf) format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Saans TRIAL';
+  src: url(../fonts/SaansTRIAL-HeavyItalic.eot);
+  src: local('Saans TRIAL Heavy Italic'), local('SaansTRIAL-HeavyItalic'),
+      url(../fonts/SaansTRIAL-HeavyItalic.eot?#iefix) format('embedded-opentype'),
+      url(../fonts/SaansTRIAL-HeavyItalic.woff2) format('woff2'),
+      url(../fonts/SaansTRIAL-HeavyItalic.woff) format('woff'),
+      url(../fonts/SaansTRIAL-HeavyItalic.ttf) format('truetype');
+  font-weight: 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Saans TRIAL';
+  src: url(../fonts/SaansTRIAL-SemiBoldItalic.eot);
+  src: local('Saans TRIAL SemiBold Italic'), local('SaansTRIAL-SemiBoldItalic'),
+      url(../fonts/SaansTRIAL-SemiBoldItalic.eot?#iefix) format('embedded-opentype'),
+      url(../fonts/SaansTRIAL-SemiBoldItalic.woff2) format('woff2'),
+      url(../fonts/SaansTRIAL-SemiBoldItalic.woff) format('woff'),
+      url(../fonts/SaansTRIAL-SemiBoldItalic.ttf) format('truetype');
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Saans TRIAL';
+  src: url(../fonts/SaansTRIAL-RegularItalic.eot);
+  src: local('Saans TRIAL Regular Italic'), local('SaansTRIAL-RegularItalic'),
+      url(../fonts/SaansTRIAL-RegularItalic.eot?#iefix) format('embedded-opentype'),
+      url(../fonts/SaansTRIAL-RegularItalic.woff2) format('woff2'),
+      url(../fonts/SaansTRIAL-RegularItalic.woff) format('woff'),
+      url(../fonts/SaansTRIAL-RegularItalic.ttf) format('truetype');
+  font-weight: normal;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Saans TRIAL';
+  src: url(../fonts/SaansTRIAL-Regular.eot);
+  src: local('Saans TRIAL Regular'), local('SaansTRIAL-Regular'),
+      url(../fonts/SaansTRIAL-Regular.eot?#iefix) format('embedded-opentype'),
+      url(../fonts/SaansTRIAL-Regular.woff2) format('woff2'),
+      url(../fonts/SaansTRIAL-Regular.woff) format('woff'),
+      url(../fonts/SaansTRIAL-Regular.ttf) format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Saans TRIAL';
+  src: url(../fonts/SaansTRIAL-SemiBold.eot);
+  src: local('Saans TRIAL SemiBold'), local('SaansTRIAL-SemiBold'),
+      url(../fonts/SaansTRIAL-SemiBold.eot?#iefix) format('embedded-opentype'),
+      url(../fonts/SaansTRIAL-SemiBold.woff2) format('woff2'),
+      url(../fonts/SaansTRIAL-SemiBold.woff) format('woff'),
+      url(../fonts/SaansTRIAL-SemiBold.ttf) format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Saans TRIAL';
+  src: url(../fonts/SaansTRIAL-Medium.eot);
+  src: local('Saans TRIAL Medium'), local('SaansTRIAL-Medium'),
+      url(../fonts/SaansTRIAL-Medium.eot?#iefix) format('embedded-opentype'),
+      url(../fonts/SaansTRIAL-Medium.woff2) format('woff2'),
+      url(../fonts/SaansTRIAL-Medium.woff) format('woff'),
+      url(../fonts/SaansTRIAL-Medium.ttf) format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Saans TRIAL';
+  src: url(../fonts/SaansTRIAL-MediumItalic.eot);
+  src: local('Saans TRIAL Medium Italic'), local('SaansTRIAL-MediumItalic'),
+      url(../fonts/SaansTRIAL-MediumItalic.eot?#iefix) format('embedded-opentype'),
+      url(../fonts/SaansTRIAL-MediumItalic.woff2) format('woff2'),
+      url(../fonts/SaansTRIAL-MediumItalic.woff) format('woff'),
+      url(../fonts/SaansTRIAL-MediumItalic.ttf) format('truetype');
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+

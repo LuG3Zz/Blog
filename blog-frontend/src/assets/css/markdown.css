@@ -1,0 +1,255 @@
+/* 文章内容样式优化 */
+
+/* 基础文本样式 */
+.prose {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  font-size: 1rem;
+  line-height: 1.8;
+  color: #374151;
+  font-weight: 400;
+}
+
+.dark .prose {
+  color: #e2e8f0;
+}
+
+/* 修复英文全是大写的问题 */
+.prose * {
+  text-transform: none !important;
+}
+
+/* 标题样式 */
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 2em;
+  margin-bottom: 1em;
+  color: #111827;
+}
+
+.dark .prose h1, .dark .prose h2, .dark .prose h3, 
+.dark .prose h4, .dark .prose h5, .dark .prose h6 {
+  color: #f3f4f6;
+}
+
+.prose h1 {
+  font-size: 2.25em;
+  margin-top: 0;
+  font-weight: 700;
+}
+
+.prose h2 {
+  font-size: 1.75em;
+  font-weight: 600;
+}
+
+.prose h3 {
+  font-size: 1.5em;
+  font-weight: 600;
+}
+
+.prose h4 {
+  font-size: 1.25em;
+  font-weight: 600;
+}
+
+.prose h5 {
+  font-size: 1.125em;
+  font-weight: 600;
+}
+
+.prose h6 {
+  font-size: 1em;
+  font-weight: 600;
+}
+
+/* 段落样式 */
+.prose p {
+  margin-top: 1.25em;
+  margin-bottom: 1.25em;
+  font-weight: 400;
+}
+
+/* 列表样式 */
+.prose ul, .prose ol {
+  margin-top: 1.25em;
+  margin-bottom: 1.25em;
+  padding-left: 1.625em;
+}
+
+.prose li {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  font-weight: 400;
+}
+
+/* 引用块样式 */
+.prose blockquote {
+  font-style: italic;
+  border-left: 4px solid #e5e7eb;
+  padding-left: 1em;
+  margin-left: 0;
+  margin-right: 0;
+  font-weight: 400;
+}
+
+.dark .prose blockquote {
+  border-left-color: #4b5563;
+}
+
+/* 代码块样式 */
+.prose pre {
+  background-color: #f3f4f6;
+  border-radius: 0.375rem;
+  padding: 1em;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.875em;
+  line-height: 1.7;
+  margin-top: 1.25em;
+  margin-bottom: 1.25em;
+}
+
+.dark .prose pre {
+  background-color: #1f2937;
+}
+
+/* 行内代码样式 */
+.prose code:not(pre code) {
+  background-color: #f3f4f6;
+  border-radius: 0.25rem;
+  padding: 0.2em 0.4em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.875em;
+  font-weight: 400;
+}
+
+.dark .prose code:not(pre code) {
+  background-color: #374151;
+  color: #e5e7eb;
+}
+
+/* 表格样式 */
+.prose table {
+  width: 100%;
+  table-layout: auto;
+  text-align: left;
+  margin-top: 1.25em;
+  margin-bottom: 1.25em;
+  border-collapse: collapse;
+}
+
+.prose thead {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dark .prose thead {
+  border-bottom-color: #4b5563;
+}
+
+.prose th {
+  font-weight: 600;
+  padding: 0.75em 0.75em 0.75em 0;
+  vertical-align: bottom;
+}
+
+.prose td {
+  padding: 0.75em 0.75em 0.75em 0;
+  vertical-align: top;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dark .prose td {
+  border-bottom-color: #4b5563;
+}
+
+/* 链接样式 */
+.prose a {
+  color: #2563eb;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.dark .prose a {
+  color: #3b82f6;
+}
+
+.prose a:hover {
+  text-decoration: none;
+}
+
+/* 图片样式 */
+.prose img {
+  margin-top: 1.25em;
+  margin-bottom: 1.25em;
+  border-radius: 0.375rem;
+  max-width: 100%;
+}
+
+/* 水平线样式 */
+.prose hr {
+  border-top: 1px solid #e5e7eb;
+  margin-top: 2.5em;
+  margin-bottom: 2.5em;
+}
+
+.dark .prose hr {
+  border-top-color: #4b5563;
+}
+
+/* 数学公式支持 */
+.prose .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 1em 0;
+}
+
+.prose .katex {
+  font-size: 1.1em;
+}
+
+/* 确保行内公式不会导致行高异常 */
+.prose .katex-inline {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* 代码高亮 */
+.prose pre code {
+  font-weight: 400;
+  color: inherit;
+  background-color: transparent;
+  padding: 0;
+  font-size: 1em;
+}
+
+/* 确保代码块内的文本不会被转换为大写 */
+.prose pre code * {
+  text-transform: none !important;
+}
+
+/* 确保代码块内的字体不会太粗 */
+.prose pre code span {
+  font-weight: inherit !important;
+}
+
+/* 修复数学公式渲染 */
+.prose .math {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.prose .math-inline {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* 确保数学公式中的字体不会太粗 */
+.prose .math * {
+  font-weight: normal !important;
+}
+
+/* 确保数学公式中的文本不会被转换为大写 */
+.prose .math * {
+  text-transform: none !important;
+}

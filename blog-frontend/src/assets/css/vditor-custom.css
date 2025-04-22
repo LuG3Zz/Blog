@@ -1,0 +1,160 @@
+/* Vditor 自定义样式 */
+
+/* 编辑器滚动条样式 */
+.vditor-ir, .vditor-sv, .vditor-wysiwyg {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+.vditor-ir::-webkit-scrollbar,
+.vditor-sv::-webkit-scrollbar,
+.vditor-wysiwyg::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.vditor-ir::-webkit-scrollbar-thumb,
+.vditor-sv::-webkit-scrollbar-thumb,
+.vditor-wysiwyg::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 4px;
+}
+
+.vditor-ir::-webkit-scrollbar-track,
+.vditor-sv::-webkit-scrollbar-track,
+.vditor-wysiwyg::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+/* 暗黑模式下的滚动条样式 */
+.dark .vditor-ir,
+.dark .vditor-sv,
+.dark .vditor-wysiwyg {
+  scrollbar-color: rgba(75, 85, 99, 0.5) rgba(31, 41, 55, 0.2);
+}
+
+.dark .vditor-ir::-webkit-scrollbar-thumb,
+.dark .vditor-sv::-webkit-scrollbar-thumb,
+.dark .vditor-wysiwyg::-webkit-scrollbar-thumb {
+  background-color: rgba(75, 85, 99, 0.5);
+}
+
+.dark .vditor-ir::-webkit-scrollbar-track,
+.dark .vditor-sv::-webkit-scrollbar-track,
+.dark .vditor-wysiwyg::-webkit-scrollbar-track {
+  background-color: rgba(31, 41, 55, 0.2);
+}
+
+/* 暗黑模式下的编辑器样式优化 */
+.dark .vditor-toolbar {
+  border-color: #4b5563;
+  background-color: #1f2937;
+}
+
+.dark .vditor-toolbar__item {
+  color: #e5e7eb;
+}
+
+.dark .vditor-toolbar__item:hover {
+  background-color: #374151;
+}
+
+.dark .vditor-toolbar__item--current {
+  background-color: #3b82f6;
+}
+
+.dark .vditor-ir__node--expand {
+  background-color: #374151;
+}
+
+/* 预览区域样式优化 */
+.dark .vditor-preview {
+  background-color: #1f2937;
+  color: #e5e7eb;
+}
+
+.dark .vditor-preview h1,
+.dark .vditor-preview h2,
+.dark .vditor-preview h3,
+.dark .vditor-preview h4,
+.dark .vditor-preview h5,
+.dark .vditor-preview h6 {
+  color: #f3f4f6;
+}
+
+.dark .vditor-preview a {
+  color: #60a5fa;
+}
+
+.dark .vditor-preview code {
+  background-color: #374151;
+  color: #f3f4f6;
+}
+
+.dark .vditor-preview pre {
+  background-color: #1e293b;
+}
+
+.dark .vditor-preview blockquote {
+  border-left-color: #4b5563;
+  background-color: #374151;
+}
+
+.dark .vditor-preview table {
+  border-color: #4b5563;
+}
+
+.dark .vditor-preview th {
+  background-color: #374151;
+  border-color: #4b5563;
+}
+
+.dark .vditor-preview td {
+  border-color: #4b5563;
+}
+
+/* 编辑器容器样式 */
+.vditor-container {
+  border-radius: 0.5rem;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.vditor-container:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.dark .vditor-container:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* 字数统计样式 */
+.vditor-counter {
+  color: #6b7280;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.dark .vditor-counter {
+  color: #9ca3af;
+}
+
+/* 工具栏按钮样式 */
+.vditor-toolbar__item {
+  transition: all 0.2s ease;
+}
+
+.vditor-toolbar__item:hover {
+  transform: translateY(-1px);
+}
+
+/* 编辑器内容区域样式 */
+.vditor-ir {
+  padding: 1rem;
+}
+
+/* 编辑器内容区域字体样式 */
+.vditor-ir, .vditor-sv, .vditor-wysiwyg {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  line-height: 1.6;
+}

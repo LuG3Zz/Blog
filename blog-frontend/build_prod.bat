@@ -1,0 +1,3 @@
+@echo off
+echo 构建生产环境前端...
+npm run build
