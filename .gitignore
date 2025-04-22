@@ -1,0 +1,173 @@
+# 前端相关
+# 依赖
+/blog-frontend/node_modules
+/blog-frontend/.pnp
+/blog-frontend/.pnp.js
+
+# 测试
+/blog-frontend/coverage
+
+# 构建输出
+/blog-frontend/dist
+/blog-frontend/dist-ssr
+/blog-frontend/build
+
+# 本地环境文件
+/blog-frontend/.env.local
+/blog-frontend/.env.*.local
+
+# 日志
+/blog-frontend/npm-debug.log*
+/blog-frontend/yarn-debug.log*
+/blog-frontend/yarn-error.log*
+/blog-frontend/pnpm-debug.log*
+/blog-frontend/logs
+/blog-frontend/*.log
+
+# 编辑器目录和文件
+.idea
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# 后端相关
+# Python字节码
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# 环境和包
+/blog-backend/env/
+/blog-backend/venv/
+/blog-backend/.env
+/blog-backend/.venv
+/blog-backend/ENV/
+/blog-backend/env.bak/
+/blog-backend/venv.bak/
+/blog-backend/.python-version
+
+# 分发/打包
+/blog-backend/dist/
+/blog-backend/build/
+/blog-backend/downloads/
+/blog-backend/eggs/
+/blog-backend/.eggs/
+/blog-backend/lib/
+/blog-backend/lib64/
+/blog-backend/parts/
+/blog-backend/sdist/
+/blog-backend/var/
+/blog-backend/wheels/
+/blog-backend/*.egg-info/
+/blog-backend/.installed.cfg
+/blog-backend/*.egg
+
+# 单元测试/覆盖率报告
+/blog-backend/htmlcov/
+/blog-backend/.tox/
+/blog-backend/.nox/
+/blog-backend/.coverage
+/blog-backend/.coverage.*
+/blog-backend/.cache
+/blog-backend/nosetests.xml
+/blog-backend/coverage.xml
+/blog-backend/*.cover
+/blog-backend/.hypothesis/
+/blog-backend/.pytest_cache/
+
+# 翻译
+/blog-backend/*.mo
+/blog-backend/*.pot
+
+# Django相关
+/blog-backend/*.log
+/blog-backend/local_settings.py
+/blog-backend/db.sqlite3
+/blog-backend/db.sqlite3-journal
+/blog-backend/media
+
+# Flask相关
+/blog-backend/instance/
+/blog-backend/.webassets-cache
+
+# FastAPI相关
+/blog-backend/static/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# 数据库
+*.sqlite3
+*.db
+
+# 上传的媒体文件
+/blog-backend/media/
+/blog-backend/uploads/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# 临时文件
+*.tmp
+*.bak
+*.swp
+*~.nib
+*.log
+*.log.*
+*.pid
+*.seed
+*.pid.lock
+
+# 本地环境文件
+.env
+.env.*
+!.env.example
+
+# 其他
+.history/
+.vercel
+.netlify
+.firebase
+.github
+.gitlab
+.circleci
+.travis.yml
+.appveyor.yml
+.dockerignore
+.git
+.gitattributes
+.gitmodules
+.hg
+.svn
+.bzr
+.bzrignore
+.hgignore
+.hgsub
+.hgsubstate
+.hgtags
+.project
+.settings
+.classpath
+.factorypath
+.buildpath
+.target
+.tern-project
+.vscode-test
+.yarn-integrity
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
