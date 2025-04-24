@@ -139,7 +139,8 @@
             <p class="text-xl text-gray-700 dark:text-gray-300 font-medium mb-6">{{ post.summary }}</p>
 
             <!-- Markdown渲染的文章内容 -->
-            <div class="prose prose-lg max-w-none dark:prose-invert text-gray-800 dark:text-gray-200 article-content markdown-body animate__animated animate__fadeIn animate__delay-2s" v-html="renderedContent"></div>
+            <div class="prose prose-lg max-w-none dark:prose-invert text-gray-800 dark:text-gray-200 article-content markdown-body animate__animated animate__fadeIn animate__delay-2s" v-html="renderedContent">
+</div>
 
             <!-- 文章底部信息 -->
             <div class="mt-10 pt-6 border-t border-gray-200 dark:border-gray-700">
@@ -260,17 +261,25 @@
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted, computed, h, createApp } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { postApi, usersApi } from '@/api'
 import { Navbar } from '@/components/layout'
 import { CommentSection, ArticleToc, ArticleSidebar, AiSummary } from '@/components/blog'
 import { Breadcrumb, ScrollIsland, CodeBlock } from '@/components/ui'
-import MarkdownIt from 'markdown-it'
-import markdownItKatex from 'markdown-it-katex'
 import 'katex/dist/katex.min.css' // 导入 KaTeX 样式
-import message from '@/utils/message'
-import confetti from 'canvas-confetti'
+
+
+// 导入组合式函数
+import {
+  useMarkdownRenderer,
+  useArticleHeadings,
+  useCodeBlockProcessor,
+  useArticleLike,
+  useArticleData,
+  useDomObserver,
+  useNavigation
+} from '@/composables'
 
 export default {
   name: 'ArticleDetail',
@@ -285,682 +294,86 @@ export default {
   },
   setup() {
     const route = useRoute()
-    const router = useRouter()
-    const post = ref(null)
-    const loading = ref(true)
-    const markdownContent = ref('')
-    const isLiked = ref(false)
-    const readingTime = ref(0)
-    const articleHeadings = ref([])
 
     // 添加取消标记
     const isComponentMounted = ref(true)
 
-    // 添加 requestAnimationFrame IDs 数组，用于清理
-    const rafIds = []
+    // 使用Markdown渲染器
+    const { renderMarkdown, calculateReadingTime } = useMarkdownRenderer()
 
-
-    // 获取文章图片
-    const getPostImage = () => {
-      if (!post.value) return ''
-
-      // 优先使用文章的自定义封面图
-      if (post.value.cover_image) {
-        return post.value.cover_image
-      }
-
-      // 如果没有自定义封面，使用随机图片
-      const titleHash = post.value.title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
-      const imageIndex = (titleHash % 35) + 1 // 使用模35确保索引在1-35范围内
-
-      return `/images/img${imageIndex}.jpg`
-    }
-
-    // 获取文章标签
-    const getPostTags = () => {
-      if (!post.value) return []
-
-      // 如果有 tags_list 字段，使用新格式
-      if (post.value.tags_list && Array.isArray(post.value.tags_list)) {
-        return post.value.tags_list.map(tag => tag.name)
-      }
-      // 兼容旧格式
-      else if (post.value.tags) {
-        if (typeof post.value.tags === 'string') {
-          return post.value.tags.split(',').map(tag => tag.trim()).filter(tag => tag !== '')
-        } else if (Array.isArray(post.value.tags)) {
-          return post.value.tags.map(tag => {
-            if (typeof tag === 'object' && tag !== null) {
-              return tag.name || ''
-            }
-            return tag
-          }).filter(tag => tag !== '')
-        }
-      }
-      return []
-    }
-
-    // 创建markdown-it实例
-    const md = new MarkdownIt({
-      html: true,
-      linkify: true,
-      typographer: true,
-      highlight: function (str, lang) {
-        // 返回空字符串，因为我们将使用自定义的代码块组件
-        return '';
-      }
+    // 使用文章数据
+    const {
+      post,
+      loading,
+      markdownContent,
+      readingTime,
+      getPostImage,
+      getPostTags,
+      getRoleName,
+      formatDate,
+      fetchPost,
+      generateAiSummary
+    } = useArticleData({
+      postApi,
+      usersApi,
+      isComponentMounted,
+      calculateReadingTime
     })
 
-    // 使用 KaTeX 插件渲染数学公式
-    md.use(markdownItKatex, {
-      throwOnError: false,
-      errorColor: '#cc0000'
+    // 使用文章标题和目录
+    const {
+      articleHeadings,
+      extractArticleHeadings,
+      setupHeadingClickHandlers
+    } = useArticleHeadings()
+
+    // 使用代码块处理器
+    const { processCodeBlocks } = useCodeBlockProcessor({
+      CodeBlock,
+      isComponentMounted
     })
 
-    // 添加自动生成标题ID的功能
-    md.use(function(md) {
-      // 创建一个映射来跟踪标题文本和计数器
-      const headingCounters = {};
-
-      const originalHeadingOpen = md.renderer.rules.heading_open || function(tokens, idx, options, env, self) {
-        return self.renderToken(tokens, idx, options);
-      };
-
-      md.renderer.rules.heading_open = function(tokens, idx, options, env, self) {
-        const token = tokens[idx];
-        const nextToken = tokens[idx + 1];
-        if (nextToken && nextToken.type === 'inline' && nextToken.content) {
-          // 生成基本ID：将标题文本转换为小写，替换空格为连字符，移除非单词字符
-          const text = nextToken.content;
-          let baseId = text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w\-]/g, '');
-
-          // 如果 baseId 为空，使用备用的 ID
-          if (!baseId) {
-            const headingLevel = token.tag.substring(1); // 例如，从 'h1' 中提取 '1'
-            baseId = `heading-${headingLevel}-${idx}`;
-            console.log(`标题文本生成的 ID 为空，使用备用 ID: ${baseId}`);
-          }
-
-          // 检查是否已经有相同文本的标题，如果有，增加计数器
-          if (!headingCounters[text]) {
-            headingCounters[text] = 0;
-          }
-          headingCounters[text]++;
-
-          // 如果是第一个出现的标题，使用基本ID，否则添加计数器
-          let uniqueId;
-          if (headingCounters[text] === 1) {
-            uniqueId = baseId;
-          } else {
-            uniqueId = `${baseId}-${headingCounters[text]}`;
-          }
-
-          console.log(`渲染标题: 文本="${text}", ID="${uniqueId}"`);
-
-          // 确保 ID 不为空
-          if (!uniqueId) {
-            uniqueId = `heading-${idx}-${Date.now()}`;
-            console.log(`生成的 ID 仍然为空，使用备用 ID: ${uniqueId}`);
-          }
-
-          // 设置标题ID和数据属性
-          token.attrSet('id', uniqueId);
-          token.attrSet('data-heading-text', text);
-          token.attrSet('data-heading-index', headingCounters[text].toString());
-
-          console.log(`标题生成ID: ${text} -> ${uniqueId} (索引: ${headingCounters[text]})`);
-        }
-        return originalHeadingOpen(tokens, idx, options, env, self);
-      };
+    // 使用文章点赞
+    const {
+      isLiked,
+      fetchLikeStatus,
+      handleLike
+    } = useArticleLike({
+      postApi,
+      isComponentMounted
     })
 
-    // 添加标题点击跳转功能
-    md.use(function(md) {
-      const originalHeadingRender = md.renderer.rules.heading_close || function(tokens, idx, options, env, self) {
-        return self.renderToken(tokens, idx, options);
-      };
+    // 使用导航
+    const {
+      goBack,
+      navigateToAuthorProfile
+    } = useNavigation()
 
-      md.renderer.rules.heading_close = function(tokens, idx, options, env, self) {
-        // 不使用内联脚本，而是添加一个特殊的类
-        const token = tokens[idx - 2]; // heading_open token
-        if (token && token.tag && token.tag.match(/^h[1-6]$/)) {
-          const id = token.attrs && token.attrs.find(attr => attr[0] === 'id');
-          if (id && id[1]) {
-            // 在标题开始标签上添加类，用于样式和脚本选择
-            token.attrSet('class', (token.attrGet('class') || '') + ' heading-anchor');
-            token.attrSet('data-id', id[1]);
-          }
-        }
-        return originalHeadingRender(tokens, idx, options, env, self);
-      };
+    // 使用DOM观察器
+    const { setupObserver } = useDomObserver({
+      isComponentMounted,
+      setupHeadingClickHandlers,
+      processCodeBlocks,
+      extractArticleHeadings
     })
+
 
     // 渲染Markdown内容的计算属性
     const renderedContent = computed(() => {
       if (!markdownContent.value) return ''
-
-      // 使用 markdown-it 渲染内容
-      return md.render(markdownContent.value)
+      return renderMarkdown(markdownContent.value)
     })
-
-    // 处理渲染后的内容，替换代码块
-    const processCodeBlocks = () => {
-      // 如果组件已经卸载，不执行操作
-      if (!isComponentMounted.value) return
-
-      setTimeout(() => {
-        try {
-          // 查找所有代码块
-          const codeBlocks = document.querySelectorAll('.prose pre code')
-
-          if (codeBlocks.length === 0) return
-
-          // 遍历每个代码块
-          codeBlocks.forEach(codeBlock => {
-            // 获取代码块父元素
-            const preElement = codeBlock.parentElement
-            if (!preElement) return
-
-            // 获取语言
-            const classNames = codeBlock.className.split(' ')
-            let language = 'none'
-            for (const className of classNames) {
-              if (className.startsWith('language-')) {
-                language = className.replace('language-', '')
-                break
-              }
-            }
-
-            // 获取代码内容
-            const code = codeBlock.textContent
-
-            // 创建新的代码块元素
-            const codeBlockElement = document.createElement('div')
-            codeBlockElement.className = 'custom-code-block'
-            codeBlockElement.setAttribute('data-language', language)
-            codeBlockElement.setAttribute('data-code', code)
-
-            // 替换原来的代码块
-            preElement.parentElement.replaceChild(codeBlockElement, preElement)
-          })
-
-          // 将自定义代码块替换为 Vue 组件
-          const customCodeBlocks = document.querySelectorAll('.custom-code-block')
-          customCodeBlocks.forEach(element => {
-            const language = element.getAttribute('data-language') || 'none'
-            const code = element.getAttribute('data-code') || ''
-
-            // 创建 CodeBlock 组件实例
-            const codeBlockInstance = h(CodeBlock, {
-              language,
-              code,
-              lineNumbers: true
-            })
-
-            // 渲染组件
-            const app = createApp({
-              render() {
-                return codeBlockInstance
-              }
-            })
-
-            // 创建容器并挂载组件
-            const container = document.createElement('div')
-            element.parentElement.replaceChild(container, element)
-            app.mount(container)
-          })
-        } catch (error) {
-          console.error('处理代码块时出错:', error)
-        }
-      }, 100) // 等待内容渲染完成
-    }
-
-    // 计算阅读时间
-    const calculateReadingTime = (content) => {
-      const wordsPerMinute = 200 // 假设平均阅读速度为每分钟200字
-      const wordCount = content.length
-      return Math.ceil(wordCount / wordsPerMinute)
-    }
-
-
-    // 处理点赞
-    const handleLike = async () => {
-      // 如果组件已经卸载，不执行操作
-      if (!isComponentMounted.value) {
-        console.log('组件已卸载，取消点赞操作')
-        return
-      }
-
-      const token = localStorage.getItem('token')
-      if (!token) {
-        message.warning('请先登录后再点赞')
-        router.push('/login')
-        return
-      }
-
-      try {
-        await postApi.likePost(post.value.id)
-
-        // 再次检查组件是否已卸载
-        if (!isComponentMounted.value) {
-          console.log('点赞操作后，组件已卸载，取消后续操作')
-          return
-        }
-
-        const wasLiked = isLiked.value
-        isLiked.value = !wasLiked
-        post.value.like_count += isLiked.value ? 1 : -1
-        message.success(isLiked.value ? '点赞成功' : '已取消点赞')
-
-        // 如果是点赞操作（不是取消点赞），触发彩带效果
-        if (isLiked.value) {
-          triggerConfetti()
-        }
-      } catch (error) {
-        console.error('点赞失败:', error)
-        message.error('点赞失败，请稍后重试')
-      }
-    }
-
-    // 触发彩带效果
-    const triggerConfetti = () => {
-      const end = Date.now() + 2 * 1000; // 2秒
-      const colors = ['#ff0000', '#ff4d94', '#ff9999', '#ffcccc']; // 红色系列
-      let rafId = null; // 存储 requestAnimationFrame 的 ID
-
-      // 帧函数，触发彩带炮
-      function frame() {
-        if (Date.now() > end || !isComponentMounted.value) {
-          // 如果时间到了或组件已卸载，停止动画
-          return;
-        }
-
-        // 左侧彩带炮
-        confetti({
-          particleCount: 2,
-          angle: 60,
-          spread: 55,
-          startVelocity: 60,
-          origin: { x: 0, y: 0.5 },
-          colors: colors,
-        });
-
-        // 右侧彩带炮
-        confetti({
-          particleCount: 2,
-          angle: 120,
-          spread: 55,
-          startVelocity: 60,
-          origin: { x: 1, y: 0.5 },
-          colors: colors,
-        });
-
-        // 继续调用帧函数，并存储 ID 以便清理
-        rafId = requestAnimationFrame(frame);
-      }
-
-      // 开始动画
-      rafId = requestAnimationFrame(frame);
-
-      // 添加到 rafIds 数组中，以便在组件卸载时清理
-      if (rafId) {
-        rafIds.push(rafId);
-      }
-    }
-
-    // 获取点赞状态
-    const fetchLikeStatus = async () => {
-      // 如果组件已经卸载，不执行操作
-      if (!isComponentMounted.value) {
-        console.log('组件已卸载，取消获取点赞状态')
-        return
-      }
-
-      const token = localStorage.getItem('token')
-      if (!token || !post.value) return
-
-      try {
-        const response = await postApi.getLikeStatus(post.value.id)
-
-        // 再次检查组件是否已卸载
-        if (!isComponentMounted.value) {
-          console.log('获取点赞状态后，组件已卸载，取消后续操作')
-          return
-        }
-
-        isLiked.value = response.is_liked
-      } catch (error) {
-        console.error('获取点赞状态失败:', error)
-      }
-    }
-
-    // 获取角色名称
-    const getRoleName = (role) => {
-      const roleMap = {
-        'admin': '管理员',
-        'editor': '编辑',
-        'user': '用户'
-      }
-      return roleMap[role] || role
-    }
-
-    // 导航到作者资料页
-    const navigateToAuthorProfile = (authorId) => {
-      if (!authorId) return
-      router.push(`/user/${authorId}`)
-    }
-
-    // 格式化日期
-    const formatDate = (dateString) => {
-      if (!dateString) return '-'
-      try {
-        return new Date(dateString).toLocaleDateString('zh-CN', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit'
-        })
-      } catch (error) {
-        console.error('日期格式化错误:', error)
-        return dateString
-      }
-    }
-
-    // 处理图片加载错误
-    const handleImageError = (event) => {
-      console.log('图片加载失败:', event.target.src)
-      // 设置默认图片
-      event.target.src = '/images/default-avatar.jpg'
-      // 防止循环触发错误事件
-      event.target.onerror = null
-    }
-
-    // 获取文章数据
-    const fetchPost = async () => {
-      // 如果组件已经卸载，不执行操作
-      if (!isComponentMounted.value) {
-        console.log('组件已卸载，取消获取文章数据')
-        return
-      }
-
-      loading.value = true
-      try {
-        const response = await postApi.getPostById(route.params.id)
-
-        // 再次检查组件是否已卸载
-        if (!isComponentMounted.value) {
-          console.log('获取文章数据后，组件已卸载，取消后续操作')
-          return
-        }
-
-        // 如果有作者ID，获取作者信息
-        let authorData = null
-        if (response.author_id) {
-          try {
-            authorData = await usersApi.getUserById(response.author_id)
-            console.log('获取到作者信息:', authorData)
-          } catch (authorError) {
-            console.error('获取作者信息失败:', authorError)
-          }
-        }
-
-        post.value = {
-          id: response.id,
-          title: response.title,
-          slug: response.slug,
-          content: response.content,
-          category: response.category?.name || response.category_name,
-          category_id: response.category?.id || response.category_id,
-          tags: response.tags_list || response.tags,
-          cover_image: response.cover_image,
-          excerpt: response.excerpt,
-          author_id: response.author_id,
-          // 如果响应中已包含作者信息，使用响应中的作者信息
-          author: response.author || authorData,
-          view_count: response.view_count,
-          like_count: response.like_count,
-          is_featured: response.is_featured,
-          created_at: response.created_at,
-          updated_at: response.updated_at,
-          date: new Date(response.created_at).toLocaleDateString('zh-CN')
-        }
-
-        markdownContent.value = response.content
-        readingTime.value = calculateReadingTime(response.content)
-
-        // 获取点赞状态
-        fetchLikeStatus()
-      } catch (error) {
-        console.error('获取文章失败:', error)
-        message.error('获取文章详情失败')
-        post.value = null
-      } finally {
-        loading.value = false
-      }
-    }
-
-    // 返回上一页
-    const goBack = () => {
-      router.back()
-    }
-
-    // 添加标题点击事件处理
-    const setupHeadingClickHandlers = () => {
-      // 如果组件已经卸载，不执行操作
-      if (!isComponentMounted.value) {
-        console.log('组件已卸载，取消设置标题点击处理器')
-        return
-      }
-
-      // console.log('设置标题点击处理器')
-
-      // 使用局部变量保存当前的挂载状态
-      const isMounted = isComponentMounted.value
-
-      // 使用 requestAnimationFrame 确保在下一帧渲染时执行
-      // 将 requestAnimationFrame ID 保存到 rafIds 数组，以便清理
-      const id = requestAnimationFrame(() => {
-        // 再次检查组件是否已卸载，使用局部变量而不是响应式对象
-        if (!isMounted) {
-          console.log('requestAnimationFrame 回调中，组件已卸载，取消操作')
-          return
-        }
-        try {
-          // 查找所有标题元素
-          const headings = document.querySelectorAll('.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6')
-
-          if (headings.length === 0) {
-            // console.log('没有找到标题元素')
-            return
-          }
-
-          // console.log(`找到 ${headings.length} 个标题元素`)
-
-          // 为每个标题处理 ID 和类
-          headings.forEach((heading, idx) => {
-            // 添加 heading-anchor 类
-            if (!heading.classList.contains('heading-anchor')) {
-              heading.classList.add('heading-anchor')
-            }
-
-            // 处理 ID
-            if (!heading.id) {
-              const text = heading.textContent.trim()
-              if (text) {
-                // 获取标题索引
-                const index = parseInt(heading.getAttribute('data-heading-index') || '0')
-
-                // 生成基本ID
-                let baseId = text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w\-]/g, '')
-
-                // 如果 baseId 为空，使用备用的 ID
-                if (!baseId) {
-                  baseId = `heading-${idx + 1}`
-                  console.log(`标题文本生成的 ID 为空，使用备用 ID: ${baseId}`)
-                }
-
-                // 如果有索引，使用索引生成ID
-                let id = index > 1 ? `${baseId}-${index}` : baseId
-
-                // 检查是否已存在相同ID的元素
-                let counter = index || 1
-                while (document.getElementById(id)) {
-                  counter++
-                  id = `${baseId}-${counter}`
-                }
-
-                console.log(`设置标题 ${idx + 1} 的 ID: "${id}", 文本="${text}"`)
-
-                // 确保 ID 不为空
-                if (!id) {
-                  id = `heading-${idx + 1}-${Date.now()}`
-                  console.log(`生成的 ID 仍然为空，使用备用 ID: ${id}`)
-                }
-
-
-                heading.id = id
-                heading.setAttribute('data-id', id)
-
-                // 确保标题有索引属性
-                if (!heading.hasAttribute('data-heading-index')) {
-                  heading.setAttribute('data-heading-index', counter.toString())
-                }
-              }
-            } else if (!heading.hasAttribute('data-id')) {
-              heading.setAttribute('data-id', heading.id)
-            }
-
-            // 检查是否已添加点击事件
-            if (heading.getAttribute('data-click-handler') !== 'true') {
-              const id = heading.getAttribute('data-id') || heading.id
-              if (id) {
-                // 创建命名的点击处理函数，便于移除
-                const clickHandler = function(event) {
-                  // console.log(`标题点击: ${id}`)
-
-                  // 更新 URL 但不触发页面滚动
-                  history.pushState(null, null, `#${id}`)
-
-                  // 计算元素的位置
-                  const rect = heading.getBoundingClientRect()
-                  const absoluteElementTop = rect.top + window.pageYOffset
-
-                  // 计算偏移量，使标题位于页面中间位置
-                  const viewportHeight = window.innerHeight
-                  const offset = viewportHeight * 0.2 // 视口高度的20%
-
-                  // 滚动到元素位置减去偏移量
-                  window.scrollTo({
-                    top: absoluteElementTop - offset,
-                    behavior: 'smooth'
-                  })
-
-                  // 添加高亮效果
-                  heading.classList.add('highlight-heading')
-                  setTimeout(() => {
-                    if (document.body.contains(heading)) {
-                      heading.classList.remove('highlight-heading')
-                    }
-                  }, 2000)
-
-                  // 阻止事件冒泡
-                  event.stopPropagation()
-                }
-
-                // 存储处理函数引用
-                heading._clickHandler = clickHandler
-
-                // 添加点击事件
-                heading.addEventListener('click', clickHandler)
-
-                // 标记已添加点击事件
-                heading.setAttribute('data-click-handler', 'true')
-              }
-            }
-          })
-        } catch (error) {
-          console.error('设置标题点击处理器时出错:', error)
-        }
-      })
-
-      // 将 ID 添加到 rafIds 数组中
-      if (id) {
-        rafIds.push(id)
-      }
-    }
-
-    // 提取文章中的标题
-    const extractArticleHeadings = () => {
-      // 如果组件已经卸载，不执行操作
-      if (!isComponentMounted.value) {
-        console.log('组件已卸载，取消提取文章标题')
-        return
-      }
-
-      try {
-        // 查找所有标题元素
-        const headingElements = document.querySelectorAll('.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6')
-
-        if (headingElements.length === 0) {
-          console.log('没有找到标题元素')
-
-          // 如果没有找到标题元素，尝试手动创建一些标题数据用于测试
-          const testHeadings = [
-            { id: 'heading-1', level: 1, text: '文章标题' },
-            { id: 'heading-2', level: 2, text: '第一部分' },
-            { id: 'heading-3', level: 3, text: '小节一' },
-            { id: 'heading-4', level: 2, text: '第二部分' },
-            { id: 'heading-5', level: 3, text: '小节二' }
-          ];
-
-          console.log('使用测试标题数据:', testHeadings);
-          articleHeadings.value = testHeadings;
-          return;
-        }
-
-        console.log(`找到 ${headingElements.length} 个标题元素`)
-
-        // 清空现有标题列表
-        articleHeadings.value = []
-
-        // 提取标题信息
-        headingElements.forEach((heading) => {
-          const id = heading.id || heading.getAttribute('data-id')
-          if (!id) return
-
-          const level = parseInt(heading.tagName.substring(1)) // 从 'H1', 'H2' 等提取数字
-          const text = heading.textContent.trim()
-
-          articleHeadings.value.push({
-            id,
-            level,
-            text
-          })
-        })
-
-        console.log('提取的标题列表:', articleHeadings.value)
-
-        // 强制触发响应式更新，确保 ScrollIsland 组件能接收到最新的标题列表
-        // 这是解决问题的关键，通过创建一个新数组来触发响应式更新
-        const newHeadings = [...articleHeadings.value];
-        console.log('强制更新标题列表，新数组:', newHeadings);
-        articleHeadings.value = newHeadings;
-
-        // 在下一帧再次检查标题列表
-        setTimeout(() => {
-          console.log('更新后的标题列表:', articleHeadings.value);
-        }, 0);
-      } catch (error) {
-        console.error('提取文章标题时出错:', error)
-      }
-    }
 
     onMounted(async () => {
       isComponentMounted.value = true
-      await fetchPost()
+
+      // 获取文章数据
+      await fetchPost(route.params.id)
 
       // 只有在组件仍然挂载时才继续执行
       if (isComponentMounted.value) {
-        await fetchLikeStatus()
+        // 获取点赞状态
+        await fetchLikeStatus(post.value.id)
       }
 
       // 内容加载后设置标题点击处理器
@@ -978,148 +391,32 @@ export default {
           // 再次尝试，以确保标题元素已经渲染
           setTimeout(() => {
             if (isComponentMounted.value && articleHeadings.value.length === 0) {
-              console.log('第一次提取标题失败，再次尝试')
               extractArticleHeadings()
-
-              // 第三次尝试
-              setTimeout(() => {
-                if (isComponentMounted.value && articleHeadings.value.length === 0) {
-                  console.log('第二次提取标题失败，再次尝试')
-                  extractArticleHeadings()
-                }
-              }, 1000)
             }
           }, 500)
         }
       }, 500) // 延迟执行，确保标题元素已经渲染
 
-      // 使用防抖处理的 MutationObserver
-      let debounceTimer = null
-      // 注意：我们已经在外部声明了 rafIds 数组，这里不需要再声明
-      const observer = new MutationObserver((mutations) => {
-        // 如果组件已经卸载，不执行操作
-        if (!isComponentMounted.value) {
-          console.log('MutationObserver 回调中，组件已卸载，取消操作')
-          return
-        }
-
-        // 使用局部变量保存当前的挂载状态
-        // 注意：我们在定时器回调中使用了局部变量，这里不需要再使用
-        // 检查是否有相关的变化
-        const hasRelevantChanges = mutations.some(mutation => {
-          // 只处理添加标题元素的变化
-          if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-            for (const node of mutation.addedNodes) {
-              if (node.nodeType === Node.ELEMENT_NODE) {
-                // 检查是否是标题元素或包含标题元素
-                if (node.tagName && /^H[1-6]$/.test(node.tagName) ||
-                    node.querySelector && node.querySelector('h1, h2, h3, h4, h5, h6')) {
-                  return true
-                }
-              }
-            }
-          }
-          return false
-        })
-
-        // 如果有相关变化，使用防抖处理
-        if (hasRelevantChanges) {
-          // console.log('检测到标题元素变化，准备更新点击处理器')
-
-          // 清除之前的定时器
-          if (debounceTimer) {
-            clearTimeout(debounceTimer)
-          }
-
-          // 设置新的定时器，延迟执行
-          // 使用局部变量保存当前的挂载状态
-          const currentIsMounted = isComponentMounted.value
-
-          debounceTimer = setTimeout(() => {
-            // 在定时器回调中再次检查组件是否已卸载
-            if (!currentIsMounted) {
-              console.log('定时器回调中，组件已卸载，取消标题点击处理器更新')
-              return
-            }
-
-            // console.log('执行延迟的标题点击处理器更新')
-            setupHeadingClickHandlers()
-
-            // 处理代码块
-            processCodeBlocks()
-
-            // 同时更新标题列表
-            extractArticleHeadings()
-          }, 500)
-        }
-      })
-
-      // 监听文章内容容器
-      const contentContainer = document.querySelector('.prose')
-      if (contentContainer) {
-        // 使用更精细的配置，减少不必要的触发
-        observer.observe(contentContainer, {
-          childList: true,  // 监听子元素的添加和删除
-          subtree: true,    // 监听所有后代元素
-          attributes: false, // 不监听属性变化
-          characterData: false // 不监听文本变化
-        })
-      }
-
-      // 组件卸载时清理所有资源
-      return () => {
-        // 断开观察者连接
-        observer.disconnect()
-
-        // 清除定时器
-        if (debounceTimer) {
-          clearTimeout(debounceTimer)
-          debounceTimer = null
-        }
-
-        // 清除 requestAnimationFrame
-        rafIds.forEach(id => {
-          cancelAnimationFrame(id)
-        })
-        rafIds.length = 0; // 清空数组
-      }
+      // 设置Dom观察器
+      setupObserver()
     })
 
     // 添加组件卸载钩子
     onUnmounted(() => {
       console.log('组件卸载，清理资源')
 
-      // 首先设置挂载状态为 false，确保所有异步操作都会检查这个状态
+      // 设置挂载状态为 false
       isComponentMounted.value = false
 
-      try {
-        // 清除所有标题元素的点击事件
-        const headings = document.querySelectorAll('.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6')
-        headings.forEach(heading => {
-          // 移除所有事件监听器
-          heading.replaceWith(heading.cloneNode(true))
-        })
-
-        // 清理所有 requestAnimationFrame
-        rafIds.forEach(id => {
-          cancelAnimationFrame(id)
-        })
-      } catch (error) {
-        console.error('清除资源时出错:', error)
-      } finally {
-        // 清除引用，避免内存泄漏
-        post.value = null
-        markdownContent.value = ''
-      }
+      // 清理标题相关资源
+      cleanup()
     })
 
-    // 生成AI摘要内容
-    const generateAiSummary = () => {
-      if (post.value.excerpt) return post.value.excerpt
-
-      // 这里可以根据文章内容生成一个更智能的摘要
-      // 实际应用中可以调用AI服务来生成
-      return `这是一篇关于${post.value.category}的精彩文章，主要探讨了${post.value.title}的核心观点。文章从多个角度分析了这一主题的重要性和应用价值，值得深入阅读。`
+    // 处理文章点赞的包装函数
+    const handleArticleLike = () => {
+      if (post.value) {
+        handleLike(post.value)
+      }
     }
 
     return {
@@ -1132,13 +429,12 @@ export default {
       goBack,
       generateAiSummary,
       readingTime,
-      handleLike,
+      handleLike: handleArticleLike,
       isLiked,
       getRoleName,
       navigateToAuthorProfile,
       formatDate,
-      articleHeadings,
-      processCodeBlocks
+      articleHeadings
     }
   }
 }
@@ -1148,6 +444,11 @@ export default {
 :root {
   --color-secondary-rgb: 59, 130, 246; /* 蓝色的RGB值 */
   --color-secondary: #3b82f6;
+}
+
+/* 强制覆盖KaTeX样式 */
+.article-content .katex-html .base {
+  position: relative !important;
 }
 
 /* 标题高亮效果 */
@@ -1233,16 +534,97 @@ export default {
   text-shadow: 0 0 8px rgba(147, 197, 253, 0.3);
 }
 
-/* 自定义代码块样式 */
-.custom-code-block {
+/* 代码块包装器样式 */
+.code-block-wrapper {
   margin: 1.5rem 0;
+  overflow: hidden;
 }
 
 /* 暗黑模式下的代码块样式 */
-.dark .article-content pre {
-  background-color: #1e293b !important; /* 深蓝色背景，增强对比度 */
-  border: 1px solid #334155 !important; /* 添加边框，增强边界 */
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -2px rgba(0, 0, 0, 0.1) !important; /* 添加阴影，增强立体感 */
+.dark .article-content .code-block-container {
+  background-color: #282c34 !important;
+  border: 1px solid #4b5563 !important;
+}
+
+/* 确保文章内容中的代码块正确显示 */
+.prose pre {
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  background-color: transparent !important;
+}
+
+.prose .code-block-wrapper pre {
+  border-radius: 0 !important;
+}
+
+/* 文章内容中的代码块容器 */
+.prose .code-block-container {
+  display: flex;
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+}
+
+.dark .prose .code-block-container {
+  border: 1px solid #4b5563;
+}
+
+/* 确保行号正确显示 */
+.prose .line-numbers-wrapper {
+  padding: 0.5rem 0;
+  display: flex;
+  align-items: stretch;
+}
+
+.prose .line-numbers {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  padding: 0.5rem 0.5rem;
+}
+
+.prose .line-number {
+  display: flex;
+  align-items: flex-start; /* 与代码对齐上边缘 */
+  justify-content: flex-end; /* 右对齐 */
+  height: 1.5rem;
+  min-width: 2rem;
+  user-select: none;
+  padding: 0;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* 确保代码行高与行号行高一致 */
+.prose .code-wrapper {
+  display: flex;
+  align-items: stretch;
+}
+
+.prose .code-wrapper pre {
+  padding: 0.5rem;
+  margin: 0;
+  width: 100%;
+}
+
+.prose pre code {
+  display: block;
+  line-height: 1.5;
+  padding: 0;
+  margin: 0;
+}
+
+/* 确保代码内容中的每一行与行号对齐 */
+.prose .hljs-line {
+  display: flex;
+  align-items: flex-start; /* 与行号对齐上边缘 */
+  min-height: 1.5rem;
+  line-height: 1.5;
+}
+
+/* 如果没有行元素，确保行高一致 */
+.prose pre code span {
+  line-height: 1.5;
 }
 
 /* 暗黑模式下的行内代码样式 */
@@ -1308,6 +690,67 @@ export default {
 .dark .article-content tbody tr:hover {
   background-color: rgba(96, 165, 250, 0.05) !important; /* 使用暗色主题的强调色，非常淡 */
   transition: background-color 0.2s ease !important;
+}
+
+/* 数学公式容器样式增强 */
+.article-content .katex-display {
+  margin: 1.5em 0 !important;
+  overflow-x: auto !important;
+}
+
+/* 确保数学公式在暗黑模式下可见 */
+.dark .article-content .katex {
+  color: #e2e8f0 !important;
+}
+
+/* 直接在组件中添加上下标样式 - 根据实际DOM结构调整 */
+.article-content .katex-html .vlist > span.reset-textstyle.scriptstyle {
+  font-size: 0.75em !important;
+  position: relative !important;
+  top: -0.5em !important;
+  color: #3b82f6 !important;
+}
+
+.article-content .katex-html .vlist > span.reset-textstyle.scriptstyle.cramped {
+  font-size: 0.75em !important;
+  position: relative !important;
+  top: 0.3em !important;
+  color: #3b82f6 !important;
+}
+
+/* 调整strut元素 */
+.article-content .katex-html .strut {
+  display: inline-block !important;
+}
+
+.article-content .katex-html .strut.bottom {
+  vertical-align: -0.25em !important;
+}
+
+/* 调整fontsize-ensurer */
+.article-content .katex-html .fontsize-ensurer {
+  display: inline-block !important;
+}
+
+/* 调整baseline-fix */
+.article-content .katex-html .baseline-fix {
+  display: inline-block !important;
+  position: relative !important;
+}
+
+/* 添加更多特定的选择器，确保样式能够应用 */
+.article-content span.katex-html .vlist span.reset-textstyle.scriptstyle {
+  font-size: 0.75em !important;
+  position: relative !important;
+  top: -0.5em !important;
+  color: #3b82f6 !important;
+}
+
+.article-content span.katex-html .vlist span.reset-textstyle.scriptstyle.cramped {
+  font-size: 0.75em !important;
+  position: relative !important;
+  top: 0.3em !important;
+  color: #3b82f6 !important;
 }
 /* 作者头像样式 */
 .author-avatar {
@@ -1512,5 +955,58 @@ export default {
   animation-duration: 1s;
   animation-fill-mode: both;
   animation-iteration-count: infinite;
+}
+</style>
+
+<style scoped>
+/* 使用深度选择器确保样式能够应用到KaTeX渲染的元素上 - 根据实际DOM结构调整 */
+:deep(.katex-html) {
+  font-size: 1.1em !important;
+  color: #3b82f6 !important;
+}
+
+/* 基础样式 */
+:deep(.katex-html .base) {
+  position: relative !important;
+}
+
+/* 上标样式 - 根据实际DOM结构调整 */
+:deep(.katex-html .vlist > span.reset-textstyle.scriptstyle),
+:deep(span.katex-html .vlist span.reset-textstyle.scriptstyle) {
+  font-size: 0.6em !important;
+  position: relative !important;
+  margin-left: 0.2em !important;
+  top: 0.5em !important; /* 修改为负值，使上标向上移动 */
+  color: #3b82f6 !important;
+}
+
+/* 下标样式 - 根据实际DOM结构调整 */
+:deep(.katex-html .vlist > span.reset-textstyle.scriptstyle.cramped),
+:deep(span.katex-html .vlist span.reset-textstyle.scriptstyle.cramped) {
+  font-size: 0.7em !important;
+  position: relative !important;
+  margin-left: 0.1em !important;
+  top: 0.6em !important;
+  color: #3b82f6 !important;
+}
+
+/* 调整strut元素 */
+:deep(.katex-html .strut) {
+  display: inline-block !important;
+}
+
+:deep(.katex-html .strut.bottom) {
+  vertical-align: -0.25em !important;
+}
+
+/* 调整fontsize-ensurer */
+:deep(.katex-html .fontsize-ensurer) {
+  display: inline-block !important;
+}
+
+/* 调整baseline-fix */
+:deep(.katex-html .baseline-fix) {
+  display: inline-block !important;
+  position: relative !important;
 }
 </style>

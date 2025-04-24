@@ -27,7 +27,7 @@
   color: #111827;
 }
 
-.dark .prose h1, .dark .prose h2, .dark .prose h3, 
+.dark .prose h1, .dark .prose h2, .dark .prose h3,
 .dark .prose h4, .dark .prose h5, .dark .prose h6 {
   color: #f3f4f6;
 }
@@ -202,14 +202,30 @@
   overflow-x: auto;
   overflow-y: hidden;
   padding: 1em 0;
+  margin: 1em 0;
+  text-align: center;
 }
 
 .prose .katex {
   font-size: 1.1em;
+  display: inline-block;
+  text-align: left;
 }
 
 /* 确保行内公式不会导致行高异常 */
 .prose .katex-inline {
+  display: inline-block;
+  vertical-align: middle;
+  line-height: normal;
+}
+
+/* 确保下标正确显示 */
+.prose .katex .msupsub {
+  text-align: left;
+}
+
+/* 确保分数正确显示 */
+.prose .katex .mfrac {
   display: inline-block;
   vertical-align: middle;
 }

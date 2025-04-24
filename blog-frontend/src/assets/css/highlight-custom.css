@@ -1,0 +1,190 @@
+/**
+ * 自定义 highlight.js 样式
+ * 支持白天和暗色模式
+ */
+
+/* 代码块基本样式 - 白天模式 */
+.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 0.5em;
+  color: #383a42;
+  background: #f8f8f8;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* 暗色模式样式 */
+.dark .hljs {
+  color: #abb2bf;
+  background: #282c34;
+}
+
+/* 注释和引用 */
+.hljs-comment,
+.hljs-quote {
+  color: #a0a1a7;
+  font-style: italic;
+}
+
+.dark .hljs-comment,
+.dark .hljs-quote {
+  color: #5c6370;
+}
+
+/* 关键字、存储类型、类型声明、CSS规则 */
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-subst {
+  color: #a626a4;
+}
+
+.dark .hljs-keyword,
+.dark .hljs-selector-tag,
+.dark .hljs-subst {
+  color: #c678dd;
+}
+
+/* 字符串和正则表达式 */
+.hljs-string,
+.hljs-regexp,
+.hljs-attribute,
+.hljs-attr,
+.hljs-addition {
+  color: #50a14f;
+}
+
+.dark .hljs-string,
+.dark .hljs-regexp,
+.dark .hljs-attribute,
+.dark .hljs-attr,
+.dark .hljs-addition {
+  color: #98c379;
+}
+
+/* 类名、函数名 */
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.function_ {
+  color: #c18401;
+}
+
+.dark .hljs-title,
+.dark .hljs-title.class_,
+.dark .hljs-title.function_ {
+  color: #e6c07b;
+}
+
+/* 变量、属性、标签 */
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-variable,
+.hljs-template-variable {
+  color: #e45649;
+}
+
+.dark .hljs-name,
+.dark .hljs-selector-id,
+.dark .hljs-selector-class,
+.dark .hljs-variable,
+.dark .hljs-template-variable {
+  color: #e06c75;
+}
+
+/* 数字、布尔值 */
+.hljs-number,
+.hljs-literal,
+.hljs-type,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-params,
+.hljs-meta {
+  color: #986801;
+}
+
+.dark .hljs-number,
+.dark .hljs-literal,
+.dark .hljs-type,
+.dark .hljs-built_in,
+.dark .hljs-builtin-name,
+.dark .hljs-params,
+.dark .hljs-meta {
+  color: #d19a66;
+}
+
+/* 删除的代码 */
+.hljs-deletion {
+  color: #e45649;
+}
+
+.dark .hljs-deletion {
+  color: #e06c75;
+}
+
+/* 强调 */
+.hljs-emphasis {
+  font-style: italic;
+}
+
+/* 加粗 */
+.hljs-strong {
+  font-weight: bold;
+}
+
+/* 行号容器样式 */
+.line-numbers-wrapper {
+  padding: 0.5rem 0;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-right: 1px solid rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: stretch;
+}
+
+.dark .line-numbers-wrapper {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.line-numbers {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem 0.5rem;
+  color: #6b7280;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.dark .line-numbers {
+  color: #9ca3af;
+}
+
+.line-number {
+  display: flex;
+  align-items: flex-start; /* 与代码对齐上边缘 */
+  justify-content: flex-end; /* 右对齐 */
+  height: 1.5rem; /* 确保行高与代码行高一致 */
+  min-width: 2rem;
+  user-select: none;
+  padding: 0;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* 确保代码内容中的每一行与行号对齐 */
+.hljs-line {
+  display: flex;
+  align-items: flex-start; /* 与行号对齐上边缘 */
+  min-height: 1.5rem;
+  line-height: 1.5;
+}
+
+/* 代码块包装器样式 */
+.code-block-wrapper {
+  margin: 1.5rem 0;
+  overflow: hidden;
+}
+
+.dark .code-block-wrapper {
+  /* 暗色模式下不需要特殊样式 */
+}
