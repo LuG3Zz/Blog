@@ -41,7 +41,20 @@
                 {{ tag }}
               </span>
             </div>
-            <h1 class="text-3xl font-bold text-white mb-2 animate__animated animate__fadeInUp animate__delay-1s">{{ post.title }}</h1>
+            <div class="flex items-center justify-between mb-2 animate__animated animate__fadeInUp animate__delay-1s">
+              <h1 class="text-3xl font-bold text-white">{{ post.title }}</h1>
+              <!-- 编辑按钮 - 只有有权限的用户才能看到 -->
+              <button
+                v-if="canEditArticle"
+                @click="editArticle"
+                class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md shadow-md transition-all duration-300 flex items-center gap-1 transform hover:scale-105"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                编辑文章
+              </button>
+            </div>
             <div class="flex items-center gap-2 mb-2 animate__animated animate__fadeInUp animate__delay-1s">
               <!-- 作者头像 -->
               <div
@@ -262,12 +275,14 @@
 
 <script>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { postApi, usersApi } from '@/api'
 import { Navbar } from '@/components/layout'
 import { CommentSection, ArticleToc, ArticleSidebar, AiSummary } from '@/components/blog'
 import { Breadcrumb, ScrollIsland, CodeBlock } from '@/components/ui'
 import 'katex/dist/katex.min.css' // 导入 KaTeX 样式
+import { userStore } from '@/store'
+import { isAdmin, hasRole } from '@/utils/permission'
 
 
 // 导入组合式函数
@@ -294,12 +309,35 @@ export default {
   },
   setup() {
     const route = useRoute()
+    const router = useRouter()
 
     // 添加取消标记
     const isComponentMounted = ref(true)
 
     // 使用Markdown渲染器
     const { renderMarkdown, calculateReadingTime } = useMarkdownRenderer()
+
+    // 判断当前用户是否有权限编辑文章
+    const canEditArticle = computed(() => {
+      // 检查用户是否已登录
+      if (!userStore.state.isLoggedIn || !userStore.state.userInfo) {
+        return false
+      }
+
+      const currentUser = userStore.state.userInfo
+
+      // 如果用户是管理员或编辑，可以编辑任何文章
+      if (isAdmin(currentUser) || hasRole(currentUser, ['editor'])) {
+        return true
+      }
+
+      // 如果用户是文章作者，也可以编辑
+      if (post.value && post.value.author_id === currentUser.id) {
+        return true
+      }
+
+      return false
+    })
 
     // 使用文章数据
     const {
@@ -419,6 +457,16 @@ export default {
       }
     }
 
+    // 跳转到编辑页面
+    const editArticle = () => {
+      if (post.value && post.value.id) {
+        router.push({
+          path: '/admin/articles/edit',
+          query: { id: post.value.id }
+        })
+      }
+    }
+
     return {
       post,
       loading,
@@ -434,7 +482,9 @@ export default {
       getRoleName,
       navigateToAuthorProfile,
       formatDate,
-      articleHeadings
+      articleHeadings,
+      canEditArticle,
+      editArticle
     }
   }
 }

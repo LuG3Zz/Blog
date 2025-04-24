@@ -53,7 +53,7 @@
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-1/8">
                 创建日期
               </th>
-             
+
               <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-1/12">
                 是否精选
               </th>
@@ -68,8 +68,17 @@
               <td class="px-6 py-4">
                 <div class="flex items-center">
                   <div class="w-full">
-                    <div class="text-1xl font-medium text-gray-900 dark:text-white truncate max-w-xs" :title="post.title">
+                    <div
+                      class="text-1xl font-medium text-gray-900 dark:text-white truncate max-w-xs cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                      :title="post.title"
+                      @click="viewArticle(post)"
+                    >
                       {{ post.title }}
+                      <span class="ml-1 text-xs text-blue-500 opacity-70">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </span>
                     </div>
                     <div class="text-sm text-gray-400 dark:text-gray-400 truncate max-w-xs" :title="getTagsDisplay(post)">
                       {{ getTagsDisplay(post) }}
@@ -85,7 +94,7 @@
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="text-sm text-gray-500 dark:text-gray-400">{{ formatDate(post.created_at) }}</div>
               </td>
-              
+
               <td class="px-6 py-4 whitespace-nowrap">
                 <span v-if="post.is_featured" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 dark:bg-green-800 text-green-800 dark:text-green-100">
                   精选文章
@@ -497,6 +506,13 @@ export default {
       })
     }
 
+    // 查看文章详情
+    const viewArticle = (post) => {
+      // 在新标签页中打开文章详情页面
+      const url = `/article/${post.id}`
+      window.open(url, '_blank')
+    }
+
     // 获取文章标签显示文本
     const getTagsDisplay = (post) => {
       // 如果有 tags_list 字段，使用新格式
@@ -542,6 +558,7 @@ export default {
       navigateToAddArticle,
       navigateToEditArticle,
       viewArticleComments,
+      viewArticle,
       loadData: fetchPosts,
       deleteConfirmMessage
     }
