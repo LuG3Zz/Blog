@@ -173,7 +173,7 @@
 <script>
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { userStore, themeStore } from '../../store'
+import { useUserStore, useThemeStore } from '@/stores'
 import message from '../../utils/message'
 import { usersApi } from '@/api'
 
@@ -181,9 +181,11 @@ export default {
   name: 'Navbar',
   setup() {
     const router = useRouter()
+    const userStore = useUserStore()
+    const themeStore = useThemeStore()
 
     // 使用全局主题状态
-    const isDark = computed(() => themeStore.state.isDark)
+    const isDark = computed(() => themeStore.isDark)
 
     // 切换主题
     const toggleTheme = () => {
@@ -214,7 +216,7 @@ export default {
     })
 
     // 使用计算属性获取登录状态
-    const isLoggedIn = computed(() => userStore.state.isLoggedIn)
+    const isLoggedIn = computed(() => userStore.isLoggedIn)
 
     // 用于存储用户信息的响应式对象
     const apiUserInfo = ref(null)

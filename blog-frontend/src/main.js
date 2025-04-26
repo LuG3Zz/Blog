@@ -1,4 +1,5 @@
 import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 import App from './App.vue'
 import './assets/css/tailwind.css'
 import './assets/css/app.css'
@@ -13,16 +14,22 @@ import Lenis from 'lenis'
 import { gsap } from 'gsap'
 import VTooltip from 'v-tooltip'
 import router from './router'
-import { themeStore } from './store'
+import { useThemeStore } from './stores'
 
 // 全局可用的GSAP和Lenis
 window.gsap = gsap
 window.Lenis = Lenis
 
-// 初始化主题
-themeStore.initTheme()
+// 创建Pinia实例
+const pinia = createPinia()
 
 const app = createApp(App)
 app.use(VTooltip)
 app.use(router)
+app.use(pinia)
+
+// 初始化主题 (在挂载应用后初始化，确保Pinia已经可用)
+const themeStore = useThemeStore()
+themeStore.initTheme()
+
 app.mount('#app')

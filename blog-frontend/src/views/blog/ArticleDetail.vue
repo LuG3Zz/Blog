@@ -281,7 +281,7 @@ import { Navbar } from '@/components/layout'
 import { CommentSection, ArticleToc, ArticleSidebar, AiSummary } from '@/components/blog'
 import { Breadcrumb, ScrollIsland, CodeBlock } from '@/components/ui'
 import 'katex/dist/katex.min.css' // 导入 KaTeX 样式
-import { userStore } from '@/store'
+import { useUserStore } from '@/stores'
 import { isAdmin, hasRole } from '@/utils/permission'
 
 
@@ -317,14 +317,17 @@ export default {
     // 使用Markdown渲染器
     const { renderMarkdown, calculateReadingTime } = useMarkdownRenderer()
 
+    // 获取用户状态
+    const userStore = useUserStore()
+
     // 判断当前用户是否有权限编辑文章
     const canEditArticle = computed(() => {
       // 检查用户是否已登录
-      if (!userStore.state.isLoggedIn || !userStore.state.userInfo) {
+      if (!userStore.isLoggedIn || !userStore.userInfo) {
         return false
       }
 
-      const currentUser = userStore.state.userInfo
+      const currentUser = userStore.userInfo
 
       // 如果用户是管理员或编辑，可以编辑任何文章
       if (isAdmin(currentUser) || hasRole(currentUser, ['editor'])) {

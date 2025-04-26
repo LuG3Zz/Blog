@@ -181,7 +181,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { userApi } from '@/api'
-import { userStore } from '@/store'
+import { useUserStore } from '@/stores'
 import message from '@/utils/message'
 import { isAdmin } from '@/utils/permission'
 
@@ -189,16 +189,17 @@ export default {
   name: 'Admin',
   setup() {
     const router = useRouter()
+    const userStore = useUserStore()
     const isCollapsed = ref(false)
 
     // 使用计算属性获取用户信息
-    const userInfo = computed(() => userStore.state.userInfo)
+    const userInfo = computed(() => userStore.userInfo)
 
     // 在组件挂载时检查登录状态和权限
     onMounted(async () => {
       console.log('后台组件挂载，检查登录状态和权限');
-      console.log('当前登录状态:', userStore.state.isLoggedIn);
-      console.log('当前用户信息:', userStore.state.userInfo);
+      console.log('当前登录状态:', userStore.isLoggedIn);
+      console.log('当前用户信息:', userStore.userInfo);
 
       // 先检查本地存储中是否有令牌
       const token = localStorage.getItem('token');
@@ -209,71 +210,27 @@ export default {
         return;
       }
 
-      // 如果没有登录状态，先设置登录状态
-      if (!userStore.state.isLoggedIn) {
-        userStore.state.isLoggedIn = true;
-        userStore.state.token = token;
+      // 如果没有登录状态，先设置登录状态并初始化
+      if (!userStore.isLoggedIn) {
+        userStore.initState();
       }
 
       // 检查是否为管理员
-      if (!isAdmin(userStore.state.userInfo)) {
+      if (!isAdmin(userStore.userInfo)) {
         console.warn('非管理员用户尝试访问后台');
         message.error('您没有权限访问后台管理页面');
         router.push('/unauthorized');
         return;
       }
 
-      // 如果没有用户信息，尝试从本地存储加载
-      if (!userStore.state.userInfo) {
-        const userInfoStr = localStorage.getItem('userInfo');
-        const userId = localStorage.getItem('userId');
-
-        if (userInfoStr && userId) {
-          try {
-            const userInfo = JSON.parse(userInfoStr);
-            userStore.state.userInfo = userInfo;
-            userStore.state.userId = userId;
-            console.log('从本地存储加载用户信息:', userInfo);
-          } catch (error) {
-            console.error('解析本地用户信息失败:', error);
-          }
-        }
-      }
-
-      // 如果仍然没有用户信息，尝试从服务器获取
-      if (!userStore.state.userInfo) {
+      // 如果没有用户信息，尝试检查登录状态
+      if (!userStore.userInfo) {
         try {
-          console.log('尝试从服务器获取用户信息');
-          // 根据 OpenAPI 文档，/users/me 返回的是 UserInDB 格式
-          // UserInDB 包含: id, username, email, created_at, updated_at, avatar, bio
-          const userInfo = await userApi.getUserInfo();
-          console.log('从服务器获取的用户信息:', userInfo);
-
-          if (userInfo && userInfo.id) {
-            userStore.state.userInfo = userInfo;
-            userStore.state.userId = userInfo.id;
-            localStorage.setItem('userInfo', JSON.stringify(userInfo));
-            localStorage.setItem('userId', userInfo.id);
-          } else {
-            throw new Error('获取的用户信息不完整');
-          }
+          await userStore.checkLoginStatus();
         } catch (error) {
-          console.error('从服务器获取用户信息失败:', error);
-          // 如果从服务器获取失败，创建一个模拟用户
-          console.log('创建模拟用户信息');
-          const mockUser = {
-            id: '1',
-            username: 'admin',
-            email: 'admin@example.com',
-            avatar: null,
-            bio: '系统管理员',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
-          userStore.state.userInfo = mockUser;
-          userStore.state.userId = mockUser.id;
-          localStorage.setItem('userInfo', JSON.stringify(mockUser));
-          localStorage.setItem('userId', mockUser.id);
+          console.error('检查登录状态失败:', error);
+          message.error('获取用户信息失败，请重新登录');
+          router.push('/login');
         }
       }
     })

@@ -96,9 +96,24 @@
               </td>
 
               <td class="px-6 py-4 whitespace-nowrap">
-                <span v-if="post.is_featured" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 dark:bg-green-800 text-green-800 dark:text-green-100">
-                  精选文章
-                </span>
+                <div class="flex items-center">
+                  <!-- 开关按钮 -->
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      :checked="post.is_featured"
+                      class="sr-only peer"
+                      @change="toggleFeatured(post)"
+                    >
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                  </label>
+                  <!-- 状态文本 -->
+                  <span
+                    :class="post.is_featured ? 'ml-3 text-xs font-medium text-green-600 dark:text-green-400' : 'ml-3 text-xs font-medium text-gray-500 dark:text-gray-400'"
+                  >
+                    {{ post.is_featured ? '已精选' : '未精选' }}
+                  </span>
+                </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <button
@@ -513,6 +528,31 @@ export default {
       window.open(url, '_blank')
     }
 
+    // 切换文章精选状态
+    const toggleFeatured = async (post) => {
+      try {
+        // 切换状态
+        const newFeaturedStatus = !post.is_featured
+
+        // 调用API更新文章
+        await postApi.updatePost(post.id, {
+          is_featured: newFeaturedStatus
+        })
+
+        // 更新本地状态
+        post.is_featured = newFeaturedStatus
+
+        // 显示成功消息
+        message.success(`文章已${newFeaturedStatus ? '设为精选' : '取消精选'}`)
+      } catch (error) {
+        console.error('更新文章精选状态失败:', error)
+        message.error('更新文章精选状态失败，请稍后重试')
+
+        // 恢复原状态（UI回滚）
+        post.is_featured = !post.is_featured
+      }
+    }
+
     // 获取文章标签显示文本
     const getTagsDisplay = (post) => {
       // 如果有 tags_list 字段，使用新格式
@@ -559,6 +599,7 @@ export default {
       navigateToEditArticle,
       viewArticleComments,
       viewArticle,
+      toggleFeatured,
       loadData: fetchPosts,
       deleteConfirmMessage
     }

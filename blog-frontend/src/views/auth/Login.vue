@@ -106,12 +106,13 @@ import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { userApi } from '@/api'
 import message from '@/utils/message'
-import { userStore } from '@/store'
+import { useUserStore } from '@/stores'
 
 export default {
   name: 'Login',
   setup() {
     const router = useRouter()
+    const userStore = useUserStore()
     const isSignup = ref(false)
     const isLoading = ref(false)
 
@@ -167,7 +168,7 @@ export default {
         console.log('登录成功，响应数据:', response);
 
         // 确保登录状态已设置
-        if (!userStore.state.isLoggedIn) {
+        if (!userStore.isLoggedIn) {
           console.warn('登录成功但状态未更新，手动设置登录状态');
           // 手动设置登录状态
           await userStore.checkLoginStatus();

@@ -245,7 +245,7 @@ import { TerminalLoader } from '@/components/ui'
 import { activityApi, commentApi, statsApi } from '@/api'
 import { formatDistanceToNow, format, subDays } from 'date-fns'
 import { zhCN } from 'date-fns/locale/zh-CN'
-import { userStore } from '@/store'
+import { useUserStore } from '@/stores'
 import message from '@/utils/message'
 import { Chart, registerables } from 'chart.js'
 
@@ -618,7 +618,7 @@ export default {
 
     onMounted(() => {
       // 检查登录状态
-      console.log('仪表盘组件挂载，检查登录状态:', userStore.state.isLoggedIn);
+      console.log('仪表盘组件挂载，检查登录状态:', userStore.isLoggedIn);
 
       // 获取统计数据
       fetchStats()
@@ -632,7 +632,7 @@ export default {
       // 延迟加载活动列表，确保用户信息已加载
       setTimeout(async () => {
         // 如果没有登录状态，尝试检查登录状态
-        if (!userStore.state.isLoggedIn) {
+        if (!userStore.isLoggedIn) {
           try {
             console.log('尝试检查登录状态');
             await userStore.checkLoginStatus();

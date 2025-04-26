@@ -9,7 +9,7 @@
 
 <script>
 import { onMounted, computed } from 'vue'
-import { userStore, themeStore } from './store'
+import { useUserStore, useThemeStore } from './stores'
 import Stick from './components/ui/stick.vue'
 import NotificationContainer from './components/ui/NotificationContainer.vue'
 import Toast from './components/ui/Toast.vue'
@@ -23,11 +23,15 @@ export default {
     Toast
   },
   setup() {
-    // 初始化主题
-    themeStore.initTheme()
+    // 获取状态管理实例
+    const themeStore = useThemeStore()
+    const userStore = useUserStore()
+
+    // 初始化主题 (已在main.js中初始化)
+    // themeStore.initTheme()
 
     // 使用计算属性获取暗黑模式状态
-    const isDark = computed(() => themeStore.state.isDark)
+    const isDark = computed(() => themeStore.isDark)
 
     // 更新暗黑模式
     const updateDarkMode = (value) => {
@@ -36,6 +40,9 @@ export default {
 
     // 初始化平滑滚动和用户状态
     onMounted(async () => {
+      // 初始化用户状态
+      userStore.initState()
+
       // 初始化 WebSocket 服务
       initWebSocketService();
 

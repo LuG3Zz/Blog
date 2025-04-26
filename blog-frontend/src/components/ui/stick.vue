@@ -318,8 +318,8 @@
 </style>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue';
-import { themeStore } from '../../store';
+import { onMounted, computed } from 'vue';
+import { useThemeStore } from '@/stores';
 
 // 定义 props
 const props = defineProps({
@@ -332,8 +332,11 @@ const props = defineProps({
 // 定义事件
 const emit = defineEmits(['update:darkMode']);
 
+// 获取主题状态管理实例
+const themeStore = useThemeStore();
+
 // 使用全局主题状态
-const isDarkMode = computed(() => themeStore.state.isDark);
+const isDarkMode = computed(() => themeStore.isDark);
 
 // 切换暗黑模式
 const toggleDarkMode = () => {

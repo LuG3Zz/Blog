@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { userStore } from '@/store'
+import { useUserStore } from '@/stores'
 import { isAdmin } from '@/utils/permission'
 
 // 使用懒加载方式导入视图组件
@@ -173,8 +173,11 @@ const router = createRouter({
 // 全局路由守卫
 router.beforeEach(async (to, from, next) => {
   try {
+    // 使用Pinia状态管理
+    const userStore = useUserStore()
+
     // 使用状态管理模块检查登录状态
-    const isLoggedIn = userStore.state.isLoggedIn
+    const isLoggedIn = userStore.isLoggedIn
 
     // 如果访问登录页且已登录，重定向到首页
     if (to.path === '/login' && isLoggedIn) {
@@ -191,7 +194,7 @@ router.beforeEach(async (to, from, next) => {
           if (validToken) {
             // 检查是否需要管理员权限
             if (to.matched.some(record => record.meta.requiresAdmin)) {
-              if (!isAdmin(userStore.state.userInfo)) {
+              if (!isAdmin(userStore.userInfo)) {
                 // 非管理员访问管理页面，重定向到未授权页面
                 next({ path: '/unauthorized' })
                 return
@@ -210,7 +213,7 @@ router.beforeEach(async (to, from, next) => {
       } else {
         // 已登录，检查是否需要管理员权限
         if (to.matched.some(record => record.meta.requiresAdmin)) {
-          if (!isAdmin(userStore.state.userInfo)) {
+          if (!isAdmin(userStore.userInfo)) {
             // 非管理员访问管理页面，重定向到未授权页面
             next({ path: '/unauthorized' })
             return

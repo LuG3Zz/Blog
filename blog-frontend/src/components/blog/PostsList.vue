@@ -1,110 +1,112 @@
 <template>
-  <div class="posts-container p-6 w-full dark:bg-gray-900">
-    <p class="text-xl font-bold mb-4 dark:text-gray-100">{{ title }}</p>
-    <div class="border-t-10 border-secondary dark:border-gray-600 w-full" ref="postsListRef">
-      <TerminalLoader v-if="isLoading" />
-      <div v-else-if="isLoading" class="flex justify-center items-center py-8">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-10 border-secondary dark:border-gray-500"></div>
-      </div>
-      <div v-else-if="error" class="text-red-500 dark:text-red-400 text-center py-8">
-        {{ error }}
-      </div>
-      <div v-else-if="posts.length === 0" class="empty-state stack">
-        <div class="card">
-          <div class="card-content">
-            <div class="empty-state-content">
-              <svg xmlns="http://www.w3.org/2000/svg" class="empty-state-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-              </svg>
-              <h3 class="empty-state-title">暂无文章</h3>
-              <p class="empty-state-description">当前分类下还没有任何文章</p>
-            </div>
-          </div>
+  <div>
+    <div class="posts-container p-6 w-full dark:bg-gray-900" :class="customClass">
+      <p class="text-xl font-bold mb-4 dark:text-gray-100">{{ title }}</p>
+      <div class="border-t-10 border-secondary dark:border-gray-600 w-full" ref="postsListRef">
+        <TerminalLoader v-if="isLoading" />
+        <div v-else-if="isLoading" class="flex justify-center items-center py-8">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-10 border-secondary dark:border-gray-500"></div>
         </div>
-      </div>
-      <div v-else class="posts-grid">
-        <div v-for="(post, index) in posts" :key="post.id" class="stack" :style="{ 'animation-delay': `${index * 0.1}s` }">
-          <div class="card" :data-cover-image="post.cover_image || ''">
+        <div v-else-if="error" class="text-red-500 dark:text-red-400 text-center py-8">
+          {{ error }}
+        </div>
+        <div v-else-if="posts.length === 0" class="empty-state stack">
+          <div class="card">
             <div class="card-content">
-              <div class="post-header">
-                <div class="title-background" :style="{ backgroundImage: post.cover_image ? `url(${post.cover_image})` : 'none' }">
-                  <h2 @click="() => $router.push(`/article/${post.id}`)" class="post-title cursor-pointer hover:text-blue-500 dark:hover:text-blue-400">
-                    {{ post.title }}
-                  </h2>
-                </div>
-                <div class="post-category">{{ post.category?.name || '未分类' }}</div>
-              </div>
-
-              <div class="post-meta">
-                <div class="author-info">
-                  <div v-if="post.author" class="flex items-center gap-2">
-                    <div class="author-avatar" :data-tooltip="`点击查看 ${post.author.username} 的资料`" @click="navigateToAuthorProfile(post.author.id)" style="cursor: pointer;">
-                      <img v-if="post.author.avatar" :src="post.author.avatar" alt="作者头像" class="avatar-image" />
-                      <div v-else class="avatar-placeholder">{{ post.author.username.charAt(0).toUpperCase() }}</div>
-                    </div>
-                    <div class="flex flex-col sm:flex-row sm:items-center">
-                      <span class="author-name">{{ post.author.username }}</span>
-                      <span class="hidden sm:inline mx-2 text-gray-300 dark:text-gray-600">•</span>
-                      <span class="post-role text-xs text-gray-500 dark:text-gray-400">{{ post.author.role || '作者' }}</span>
-                    </div>
-                  </div>
-                  <span class="post-date">{{ formatDate(post.created_at) }}</span>
-                </div>
-
-                <div class="post-stats">
-                  <div class="stat-item">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="stat-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                    <span class="stat-value">{{ post.view_count }}</span>
-                    <span class="stat-label">浏览</span>
-                  </div>
-
-                  <div class="stat-item">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="stat-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                    <span class="stat-value">{{ post.like_count }}</span>
-                    <span class="stat-label">喜欢</span>
-                  </div>
-
-                  <div v-if="post.is_featured" class="featured-badge">精选</div>
-                </div>
-              </div>
-
-              <div class="post-excerpt">
-                <p>{{ post.excerpt || '暂无摘要' }}</p>
+              <div class="empty-state-content">
+                <svg xmlns="http://www.w3.org/2000/svg" class="empty-state-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                </svg>
+                <h3 class="empty-state-title">暂无文章</h3>
+                <p class="empty-state-description">当前分类下还没有任何文章</p>
               </div>
             </div>
           </div>
         </div>
+        <div v-else class="posts-grid">
+          <div v-for="(post, index) in posts" :key="post.id" class="stack" :style="{ 'animation-delay': `${index * 0.1}s` }">
+            <div class="card" :data-cover-image="post.cover_image || ''">
+              <div class="card-content">
+                <div class="post-header">
+                  <div class="title-background" :style="{ backgroundImage: post.cover_image ? `url(${post.cover_image})` : 'none' }">
+                    <h2 @click="() => $router.push(`/article/${post.id}`)" class="post-title cursor-pointer hover:text-blue-500 dark:hover:text-blue-400">
+                      {{ post.title }}
+                    </h2>
+                  </div>
+                  <div class="post-category">{{ post.category?.name || '未分类' }}</div>
+                </div>
 
-        <div class="pagination">
-          <button
-            @click="loadPreviousPage"
-            :disabled="currentPage === 1"
-            class="pagination-btn"
-          >
-            上一页
-          </button>
-          <span class="page-indicator dark:text-gray-100">第 {{ currentPage }} 页</span>
-          <button
-            @click="loadNextPage"
-            :disabled="!hasMorePosts"
-            class="pagination-btn"
-          >
-            下一页
-          </button>
+                <div class="post-meta">
+                  <div class="author-info">
+                    <div v-if="post.author" class="flex items-center gap-2">
+                      <div class="author-avatar" :data-tooltip="`点击查看 ${post.author.username} 的资料`" @click="navigateToAuthorProfile(post.author.id)" style="cursor: pointer;">
+                        <img v-if="post.author.avatar" :src="post.author.avatar" alt="作者头像" class="avatar-image" />
+                        <div v-else class="avatar-placeholder">{{ post.author.username.charAt(0).toUpperCase() }}</div>
+                      </div>
+                      <div class="flex flex-col sm:flex-row sm:items-center">
+                        <span class="author-name">{{ post.author.username }}</span>
+                        <span class="hidden sm:inline mx-2 text-gray-300 dark:text-gray-600">•</span>
+                        <span class="post-role text-xs text-gray-500 dark:text-gray-400">{{ post.author.role || '作者' }}</span>
+                      </div>
+                    </div>
+                    <span class="post-date">{{ formatDate(post.created_at) }}</span>
+                  </div>
+
+                  <div class="post-stats">
+                    <div class="stat-item">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="stat-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      </svg>
+                      <span class="stat-value">{{ post.view_count }}</span>
+                      <span class="stat-label">浏览</span>
+                    </div>
+
+                    <div class="stat-item">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="stat-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      </svg>
+                      <span class="stat-value">{{ post.like_count }}</span>
+                      <span class="stat-label">喜欢</span>
+                    </div>
+
+                    <div v-if="post.is_featured" class="featured-badge">精选</div>
+                  </div>
+                </div>
+
+                <div class="post-excerpt">
+                  <p>{{ post.excerpt || '暂无摘要' }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pagination">
+            <button
+              @click="loadPreviousPage"
+              :disabled="currentPage === 1"
+              class="pagination-btn"
+            >
+              上一页
+            </button>
+            <span class="page-indicator dark:text-gray-100">第 {{ currentPage }} 页</span>
+            <button
+              @click="loadNextPage"
+              :disabled="!hasMorePosts"
+              class="pagination-btn"
+            >
+              下一页
+            </button>
+          </div>
         </div>
       </div>
     </div>
+    <div class="fixed bottom-4 right-4 w-64 h-64 z-50 pointer-events-none" ref="postPreviewRef"></div>
   </div>
-  <div class="fixed bottom-4 right-4 w-64 h-64 z-50 pointer-events-none" ref="postPreviewRef"></div>
 </template>
 
 <script>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { postApi } from '../../api'
 import { usePostAnimation } from '../../hooks/usePostAnimation.js'
 import { message } from '../../utils'
@@ -124,6 +126,10 @@ export default {
     posts: {
       type: Array,
       default: () => []
+    },
+    class: {
+      type: String,
+      default: ''
     }
   },
   setup(props) {
@@ -138,6 +144,9 @@ export default {
     const currentPage = ref(1)
     const pageSize = 10
     const hasMorePosts = ref(true)
+
+    // 处理外部传入的class
+    const customClass = computed(() => props.class)
 
     // 使用动画hook
     const {
@@ -379,7 +388,8 @@ export default {
       loadPreviousPage,
       loadNextPage,
       formatDate,
-      navigateToAuthorProfile
+      navigateToAuthorProfile,
+      customClass
     }
   }
 }

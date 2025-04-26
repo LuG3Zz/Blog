@@ -4,7 +4,7 @@
  */
 
 import { ref, onMounted, onUnmounted, watch } from 'vue';
-import { userStore } from '@/store';
+import { useUserStore } from '@/stores';
 import { API_BASE_URL, WEBSOCKET } from '@/config';
 
 // WebSocket 连接状态
@@ -211,15 +211,18 @@ export function useWebSocket() {
 
   // 组件挂载时连接 WebSocket
   onMounted(() => {
+    // 获取用户状态管理实例
+    const userStore = useUserStore();
+
     // 检查用户是否已登录
-    if (userStore.state.isLoggedIn) {
+    if (userStore.isLoggedIn) {
       connect();
     }
 
     // 监听用户登录状态变化
     // 使用 watch 函数监听状态变化
     const stopWatch = watch(
-      () => userStore.state.isLoggedIn,
+      () => userStore.isLoggedIn,
       (isLoggedIn) => {
         if (isLoggedIn && (!socket.value || status.value === WebSocketStatus.CLOSED)) {
           connect();
@@ -420,12 +423,15 @@ export const webSocketService = {
 
 // 初始化全局 WebSocket 服务
 export function initWebSocketService() {
+  // 获取用户状态管理实例
+  const userStore = useUserStore();
+
   // 无论用户是否登录，都初始化 WebSocket 连接
   webSocketService.init();
 
   // 使用 watch 监听用户登录状态变化
   watch(
-    () => userStore.state.isLoggedIn,
+    () => userStore.isLoggedIn,
     (isLoggedIn) => {
       if (isLoggedIn && (!webSocketService.socket || webSocketService.status === WebSocketStatus.CLOSED)) {
         // 用户登录时，重新连接 WebSocket，使用登录凭证
@@ -447,7 +453,7 @@ export function initWebSocketService() {
   // 监听页面关闭事件，发送用户离开消息
   window.addEventListener('beforeunload', () => {
     if (webSocketService.socket && webSocketService.status === WebSocketStatus.OPEN) {
-      const isLoggedIn = userStore.state.isLoggedIn;
+      const isLoggedIn = userStore.isLoggedIn;
       const anonymousId = webSocketService.getOrCreateAnonymousId();
 
       if (isLoggedIn) {
