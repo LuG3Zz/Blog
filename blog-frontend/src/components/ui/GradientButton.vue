@@ -12,8 +12,12 @@
     }"
   >
     <span
-      class="btn-content inline-flex items-center justify-center px-4 py-2"
-      style="width: 100%; height: 100%;"
+      class="btn-content inline-flex items-center justify-center px-4 py-2 font-medium"
+      :style="{
+        width: '100%',
+        height: '100%',
+        color: props.textColor
+      }"
     >
       <slot />
     </span>
@@ -32,6 +36,7 @@ interface GradientButtonProps {
   blur?: number;
   class?: string;
   bgColor?: string;
+  textColor?: string;
 }
 
 const props = withDefaults(defineProps<GradientButtonProps>(), {
@@ -50,6 +55,7 @@ const props = withDefaults(defineProps<GradientButtonProps>(), {
   borderRadius: 8,
   blur: 4,
   bgColor: "#000",
+  textColor: "#fff",
 });
 
 const durationInMilliseconds = computed(() => `${props.duration}ms`);

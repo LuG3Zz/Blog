@@ -21,6 +21,10 @@ from app.schemas.activity import (
 from app.schemas.token import (
     Token, TokenData
 )
+from app.schemas.file import (
+    FileBase, FileCreate, FileUpdate, FileInDB, FileResponse, FileListResponse,
+    FileUploadResponse, FileDeleteRequest, FileRenameRequest
+)
 from app.schemas.ai_assist import (
     AIAssistRequest, AIAssistResponse
 )

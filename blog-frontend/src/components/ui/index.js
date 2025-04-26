@@ -12,6 +12,7 @@ import UnauthorizedAccess from './UnauthorizedAccess.vue';
 import ScrollIsland from './ScrollIsland.vue';
 import AnimatedCircularProgressBar from './AnimatedCircularProgressBar.vue';
 import CodeBlock from './CodeBlock.vue';
+import GradientButton from './GradientButton.vue';
 
 export {
   Message,
@@ -26,5 +27,8 @@ export {
   UnauthorizedAccess,
   ScrollIsland,
   AnimatedCircularProgressBar,
+  GradientButton,
   CodeBlock
 };
+
+

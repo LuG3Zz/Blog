@@ -109,3 +109,48 @@ async def get_current_admin_user(
             detail="The user doesn't have enough privileges"
         )
     return current_user
+
+async def get_current_user_or_token(
+    token: Optional[str] = Depends(oauth2_scheme),
+    query_token: Optional[str] = None,
+    db: Session = Depends(get_db)
+) -> User:
+    """
+    Get the current user from either the OAuth2 token or a query parameter token.
+    This is useful for endpoints that need to be accessed both via API and directly (like image URLs).
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    # 使用查询参数中的token（如果提供）
+    if query_token:
+        token_to_use = query_token
+    else:
+        token_to_use = token
+
+    if not token_to_use:
+        raise credentials_exception
+
+    try:
+        payload = jwt.decode(
+            token_to_use,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM]
+        )
+        username: str = payload.get("sub")
+
+        if username is None:
+            raise credentials_exception
+
+    except JWTError:
+        raise credentials_exception
+
+    user = db.query(User).filter(User.username == username).first()
+
+    if user is None:
+        raise credentials_exception
+
+    return user

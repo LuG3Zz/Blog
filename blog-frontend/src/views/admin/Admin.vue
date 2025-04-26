@@ -141,6 +141,30 @@
               </svg>
               <span :class="{ 'hidden': isCollapsed }">通知管理</span>
             </router-link>
+
+            <router-link
+              to="/admin/about"
+              active-class="bg-gray-200 dark:bg-gray-700"
+              class="flex items-center py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+              :class="{ 'justify-center px-2': isCollapsed, 'px-4': !isCollapsed }"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" :class="{ 'mr-3': !isCollapsed }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span :class="{ 'hidden': isCollapsed }">关于页面</span>
+            </router-link>
+
+            <router-link
+              to="/admin/files"
+              active-class="bg-gray-200 dark:bg-gray-700"
+              class="flex items-center py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+              :class="{ 'justify-center px-2': isCollapsed, 'px-4': !isCollapsed }"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" :class="{ 'mr-3': !isCollapsed }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+              </svg>
+              <span :class="{ 'hidden': isCollapsed }">文件管理</span>
+            </router-link>
           </div>
         </nav>
       </aside>

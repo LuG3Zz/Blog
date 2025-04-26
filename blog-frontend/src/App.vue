@@ -3,6 +3,7 @@
     <router-view />
     <Stick :initial-dark-mode="isDark" @update:dark-mode="updateDarkMode" />
     <NotificationContainer />
+    <Toast />
   </div>
 </template>
 
@@ -11,13 +12,15 @@ import { onMounted, computed } from 'vue'
 import { userStore, themeStore } from './store'
 import Stick from './components/ui/stick.vue'
 import NotificationContainer from './components/ui/NotificationContainer.vue'
+import Toast from './components/ui/Toast.vue'
 import { initWebSocketService } from './services/websocket'
 
 export default {
   name: 'App',
   components: {
     Stick,
-    NotificationContainer
+    NotificationContainer,
+    Toast
   },
   setup() {
     // 初始化主题

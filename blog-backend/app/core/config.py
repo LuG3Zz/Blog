@@ -56,7 +56,11 @@ class Settings(BaseSettings):
     # File storage settings
     STATIC_FILES_DIR: str = "static"
     IMAGES_DIR: str = "static/images"
+    FILES_DIR: str = "static/files"
+    MAX_FILE_SIZE: int = 50 * 1024 * 1024  # 50MB
+    ALLOWED_FILE_TYPES: list = ["image", "document", "audio", "video", "archive"]
     BASE_URL: str = os.getenv("BASE_URL", "http://localhost:8000")
+    FRONTEND_BASE_URL: str = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
 
     # Cache settings
     VIEW_COUNT_CACHE_SECONDS: int = 300  # 5 minutes

@@ -13,6 +13,17 @@
       </button>
     </div>
 
+    <!-- 文件选择器模态框 -->
+    <Modal v-if="showFileSelector" @close="showFileSelector = false">
+      <div class="w-full max-w-4xl">
+        <FileSelector
+          file-type="image"
+          @close="showFileSelector = false"
+          @select="handleFileSelected"
+        />
+      </div>
+    </Modal>
+
     <!-- 文章编辑表单 -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden p-6">
       <form @submit.prevent="savePost" class="space-y-6">
@@ -188,8 +199,25 @@
 
         <!-- 内容编辑器 (占据整行) -->
         <div class="mt-8">
-          <label for="content" class="block text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">内容</label>
-          <div id="vditor" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden shadow-sm max-h-[600px] overflow-y-auto"></div>
+          <div class="flex items-center justify-between mb-4">
+            <label for="content" class="text-lg font-semibold text-gray-900 dark:text-gray-100">内容</label>
+            <div class="flex items-center">
+              <span class="text-sm text-gray-500 dark:text-gray-400 mr-2">当前模式:</span>
+              <span class="px-2 py-1 text-xs font-medium rounded-md"
+                    :class="{
+                      'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200': currentMode === 'ir',
+                      'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200': currentMode === 'wysiwyg',
+                      'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200': currentMode === 'sv'
+                    }">
+                {{
+                  currentMode === 'ir' ? '即时渲染' :
+                  currentMode === 'wysiwyg' ? '所见即所得' :
+                  currentMode === 'sv' ? '分屏预览' : '未知模式'
+                }}
+              </span>
+            </div>
+          </div>
+          <div id="vditor" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden shadow-sm" style="height: 600px;"></div>
         </div>
 
         <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
@@ -215,14 +243,20 @@
 <script>
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { postApi, categoryApi, tagApi } from '@/api'
+import { postApi, categoryApi, tagApi, filesApi } from '@/api'
 import message from '@/utils/message.js'  // 添加 message 导入
 import Vditor from 'vditor'
 import "vditor/dist/index.css"
 import { API_BASE_URL } from '@/config'
+import Modal from '@/components/common/Modal.vue'
+import FileSelector from '@/components/admin/FileSelector.vue'
 
 export default {
   name: 'ArticleEdit',
+  components: {
+    Modal,
+    FileSelector
+  },
   setup() {
     const router = useRouter()
     const route = useRoute()
@@ -236,6 +270,12 @@ export default {
     const tags = ref([])
     const allTags = ref([])
     const tagSuggestions = ref([])
+
+    // 文件选择器相关状态
+    const showFileSelector = ref(false)
+
+    // 编辑器模式 - 默认使用分屏预览模式
+    const currentMode = ref('sv')
 
     // 当前操作的文章
     const currentPost = ref({
@@ -389,20 +429,236 @@ export default {
 
     // 初始化Vditor编辑器
     const initVditor = () => {
+      console.log('初始化Vditor编辑器...');
+
       // 如果已经存在实例，先销毁
       if (vditor.value) {
-        vditor.value.destroy()
+        console.log('销毁现有Vditor实例');
+        vditor.value.destroy();
+        vditor.value = null;
       }
+
+      console.log('设置初始编辑模式:', currentMode.value);
+
+      console.log('创建新实例，当前模式:', currentMode.value);
 
       // 创建新实例
       vditor.value = new Vditor('vditor', {
-        height: 500, // 增加高度
-        mode: 'ir',
+        height: 600, // 与容器高度一致
+        mode: currentMode.value,
         theme: document.documentElement.classList.contains('dark') ? 'dark' : 'classic',
         placeholder: '请输入文章内容...',
         toolbarConfig: {
           pin: true
         },
+        toolbar: [
+          'emoji',
+          'headings',
+          'bold',
+          'italic',
+          'strike',
+          'link',
+          '|',
+          'list',
+          'ordered-list',
+          'check',
+          'outdent',
+          'indent',
+          '|',
+          'quote',
+          'line',
+          'code',
+          'inline-code',
+          'insert-before',
+          'insert-after',
+          '|',
+          {
+            name: 'select-image',
+            tipPosition: 's',
+            tip: '从文件管理选择图片',
+            className: 'right',
+            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M4.502 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/><path d="M14.002 13a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2V5A2 2 0 0 1 2 3a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-1.998 2zM14 2H4a1 1 0 0 0-1 1h9.002a2 2 0 0 1 2 2v7A1 1 0 0 0 14 11V2zM2.002 4a1 1 0 0 0-1 1v8l2.646-2.354a.5.5 0 0 1 .63-.062l2.66 1.773 3.71-3.71a.5.5 0 0 1 .577-.094l1.777 1.947V5a1 1 0 0 0-1-1h-10z"/></svg>',
+            click: () => {
+              showFileSelector.value = true
+            }
+          },
+          'table',
+          '|',
+          'undo',
+          'redo',
+          '|',
+          {
+            name: 'switch-mode',
+            tipPosition: 's',
+            tip: '切换编辑模式',
+            className: 'right',
+            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/></svg>',
+            click: () => {
+              try {
+                console.log('切换模式按钮被点击');
+                console.log('当前模式:', currentMode.value);
+
+                // 切换编辑模式
+                const modes = ['ir', 'wysiwyg', 'sv'];
+                const currentIndex = modes.indexOf(currentMode.value);
+                console.log('当前模式索引:', currentIndex);
+
+                const nextIndex = (currentIndex + 1) % modes.length;
+                const nextMode = modes[nextIndex];
+                console.log('下一个模式:', nextMode);
+
+                // 保存当前内容
+                const content = vditor.value.getValue();
+                console.log('当前内容长度:', content.length);
+                console.log('开始切换模式...');
+
+                // 销毁当前实例
+                vditor.value.destroy();
+
+                // 更新模式
+                currentMode.value = nextMode;
+                console.log('模式已更新为:', nextMode);
+
+                // 重新创建实例
+                vditor.value = new Vditor('vditor', {
+                  height: 600,
+                  mode: currentMode.value,
+                  theme: document.documentElement.classList.contains('dark') ? 'dark' : 'classic',
+                  placeholder: '请输入文章内容...',
+                  toolbarConfig: {
+                    pin: true
+                  },
+                  toolbar: [
+                    'emoji',
+                    'headings',
+                    'bold',
+                    'italic',
+                    'strike',
+                    'link',
+                    '|',
+                    'list',
+                    'ordered-list',
+                    'check',
+                    'outdent',
+                    'indent',
+                    '|',
+                    'quote',
+                    'line',
+                    'code',
+                    'inline-code',
+                    'insert-before',
+                    'insert-after',
+                    '|',
+                    {
+                      name: 'select-image',
+                      tipPosition: 's',
+                      tip: '从文件管理选择图片',
+                      className: 'right',
+                      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M4.502 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/><path d="M14.002 13a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2V5A2 2 0 0 1 2 3a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-1.998 2zM14 2H4a1 1 0 0 0-1 1h9.002a2 2 0 0 1 2 2v7A1 1 0 0 0 14 11V2zM2.002 4a1 1 0 0 0-1 1v8l2.646-2.354a.5.5 0 0 1 .63-.062l2.66 1.773 3.71-3.71a.5.5 0 0 1 .577-.094l1.777 1.947V5a1 1 0 0 0-1-1h-10z"/></svg>',
+                      click: () => {
+                        showFileSelector.value = true
+                      }
+                    },
+                    'table',
+                    '|',
+                    'undo',
+                    'redo',
+                    '|',
+                    {
+                      name: 'switch-mode',
+                      tipPosition: 's',
+                      tip: '切换编辑模式',
+                      className: 'right',
+                      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/></svg>',
+                      click: () => {
+                        try {
+                          console.log('切换模式按钮被点击');
+                          console.log('当前模式:', currentMode.value);
+
+                          // 切换编辑模式
+                          const modes = ['ir', 'wysiwyg', 'sv'];
+                          const currentIndex = modes.indexOf(currentMode.value);
+                          console.log('当前模式索引:', currentIndex);
+
+                          const nextIndex = (currentIndex + 1) % modes.length;
+                          const nextMode = modes[nextIndex];
+                          console.log('下一个模式:', nextMode);
+
+                          // 保存当前内容
+                          const content = vditor.value.getValue();
+                          console.log('当前内容长度:', content.length);
+
+                          // 切换模式
+                          console.log('开始切换模式...');
+
+                          // 销毁当前实例
+                          vditor.value.destroy();
+
+                          // 更新模式
+                          currentMode.value = nextMode;
+                          console.log('模式已更新为:', nextMode);
+
+                          // 重新创建实例
+                          initVditor();
+
+                          // 设置内容
+                          setTimeout(() => {
+                            vditor.value.setValue(content);
+                          }, 100);
+
+                          // 显示提示消息
+                          const modeNames = {
+                            'ir': '即时渲染',
+                            'wysiwyg': '所见即所得',
+                            'sv': '分屏预览'
+                          };
+                          message.success(`已切换到${modeNames[nextMode]}模式`);
+                          console.log('成功消息已显示');
+                        } catch (error) {
+                          console.error('切换模式时发生错误:', error);
+                          message.error(`切换模式失败: ${error.message}`);
+                        }
+                      }
+                    },
+                    'fullscreen',
+                    'preview',
+                    'outline',
+                    'export',
+                    'help'
+                  ],
+                  cache: {
+                    enable: false
+                  },
+                  preview: {
+                    maxWidth: 1000,
+                    theme: {
+                      current: document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+                    }
+                    // 不再需要转换URL，因为后端已经返回完整URL
+                  },
+                  counter: {
+                    enable: true,
+                    type: 'text'
+                  },
+                  after: () => {
+                    // 设置编辑器内容
+                    vditor.value.setValue(content);
+                    console.log('编辑器重新创建完成，内容已恢复');
+                  }
+                });
+                console.log('模式已切换为:', nextMode);
+              } catch (error) {
+                console.error('切换模式时发生错误:', error);
+                message.error(`切换模式失败: ${error.message}`);
+              }
+            }
+          },
+          'fullscreen',
+          'preview',
+          'outline',
+          'export',
+          'help'
+        ],
         cache: {
           enable: false
         },
@@ -411,64 +667,13 @@ export default {
           theme: {
             current: document.documentElement.classList.contains('dark') ? 'dark' : 'light'
           }
+          // 不再需要转换URL，因为后端已经返回完整URL
         },
         counter: {
           enable: true, // 启用字数统计
           type: 'text' // 统计类型
         },
-        upload: {
-          accept: 'image/*', // 只接受图片
-          multiple: true, // 支持多文件上传
-          fieldName: 'file', // 上传字段名称
-          url: `${API_BASE_URL}/files/upload-image`, // 上传接口地址
-          withCredentials: true, // 跨域请求是否携带 cookie
-          headers: {
-            // 设置请求头，包括认证信息
-            'Authorization': () => {
-              const token = localStorage.getItem('token')
-              if (!token) return ''
 
-              // 正确处理 token 格式
-              const lowerToken = token.toLowerCase()
-              let cleanToken = token
-              if (lowerToken.includes('bearer')) {
-                cleanToken = token.replace(/^\s*bearer\s+/i, '')
-              }
-              return `Bearer ${cleanToken}`
-            }
-          },
-          format: (files, responseText) => {
-            // 格式化服务器返回的数据，使其符合 Vditor 所需格式
-            try {
-              const res = JSON.parse(responseText)
-              if (res.url) {
-                return JSON.stringify({
-                  msg: '上传成功',
-                  code: 0,
-                  data: {
-                    errFiles: [],
-                    succMap: {
-                      [files[0].name]: res.url
-                    }
-                  }
-                })
-              } else {
-                return JSON.stringify({
-                  msg: '上传失败',
-                  code: 1,
-                  data: {}
-                })
-              }
-            } catch (e) {
-              console.error('上传响应格式化失败:', e)
-              return JSON.stringify({
-                msg: '上传失败',
-                code: 1,
-                data: {}
-              })
-            }
-          }
-        },
         after: () => {
           // 编辑模式下，设置编辑器内容
           if (currentPost.value.content) {
@@ -705,7 +910,48 @@ export default {
       }
     }
 
-    // 删除封面图
+    // 处理从文件管理器选择的图片
+    const handleFileSelected = (file) => {
+      if (!file || !vditor.value) return
+
+      console.log('选择的文件:', file);
+
+      // 使用API_BASE_URL拼接完整URL
+      let fileUrl = '';
+
+      // 如果file.url已经是完整URL，则直接使用
+      if (file.url && (file.url.startsWith('http://') || file.url.startsWith('https://'))) {
+        fileUrl = file.url;
+      }
+      // 如果file.url是相对路径，则使用API_BASE_URL拼接
+      else if (file.url) {
+        // 确保路径格式正确
+        const relativePath = file.url.startsWith('/') ? file.url : `/${file.url}`;
+        fileUrl = `${API_BASE_URL}${relativePath}`;
+      }
+      // 如果没有url，则使用file.id构建下载URL
+      else if (file.id) {
+        fileUrl = `${API_BASE_URL}/api/v1/files/download/${file.id}`;
+      }
+
+      console.log('使用的文件URL:', fileUrl);
+
+      // 获取文件名
+      const fileName = file.original_filename || `图片${Date.now()}`
+
+      // 构建Markdown格式的图片标记
+      const imageMarkdown = `![${fileName}](${fileUrl})`
+      console.log('插入的Markdown:', imageMarkdown);
+
+      // 在编辑器当前光标位置插入图片
+      vditor.value.insertValue(imageMarkdown)
+
+      // 关闭文件选择器
+      showFileSelector.value = false
+
+      // 显示成功消息
+      message.success('图片插入成功')
+    }
 
     return {
       currentPost,
@@ -724,7 +970,12 @@ export default {
       handleAIAssist,
       isUploading,
       handleCoverImageUpload,
-      removeCoverImage
+      removeCoverImage,
+      // 文件选择器相关
+      showFileSelector,
+      handleFileSelected,
+      // 编辑器模式
+      currentMode
     }
   }
 }

@@ -380,7 +380,8 @@
                       bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium
                       shadow-[0_10px_20px_rgba(59,130,246,0.3)]
                       hover:shadow-[0_15px_30px_rgba(59,130,246,0.5)]
-                      transition-all duration-300 transform hover:-translate-y-1 hover:scale-105">
+                      transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
+               @click.prevent="sendEmail">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
@@ -543,6 +544,7 @@
 import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import Navbar from '@/components/layout/Navbar.vue';
 import confetti from 'canvas-confetti';
+import { aboutPageApi } from '@/api';
 
 // 项目详情相关状态
 const selectedProject = ref(null);
@@ -758,7 +760,40 @@ const toggleWechatQR = () => {
   triggerConfetti();
 };
 
-onMounted(() => {
+// 发送邮件
+const sendEmail = () => {
+  // 获取邮件链接
+  const emailLink = resumeData.value.contactSection.emailLink;
+
+  // 如果链接以 mailto: 开头，直接打开邮件客户端
+  if (emailLink.startsWith('mailto:')) {
+    window.location.href = emailLink;
+  } else {
+    // 否则，打开链接
+    window.open(emailLink, '_blank');
+  }
+
+  // 触发五彩纸屑效果
+  triggerConfetti();
+};
+
+// 从后端获取 About 页面内容
+const fetchAboutPageContent = async () => {
+  try {
+    const response = await aboutPageApi.getAboutPage();
+    console.log('获取到的 About 页面数据:', response);
+    if (response && response.content) {
+      resumeData.value = response.content;
+    }
+  } catch (error) {
+    console.error('获取 About 页面内容失败:', error);
+  }
+};
+
+onMounted(async () => {
+  // 获取 About 页面内容
+  await fetchAboutPageContent();
+
   // 初始化技能进度条
   initSkillBars();
 

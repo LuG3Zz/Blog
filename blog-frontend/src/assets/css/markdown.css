@@ -184,6 +184,12 @@
   margin-bottom: 1.25em;
   border-radius: 0.375rem;
   max-width: 100%;
+  position: static !important; /* 覆盖全局样式中的absolute定位 */
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  height: auto !important; /* 覆盖全局样式中的高度设置 */
+  object-fit: contain !important; /* 确保图片比例正确 */
 }
 
 /* 水平线样式 */

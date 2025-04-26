@@ -1,48 +1,59 @@
 /* Vditor 自定义样式 */
 
-/* 编辑器滚动条样式 */
+/* 编辑器滚动条样式 - 覆盖全局隐藏滚动条的样式 */
 .vditor-ir, .vditor-sv, .vditor-wysiwyg {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent !important;
+  -ms-overflow-style: auto !important; /* IE and Edge */
 }
 
 .vditor-ir::-webkit-scrollbar,
 .vditor-sv::-webkit-scrollbar,
 .vditor-wysiwyg::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  display: block !important;
+  width: 8px !important;
+  height: 8px !important;
 }
 
 .vditor-ir::-webkit-scrollbar-thumb,
 .vditor-sv::-webkit-scrollbar-thumb,
 .vditor-wysiwyg::-webkit-scrollbar-thumb {
-  background-color: rgba(156, 163, 175, 0.5);
-  border-radius: 4px;
+  background-color: rgba(156, 163, 175, 0.5) !important;
+  border-radius: 4px !important;
 }
 
 .vditor-ir::-webkit-scrollbar-track,
 .vditor-sv::-webkit-scrollbar-track,
 .vditor-wysiwyg::-webkit-scrollbar-track {
-  background-color: transparent;
+  background-color: transparent !important;
 }
 
 /* 暗黑模式下的滚动条样式 */
 .dark .vditor-ir,
 .dark .vditor-sv,
 .dark .vditor-wysiwyg {
-  scrollbar-color: rgba(75, 85, 99, 0.5) rgba(31, 41, 55, 0.2);
+  scrollbar-color: rgba(75, 85, 99, 0.5) rgba(31, 41, 55, 0.2) !important;
+  -ms-overflow-style: auto !important; /* IE and Edge */
+}
+
+.dark .vditor-ir::-webkit-scrollbar,
+.dark .vditor-sv::-webkit-scrollbar,
+.dark .vditor-wysiwyg::-webkit-scrollbar {
+  display: block !important;
+  width: 8px !important;
+  height: 8px !important;
 }
 
 .dark .vditor-ir::-webkit-scrollbar-thumb,
 .dark .vditor-sv::-webkit-scrollbar-thumb,
 .dark .vditor-wysiwyg::-webkit-scrollbar-thumb {
-  background-color: rgba(75, 85, 99, 0.5);
+  background-color: rgba(75, 85, 99, 0.5) !important;
 }
 
 .dark .vditor-ir::-webkit-scrollbar-track,
 .dark .vditor-sv::-webkit-scrollbar-track,
 .dark .vditor-wysiwyg::-webkit-scrollbar-track {
-  background-color: rgba(31, 41, 55, 0.2);
+  background-color: rgba(31, 41, 55, 0.2) !important;
 }
 
 /* 暗黑模式下的编辑器样式优化 */

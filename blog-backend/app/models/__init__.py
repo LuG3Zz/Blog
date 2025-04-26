@@ -7,6 +7,8 @@ from app.models.comment import Comment
 from app.models.activity import Activity
 from app.models.subscription import Notification
 from app.models.version import ArticleVersion
+from app.models.about import AboutPage
+from app.models.file import File
 
 # Export all models
 __all__ = [
@@ -18,4 +20,6 @@ __all__ = [
     "Activity",
     "Notification",
     "ArticleVersion",
+    "AboutPage",
+    "File",
 ]

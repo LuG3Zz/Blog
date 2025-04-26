@@ -86,6 +86,13 @@ export const API_PATHS = {
   FILES: {
     UPLOAD_IMAGE: `${API_PREFIX}/files/upload-image`,
     DELETE_IMAGE: `${API_PREFIX}/files/delete-image`,
+    UPLOAD: `${API_PREFIX}/files/upload`,
+    LIST: `${API_PREFIX}/files/list`,
+    DOWNLOAD: (id) => `${API_PREFIX}/files/download/${id}`,
+    DELETE: (id) => `${API_PREFIX}/files/${id}`,
+    RENAME: (id) => `${API_PREFIX}/files/rename/${id}`,
+    STATS: `${API_PREFIX}/files/stats`,
+    BATCH_DELETE: `${API_PREFIX}/files/batch-delete`,
   },
 
   // 活动相关
@@ -93,6 +100,11 @@ export const API_PATHS = {
     BASE: `${API_PREFIX}/activities/`,
     BASIC: `${API_PREFIX}/activities/basic`,
     PUBLIC: `${API_PREFIX}/activities/public`,
+  },
+
+  // About页面相关
+  ABOUT: {
+    BASE: `${API_PREFIX}/about`,
   },
 };
 

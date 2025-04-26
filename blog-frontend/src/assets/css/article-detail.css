@@ -1,0 +1,49 @@
+/* 文章详情页面样式 */
+
+/* 覆盖全局图片样式，确保文章内容中的图片正确显示 */
+.article-content img {
+  position: static !important;
+  width: auto !important;
+  max-width: 100% !important;
+  height: auto !important;
+  object-fit: contain !important;
+  display: block !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  border-radius: 0.375rem;
+  margin-top: 1.25em;
+  margin-bottom: 1.25em;
+}
+
+/* 限制图片最大高度，避免图片过大 */
+.article-content img {
+  max-height: 500px !important;
+}
+
+/* 图片容器样式 */
+.article-content p:has(img) {
+  text-align: center;
+  margin: 1.5em 0;
+}
+
+/* 确保数学公式正确显示 */
+.article-content .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 1em 0;
+  margin: 1em 0;
+}
+
+/* 确保代码块正确显示 */
+.article-content pre {
+  position: relative;
+  overflow-x: auto;
+}
+
+/* 确保表格正确显示 */
+.article-content table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  margin: 1em 0;
+}

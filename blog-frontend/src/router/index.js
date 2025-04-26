@@ -15,6 +15,8 @@ const UserManage = () => import('../views/admin/UserManage.vue')
 const CommentManagement = () => import('../views/admin/CommentManagement.vue')
 const ActivityManage = () => import('../views/admin/ActivityManage.vue')
 const NotificationManage = () => import('../views/admin/NotificationManage.vue')
+const AboutManage = () => import('../views/admin/AboutManage.vue')
+const FileManager = () => import('../views/admin/FileManager.vue')
 
 // 导入 UI 组件
 import { UnauthorizedAccess } from '../components/ui'
@@ -132,6 +134,20 @@ const routes = [
         path: 'notifications',
         name: 'NotificationManage',
         component: NotificationManage
+      },
+      {
+        path: 'about',
+        name: 'AboutManage',
+        component: AboutManage
+      },
+      {
+        path: 'files',
+        name: 'FileManager',
+        component: FileManager,
+        meta: {
+          requiresAuth: true,
+          title: '文件管理'
+        }
       }
     ]
   },

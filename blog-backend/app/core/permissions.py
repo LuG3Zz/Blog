@@ -63,3 +63,19 @@ def is_admin(user: models.User) -> bool:
 def is_editor_or_admin(user: models.User) -> bool:
     """检查用户是否为编辑或管理员"""
     return user.role in [UserRole.editor, UserRole.admin]
+
+def can_manage_file(user: models.User, file_owner_id: int) -> bool:
+    """
+    检查用户是否可以管理文件
+
+    Args:
+        user: 用户对象
+        file_owner_id: 文件所有者ID
+
+    Returns:
+        bool: 是否可以管理文件
+    """
+    if not user:
+        return False
+    # 管理员可以管理所有文件，普通用户只能管理自己的文件
+    return is_admin(user) or user.id == file_owner_id

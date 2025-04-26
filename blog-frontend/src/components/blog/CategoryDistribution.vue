@@ -22,18 +22,22 @@
         <div class="flex justify-between items-center mb-1">
           <router-link
             :to="`/blog/category/${category.category_id}`"
-            class="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400"
+            class="text-sm font-medium hover:font-bold transition-all duration-300"
+            :style="{ color: getCategoryColor(category.category_id) }"
           >
             {{ category.name }}
           </router-link>
-          <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ category.article_count }} 篇</span>
+          <span class="text-xs font-medium bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full"
+                :style="{ color: getCategoryColor(category.category_id) }">
+            {{ category.article_count }} 篇
+          </span>
         </div>
 
         <!-- 进度条 -->
-        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
           <div
-            class="h-2.5 rounded-full transition-all duration-500 ease-out"
-            :style="{ width: `${getPercentage(category.article_count)}%`, backgroundColor: getCategoryColor(category.category_id) }"
+            class="h-3 rounded-full transition-all duration-500 ease-out"
+            :style="getProgressBarStyle(category)"
           ></div>
         </div>
       </div>
@@ -70,23 +74,85 @@ export default {
       return Math.max(5, percentage) // 最小宽度为 5%
     }
 
+    // 获取进度条样式
+    const getProgressBarStyle = (category) => {
+      try {
+        const count = category?.article_count || 0;
+        const categoryId = category?.category_id || category?.id || 0;
+
+        const baseColor = getCategoryColor(categoryId);
+        const lighterColor = getLighterColor(baseColor);
+
+        return {
+          width: `${getPercentage(count)}%`,
+          background: `linear-gradient(90deg, ${baseColor} 0%, ${lighterColor} 100%)`,
+          boxShadow: `0 0 8px ${baseColor}80`
+        };
+      } catch (error) {
+        console.error('进度条样式错误:', error, '分类:', category);
+        // 返回默认样式
+        return {
+          width: '5%',
+          background: '#4287f5',
+          boxShadow: '0 0 8px rgba(66, 135, 245, 0.5)'
+        };
+      }
+    }
+
     // 获取分类颜色
     const getCategoryColor = (categoryId) => {
-      // 预定义的颜色数组
+      // 预定义的颜色数组 - 使用更鲜艳的颜色
       const colors = [
-        '#3b82f6', // blue-500
-        '#10b981', // emerald-500
-        '#f59e0b', // amber-500
-        '#ef4444', // red-500
-        '#8b5cf6', // violet-500
-        '#ec4899', // pink-500
-        '#06b6d4', // cyan-500
-        '#f97316', // orange-500
+        '#4287f5', // 更鲜艳的蓝色
+        '#10d990', // 更鲜艳的绿色
+        '#ffb700', // 更鲜艳的琥珀色
+        '#ff3a3a', // 更鲜艳的红色
+        '#9d4eff', // 更鲜艳的紫色
+        '#ff3399', // 更鲜艳的粉色
+        '#00d1e6', // 更鲜艳的青色
+        '#ff7a00', // 更鲜艳的橙色
       ]
 
-      // 根据分类ID选择颜色
-      const index = (typeof categoryId === 'number' ? categoryId : parseInt(categoryId, 10)) % colors.length
-      return colors[Math.abs(index)]
+      try {
+        // 检查categoryId是否有效
+        if (categoryId === undefined || categoryId === null) {
+          return colors[0]; // 默认返回第一个颜色
+        }
+
+        // 根据分类ID选择颜色
+        const index = (typeof categoryId === 'number' ? categoryId : parseInt(categoryId, 10)) % colors.length;
+        return colors[Math.abs(index) || 0]; // 确保索引有效，如果无效则使用0
+      } catch (error) {
+        console.error('获取颜色错误:', error, '分类ID:', categoryId);
+        return colors[0]; // 出错时返回第一个颜色
+      }
+    }
+
+    // 获取更亮的颜色版本用于渐变效果
+    const getLighterColor = (hexColor) => {
+      // 检查颜色是否有效
+      if (!hexColor || typeof hexColor !== 'string' || !hexColor.startsWith('#') || hexColor.length < 7) {
+        // 返回一个默认的浅色
+        return '#ffffff';
+      }
+
+      try {
+        // 将十六进制颜色转换为RGB
+        const r = parseInt(hexColor.slice(1, 3), 16);
+        const g = parseInt(hexColor.slice(3, 5), 16);
+        const b = parseInt(hexColor.slice(5, 7), 16);
+
+        // 使颜色更亮 (增加亮度)
+        const lighterR = Math.min(255, r + 40);
+        const lighterG = Math.min(255, g + 40);
+        const lighterB = Math.min(255, b + 40);
+
+        // 转换回十六进制
+        return `#${lighterR.toString(16).padStart(2, '0')}${lighterG.toString(16).padStart(2, '0')}${lighterB.toString(16).padStart(2, '0')}`;
+      } catch (error) {
+        console.error('颜色处理错误:', error, '原始颜色:', hexColor);
+        return '#ffffff'; // 出错时返回白色
+      }
     }
 
     // 模拟数据，当API返回的数据不正确时使用
@@ -163,7 +229,9 @@ export default {
       error,
       categories,
       getPercentage,
-      getCategoryColor
+      getCategoryColor,
+      getLighterColor,
+      getProgressBarStyle
     }
   }
 }
@@ -223,11 +291,32 @@ export default {
 }
 
 .rounded-full:last-child {
-  animation: progressAnimation 1s ease-out forwards;
-  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+  animation: progressAnimation 1.2s ease-out forwards;
+  position: relative;
+  overflow: hidden;
+}
+
+.rounded-full:last-child::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
 }
 
 .dark .rounded-full:last-child {
-  box-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
 }
 </style>

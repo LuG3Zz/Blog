@@ -23,7 +23,7 @@ export default defineConfig(({ command, mode }) => {
     proxy: {
       // 使用通配符代理所有API请求到后端服务器
       // 代理带有API前缀的请求
-      '^/api/v1/(auth|users|articles|categories|comments|tags|search|stats|files|activities|admin)': {
+      '^/api/v1/(auth|users|articles|categories|comments|tags|search|stats|files|activities|admin|about)': {
         target: 'http://127.0.0.1:8000',
         //target: 'http://39.105.192.244:8000',
         changeOrigin: true,
@@ -45,7 +45,7 @@ export default defineConfig(({ command, mode }) => {
         }
       },
       // WebSocket路径单独代理
-      '^/ws': {
+      '^/(ws|static)': {
         target: 'http://127.0.0.1:8000',
         //target: 'http://39.105.192.244:8000',
         changeOrigin: true,

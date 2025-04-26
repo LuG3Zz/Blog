@@ -14,6 +14,7 @@ from app.routers.activities import router as activities_router
 from app.routers.admin import router as admin_router
 from app.routers.cache import router as cache_router
 from app.routers.websocket import router as websocket_router
+from app.routers.about import router as about_router
 
 # List of all routers
 routers = [
@@ -32,4 +33,5 @@ routers = [
     admin_router,
     cache_router,
     websocket_router,
+    about_router,
 ]

@@ -19,6 +19,7 @@ import * as tagsApi from './modules/tags';
 import * as searchApi from './modules/search';
 import * as statsApi from './modules/stats';
 import * as notificationsApi from './modules/notifications';
+import * as aboutApi from './modules/about';
 
 // 导出所有 API 模块
 export {
@@ -34,7 +35,8 @@ export {
   tagsApi,
   searchApi,
   statsApi,
-  notificationsApi
+  notificationsApi,
+  aboutApi
 };
 
 // 为了向后兼容，保留原来的导出名称
@@ -48,6 +50,7 @@ export const fileApi = filesApi;
 export const tagApi = tagsApi;
 export const search = searchApi;
 export const notificationApi = notificationsApi;
+export const aboutPageApi = aboutApi;
 // statsApi 已经在上面导出，这里不需要重复导出
 
 // 默认导出所有 API
@@ -64,5 +67,6 @@ export default {
   tags: tagsApi,
   search: searchApi,
   stats: statsApi,
-  notifications: notificationsApi
+  notifications: notificationsApi,
+  about: aboutApi
 };

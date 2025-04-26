@@ -6,6 +6,7 @@ import './assets/css/style.css'
 import './assets/css/vditor-custom.css' // 导入 Vditor 自定义样式
 import './assets/css/markdown.css' // 导入 Markdown 样式
 import './assets/css/highlight-custom.css' // 导入 highlight.js 代码高亮样式
+import './assets/css/article-detail.css' // 导入文章详情页面样式
 import 'animate.css' // 导入 Animate.css 动画库
 
 import Lenis from 'lenis'
