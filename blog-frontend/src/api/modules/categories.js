@@ -51,10 +51,22 @@ export const deleteCategory = (id) => {
   return apiClient.delete(API_PATHS.CATEGORIES.BY_ID(id));
 };
 
+/**
+ * 批量删除分类
+ * @param {Array<number>} categoryIds - 分类ID数组
+ * @returns {Promise} 返回删除结果
+ */
+export const batchDeleteCategories = (categoryIds) => {
+  return apiClient.post(API_PATHS.CATEGORIES.BATCH_DELETE, {
+    category_ids: categoryIds
+  });
+};
+
 export default {
   getCategories,
   getCategoryById,
   createCategory,
   updateCategory,
-  deleteCategory
+  deleteCategory,
+  batchDeleteCategories
 };

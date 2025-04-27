@@ -121,6 +121,7 @@ export const deleteFile = (fileId) => {
  */
 export const renameFile = (fileId, newFilename) => {
   return apiClient.put(API_PATHS.FILES.RENAME(fileId), {
+    file_id: fileId,
     new_filename: newFilename
   });
 };

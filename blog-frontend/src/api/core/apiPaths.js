@@ -52,6 +52,7 @@ export const API_PATHS = {
   CATEGORIES: {
     BASE: `${API_PREFIX}/categories/`,
     BY_ID: (id) => `${API_PREFIX}/categories/${id}`,
+    BATCH_DELETE: `${API_PREFIX}/categories/batch-delete`,
   },
 
   // 标签相关
@@ -63,6 +64,7 @@ export const API_PATHS = {
     ADD_TO_ARTICLE: (articleId) => `${API_PREFIX}/tags/articles/${articleId}/tags`,
     UPDATE_ARTICLE_TAGS: (articleId) => `${API_PREFIX}/tags/articles/${articleId}/tags`,
     REMOVE_FROM_ARTICLE: (articleId, tagId) => `${API_PREFIX}/tags/articles/${articleId}/tags/${tagId}`,
+    BATCH_DELETE: `${API_PREFIX}/tags/batch-delete`,
   },
 
   // 搜索相关
@@ -100,6 +102,7 @@ export const API_PATHS = {
     BASE: `${API_PREFIX}/activities/`,
     BASIC: `${API_PREFIX}/activities/basic`,
     PUBLIC: `${API_PREFIX}/activities/public`,
+    BATCH_DELETE: `${API_PREFIX}/activities/batch-delete`,
   },
 
   // About页面相关

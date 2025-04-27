@@ -148,11 +148,33 @@ export const getBasicActivities = async (params = {}) => {
   }
 };
 
+/**
+ * 删除活动记录
+ * @param {number} activityId - 活动ID
+ * @returns {Promise} 返回删除结果
+ */
+export const deleteActivity = (activityId) => {
+  return apiClient.delete(`${API_PATHS.ACTIVITIES.BASE}${activityId}`);
+};
+
+/**
+ * 批量删除活动记录
+ * @param {Array<number>} activityIds - 活动ID数组
+ * @returns {Promise} 返回删除结果
+ */
+export const batchDeleteActivities = (activityIds) => {
+  return apiClient.post(API_PATHS.ACTIVITIES.BATCH_DELETE, {
+    activity_ids: activityIds
+  });
+};
+
 export default {
   getActivities,
   getUserActivities,
   getStats,
   getActivityTimeline,
   getPublicActivities,
-  getBasicActivities
+  getBasicActivities,
+  deleteActivity,
+  batchDeleteActivities
 };

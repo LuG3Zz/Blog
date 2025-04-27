@@ -6,7 +6,8 @@ from sqlalchemy import func
 from app import models
 from app.core import security
 from app.core.database import get_db
-from app.schemas.tag import TagCreate, TagResponse, TagUpdate, TagWithCount
+from app.core.cache import clear_cache_by_prefix
+from app.schemas.tag import TagCreate, TagResponse, TagUpdate, TagWithCount, TagBatchDeleteRequest
 from app.schemas.article import ArticleList
 from app.services.tag_service import TagService
 
@@ -72,6 +73,47 @@ async def delete_tag(
     if not success:
         raise HTTPException(status_code=404, detail="Tag not found")
     return None
+
+@router.post("/batch-delete", status_code=status.HTTP_200_OK)
+async def batch_delete_tags(
+    request: TagBatchDeleteRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_user)
+):
+    """
+    批量删除标签。
+
+    参数:
+    - **tag_ids**: 要删除的标签ID列表
+
+    返回:
+    - 200 OK: 删除成功，返回删除的数量
+    - 403 Forbidden: 没有权限删除
+    """
+    # 检查用户是否为管理员
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="只有管理员可以批量删除标签"
+        )
+
+    if not request.tag_ids:
+        return {"deleted_count": 0, "message": "没有指定要删除的标签"}
+
+    # 查询并删除标签
+    deleted_count = 0
+    for tag_id in request.tag_ids:
+        success = TagService.delete_tag(db=db, tag_id=tag_id)
+        if success:
+            deleted_count += 1
+
+    # 清除相关缓存
+    clear_cache_by_prefix("tags_")
+
+    return {
+        "deleted_count": deleted_count,
+        "message": f"成功删除 {deleted_count} 个标签"
+    }
 
 @router.get("/by-name/{name}", response_model=TagResponse)
 async def get_tag_by_name(

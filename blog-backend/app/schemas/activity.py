@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel
 
 from app.schemas.user import UserBriefResponse
@@ -47,3 +47,7 @@ class EnhancedActivityResponse(ActivityResponse):
             except json.JSONDecodeError:
                 obj.user.social_media = None
         return super().model_validate(obj, *args, **kwargs)
+
+class ActivityBatchDeleteRequest(BaseModel):
+    """Request schema for batch deleting activities."""
+    activity_ids: List[int]

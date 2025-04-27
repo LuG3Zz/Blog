@@ -21,6 +21,16 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
         </button>
+        <button
+          v-if="selectedActivities.length > 0"
+          @click="confirmBatchDelete"
+          class="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 text-sm font-medium flex items-center"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          批量删除 ({{ selectedActivities.length }})
+        </button>
       </div>
     </div>
 
@@ -40,17 +50,42 @@
       <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
         <thead class="bg-gray-50 dark:bg-gray-700">
           <tr>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300">
+              <div class="flex items-center">
+                <input
+                  id="select-all"
+                  type="checkbox"
+                  class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600"
+                  :checked="selectAll"
+                  @change="toggleSelectAll"
+                />
+                <label for="select-all" class="sr-only">全选</label>
+              </div>
+            </th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">活动类型</th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">用户</th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">描述</th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">目标ID</th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">时间</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">操作</th>
           </tr>
         </thead>
         <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
           <tr v-for="activity in activities" :key="activity.id" class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
             <td class="px-6 py-4 whitespace-nowrap">
-              <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full" 
+              <div class="flex items-center">
+                <input
+                  :id="`select-activity-${activity.id}`"
+                  type="checkbox"
+                  class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600"
+                  :checked="selectedActivities.includes(activity.id)"
+                  @change="toggleActivitySelection(activity.id)"
+                />
+                <label :for="`select-activity-${activity.id}`" class="sr-only">选择活动</label>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full"
                 :class="getActionTypeClass(activity.action_type)">
                 {{ formatActionType(activity.action_type) }}
               </span>
@@ -75,6 +110,17 @@
             <td class="px-6 py-4 whitespace-nowrap">
               <div class="text-sm text-gray-500 dark:text-gray-400">{{ formatDate(activity.created_at) }}</div>
             </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <button
+                @click="confirmDelete(activity)"
+                class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                title="删除活动"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -83,6 +129,58 @@
     <!-- 无数据提示 -->
     <div v-if="!loading && !error && activities.length === 0" class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-center">
       <p class="text-gray-500 dark:text-gray-400">暂无活动记录</p>
+    </div>
+
+    <!-- 单个删除确认对话框 -->
+    <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">确认删除</h3>
+        <p class="text-gray-700 dark:text-gray-300 mb-6">
+          您确定要删除此活动记录吗？此操作无法撤销。
+        </p>
+        <div class="flex justify-end space-x-3">
+          <button
+            @click="cancelDelete"
+            class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200"
+          >
+            取消
+          </button>
+          <button
+            @click="deleteActivity"
+            class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200"
+            :disabled="isDeleting"
+          >
+            <span v-if="isDeleting">删除中...</span>
+            <span v-else>确认删除</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 批量删除确认对话框 -->
+    <div v-if="showBatchDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">确认批量删除</h3>
+        <p class="text-gray-700 dark:text-gray-300 mb-6">
+          您确定要删除选中的 {{ selectedActivities.length }} 条活动记录吗？此操作无法撤销。
+        </p>
+        <div class="flex justify-end space-x-3">
+          <button
+            @click="cancelBatchDelete"
+            class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200"
+          >
+            取消
+          </button>
+          <button
+            @click="batchDeleteActivities"
+            class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200"
+            :disabled="isBatchDeleting"
+          >
+            <span v-if="isBatchDeleting">删除中...</span>
+            <span v-else>确认删除</span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -102,6 +200,17 @@ export default {
     const filterDays = ref('30')
     const users = ref({}) // 缓存用户信息
 
+    // 删除相关状态
+    const showDeleteConfirm = ref(false)
+    const activityToDelete = ref(null)
+    const isDeleting = ref(false)
+
+    // 批量删除相关状态
+    const selectedActivities = ref([])
+    const selectAll = ref(false)
+    const showBatchDeleteConfirm = ref(false)
+    const isBatchDeleting = ref(false)
+
     // 获取活动列表
     const fetchActivities = async () => {
       loading.value = true
@@ -113,7 +222,7 @@ export default {
         })
 
         activities.value = Array.isArray(response) ? response : []
-        
+
         // 获取活动中涉及的用户信息
         await fetchUserInfo()
       } catch (err) {
@@ -130,7 +239,7 @@ export default {
       const userIds = [...new Set(activities.value
         .filter(activity => activity.user_id)
         .map(activity => activity.user_id))]
-      
+
       for (const userId of userIds) {
         if (!users.value[userId]) {
           try {
@@ -222,6 +331,112 @@ export default {
       return typeClasses[actionType] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
     }
 
+    // 确认删除对话框
+    const confirmDelete = (activity) => {
+      activityToDelete.value = activity
+      showDeleteConfirm.value = true
+    }
+
+    // 取消删除
+    const cancelDelete = () => {
+      showDeleteConfirm.value = false
+      activityToDelete.value = null
+    }
+
+    // 删除活动
+    const deleteActivity = async () => {
+      if (!activityToDelete.value) return
+
+      isDeleting.value = true
+      try {
+        const activityId = activityToDelete.value.id
+        await activityApi.deleteActivity(activityId)
+        message.success('活动记录删除成功')
+
+        // 如果该活动在选中列表中，也要移除
+        if (selectedActivities.value.includes(activityId)) {
+          selectedActivities.value = selectedActivities.value.filter(id => id !== activityId)
+        }
+
+        // 关闭确认对话框
+        showDeleteConfirm.value = false
+        activityToDelete.value = null
+
+        // 刷新活动列表
+        fetchActivities()
+      } catch (error) {
+        console.error('删除活动记录失败:', error)
+        message.error('删除活动记录失败: ' + (error.message || '未知错误'))
+      } finally {
+        isDeleting.value = false
+      }
+    }
+
+    // 切换活动选择状态
+    const toggleActivitySelection = (activityId) => {
+      if (selectedActivities.value.includes(activityId)) {
+        // 如果已选中，则取消选中
+        selectedActivities.value = selectedActivities.value.filter(id => id !== activityId)
+        // 如果取消选中某个活动，全选状态也要取消
+        selectAll.value = false
+      } else {
+        // 如果未选中，则选中
+        selectedActivities.value.push(activityId)
+        // 检查是否所有活动都被选中
+        selectAll.value = selectedActivities.value.length === activities.value.length
+      }
+    }
+
+    // 切换全选状态
+    const toggleSelectAll = () => {
+      selectAll.value = !selectAll.value
+
+      if (selectAll.value) {
+        // 全选：将所有活动ID添加到选中列表
+        selectedActivities.value = activities.value.map(activity => activity.id)
+      } else {
+        // 取消全选：清空选中列表
+        selectedActivities.value = []
+      }
+    }
+
+    // 确认批量删除
+    const confirmBatchDelete = () => {
+      if (selectedActivities.value.length === 0) return
+      showBatchDeleteConfirm.value = true
+    }
+
+    // 取消批量删除
+    const cancelBatchDelete = () => {
+      showBatchDeleteConfirm.value = false
+    }
+
+    // 批量删除活动
+    const batchDeleteActivities = async () => {
+      if (selectedActivities.value.length === 0) return
+
+      isBatchDeleting.value = true
+      try {
+        const response = await activityApi.batchDeleteActivities(selectedActivities.value)
+        message.success(response.message || `成功删除 ${response.deleted_count} 条活动记录`)
+
+        // 关闭确认对话框
+        showBatchDeleteConfirm.value = false
+
+        // 清空选中列表
+        selectedActivities.value = []
+        selectAll.value = false
+
+        // 刷新活动列表
+        fetchActivities()
+      } catch (error) {
+        console.error('批量删除活动记录失败:', error)
+        message.error('批量删除活动记录失败: ' + (error.message || '未知错误'))
+      } finally {
+        isBatchDeleting.value = false
+      }
+    }
+
     // 监听筛选条件变化
     watch(filterDays, () => {
       fetchActivities()
@@ -243,7 +458,23 @@ export default {
       getUserInitial,
       formatDate,
       formatActionType,
-      getActionTypeClass
+      getActionTypeClass,
+      // 删除相关
+      showDeleteConfirm,
+      isDeleting,
+      confirmDelete,
+      cancelDelete,
+      deleteActivity,
+      // 批量删除相关
+      selectedActivities,
+      selectAll,
+      toggleActivitySelection,
+      toggleSelectAll,
+      showBatchDeleteConfirm,
+      isBatchDeleting,
+      confirmBatchDelete,
+      cancelBatchDelete,
+      batchDeleteActivities
     }
   }
 }

@@ -21,7 +21,7 @@
       >
         <div class="flex justify-between items-center mb-1">
           <router-link
-            :to="`/blog/category/${category.category_id}`"
+            :to="{path: '/articles', query: {category: category.name}}"
             class="text-sm font-medium hover:font-bold transition-all duration-300"
             :style="{ color: getCategoryColor(category.category_id) }"
           >

@@ -8,7 +8,7 @@ from app import models
 from app.core import security
 from app.core.database import get_db
 from app.core.cache import cache, clear_cache_by_prefix
-from app.schemas.article import CategoryBase, CategoryCreate, CategoryUpdate, CategoryResponse, CategoryWithCount
+from app.schemas.article import CategoryBase, CategoryCreate, CategoryUpdate, CategoryResponse, CategoryWithCount, CategoryBatchDeleteRequest
 
 router = APIRouter(prefix="/categories", tags=['categories'])
 
@@ -116,4 +116,71 @@ async def delete_category(
     # 删除分类
     db.delete(category)
     db.commit()
+
+    # 清除分类缓存
+    clear_cache_by_prefix("get_categories")
+
     return {"message": "Category deleted successfully"}
+
+@router.post("/batch-delete", status_code=status.HTTP_200_OK)
+async def batch_delete_categories(
+    request: CategoryBatchDeleteRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_user)
+):
+    """
+    批量删除分类。
+
+    参数:
+    - **category_ids**: 要删除的分类ID列表
+
+    返回:
+    - 200 OK: 删除成功，返回删除的数量
+    - 403 Forbidden: 没有权限删除
+    """
+    # 检查用户是否为管理员
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="只有管理员可以批量删除分类"
+        )
+
+    if not request.category_ids:
+        return {"deleted_count": 0, "message": "没有指定要删除的分类"}
+
+    # 查询并删除分类
+    deleted_count = 0
+    not_deleted = []
+
+    for category_id in request.category_ids:
+        # 检查分类是否存在
+        category = db.query(models.Category).filter(models.Category.id == category_id).first()
+        if not category:
+            not_deleted.append({"id": category_id, "reason": "分类不存在"})
+            continue
+
+        # 检查分类是否有关联的文章
+        articles = db.query(models.Article).filter(models.Article.category_id == category_id).first()
+        if articles:
+            not_deleted.append({"id": category_id, "reason": "分类下有关联文章"})
+            continue
+
+        # 删除分类
+        db.delete(category)
+        deleted_count += 1
+
+    # 提交事务
+    if deleted_count > 0:
+        db.commit()
+        # 清除分类缓存
+        clear_cache_by_prefix("get_categories")
+
+    result = {
+        "deleted_count": deleted_count,
+        "message": f"成功删除 {deleted_count} 个分类"
+    }
+
+    if not_deleted:
+        result["not_deleted"] = not_deleted
+
+    return result

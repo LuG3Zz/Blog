@@ -371,6 +371,9 @@ export default {
       }
     }
 
+    // 获取用户状态管理实例
+    const userStore = useUserStore()
+
     // 当前日期格式化
     const currentDate = computed(() => {
       const now = new Date()

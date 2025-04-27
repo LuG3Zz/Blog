@@ -194,12 +194,20 @@
               <div class="text-sm text-gray-500 dark:text-gray-400">{{ formatSize(file.file_size) }}</div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
-              <button
-                @click="selectFile(file)"
-                class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 font-medium"
-              >
-                选择此文件
-              </button>
+              <div class="flex space-x-2">
+                <button
+                  @click="selectFile(file)"
+                  class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 font-medium"
+                >
+                  选择此文件
+                </button>
+                <button
+                  @click="confirmDeleteFile(file)"
+                  class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 font-medium"
+                >
+                  删除
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -253,6 +261,32 @@
         </div>
       </div>
     </div>
+
+    <!-- 删除确认对话框 -->
+    <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">确认删除</h3>
+        <p class="text-gray-700 dark:text-gray-300 mb-6">
+          您确定要删除文件 <span class="font-semibold">{{ fileToDelete?.original_filename }}</span> 吗？此操作无法撤销。
+        </p>
+        <div class="flex justify-end space-x-3">
+          <button
+            @click="showDeleteConfirm = false"
+            class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200"
+          >
+            取消
+          </button>
+          <button
+            @click="deleteFile"
+            class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200"
+            :disabled="isDeleting"
+          >
+            <span v-if="isDeleting">删除中...</span>
+            <span v-else>确认删除</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -296,6 +330,11 @@ const previewVisible = ref(false);
 const previewImageUrl = ref('');
 const previewImageName = ref('');
 const previewImageSize = ref(0);
+
+// 删除文件相关状态
+const showDeleteConfirm = ref(false);
+const fileToDelete = ref(null);
+const isDeleting = ref(false);
 
 // 计算属性
 const filteredFiles = computed(() => {
@@ -573,10 +612,44 @@ const uploadFiles = async () => {
   }
 };
 
+// 确认删除文件
+const confirmDeleteFile = (file) => {
+  fileToDelete.value = file;
+  showDeleteConfirm.value = true;
+};
+
+// 删除文件
+const deleteFile = async () => {
+  if (!fileToDelete.value) return;
+
+  isDeleting.value = true;
+  try {
+    await filesApi.deleteFile(fileToDelete.value.id);
+    message.success('文件删除成功');
+
+    // 关闭确认对话框
+    showDeleteConfirm.value = false;
+    fileToDelete.value = null;
+
+    // 刷新文件列表
+    fetchFiles();
+  } catch (error) {
+    console.error('删除文件失败:', error);
+    message.error('删除文件失败: ' + (error.message || '未知错误'));
+  } finally {
+    isDeleting.value = false;
+  }
+};
+
 // 添加键盘事件监听
 const handleKeyDown = (e) => {
-  if (e.key === 'Escape' && previewVisible.value) {
-    closePreview();
+  if (e.key === 'Escape') {
+    if (previewVisible.value) {
+      closePreview();
+    }
+    if (showDeleteConfirm.value) {
+      showDeleteConfirm.value = false;
+    }
   }
 };
 

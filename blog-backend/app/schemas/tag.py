@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, Field
 
 class TagBase(BaseModel):
@@ -18,7 +18,7 @@ class TagResponse(TagBase):
     """Schema for tag response."""
     id: int
     description: Optional[str] = None
-    
+
     model_config = {
         "from_attributes": True
     }
@@ -26,7 +26,11 @@ class TagResponse(TagBase):
 class TagWithCount(TagResponse):
     """Schema for tag with article count."""
     article_count: int = 0
-    
+
     model_config = {
         "from_attributes": True
     }
+
+class TagBatchDeleteRequest(BaseModel):
+    """Schema for batch deleting tags."""
+    tag_ids: List[int]

@@ -25,28 +25,7 @@ load_dotenv()
 # 获取 OpenRouter API 密钥
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
-# Emoji 过滤函数
-def remove_emoji(text):
-    if not text:
-        return ""
-    # 移除 Emoji 字符
-    emoji_pattern = re.compile(
-        "["
-        "\U0001F600-\U0001F64F"  # emoticons
-        "\U0001F300-\U0001F5FF"  # symbols & pictographs
-        "\U0001F680-\U0001F6FF"  # transport & map symbols
-        "\U0001F700-\U0001F77F"  # alchemical symbols
-        "\U0001F780-\U0001F7FF"  # Geometric Shapes
-        "\U0001F800-\U0001F8FF"  # Supplemental Arrows-C
-        "\U0001F900-\U0001F9FF"  # Supplemental Symbols and Pictographs
-        "\U0001FA00-\U0001FA6F"  # Chess Symbols
-        "\U0001FA70-\U0001FAFF"  # Symbols and Pictographs Extended-A
-        "\U00002702-\U000027B0"  # Dingbats
-        "\U000024C2-\U0001F251"  # enclosed characters
-        "]+",
-        flags=re.UNICODE
-    )
-    return emoji_pattern.sub(r'', text)
+# 移除了 Emoji 过滤函数，保留 Emoji 字符
 
 router = APIRouter(prefix="/articles", tags=['articles'])
 
@@ -259,21 +238,16 @@ async def create_article(
     # 生成文章预览
     content_preview = ""
     if db_article.excerpt:
-        # 使用过滤函数移除 Emoji 字符
-        excerpt = remove_emoji(db_article.excerpt)
-        content_preview = f": \"{excerpt[:100]}...\""
+        content_preview = f": \"{db_article.excerpt[:100]}...\""
     elif db_article.content:
-        # 使用过滤函数移除 Emoji 字符
-        content = remove_emoji(db_article.content)
-        content_preview = f": \"{content[:100]}...\""
+        content_preview = f": \"{db_article.content[:100]}...\""
 
-    # 记录活动
-    # 使用过滤函数移除所有字段中的 Emoji 字符
-    safe_username = remove_emoji(current_user.username)
-    safe_title = remove_emoji(db_article.title)
-    safe_category = remove_emoji(category_name)
-    safe_tags = remove_emoji(tags_info)
-    safe_preview = remove_emoji(content_preview)
+    # 记录活动 - 保留 Emoji 字符
+    safe_username = current_user.username
+    safe_title = db_article.title
+    safe_category = category_name
+    safe_tags = tags_info
+    safe_preview = content_preview
 
     activity = models.Activity(
         action_type='article',
@@ -287,6 +261,18 @@ async def create_article(
 
     # 清除文章列表缓存
     clear_cache_by_prefix("read_articles")
+
+    # 获取作者信息，包括处理 social_media 字段
+    author = db.query(models.User).filter(models.User.id == db_article.author_id).first()
+    if author and author.social_media:
+        try:
+            import json
+            author.social_media = json.loads(author.social_media)
+        except json.JSONDecodeError:
+            author.social_media = None
+
+    # 将作者信息附加到文章对象
+    setattr(db_article, 'author', author)
 
     return db_article
 
@@ -709,7 +695,7 @@ async def update_article(
     tags = [tag.name for tag in db_article.tags_relationship] if hasattr(db_article, 'tags_relationship') else []
     tags_info = f" [标签: {', '.join(tags)}]" if tags else ""
 
-    # 生成文章预览
+    # 生成文章预览 - 保留 Emoji 字符
     content_preview = ""
     if db_article.excerpt:
         content_preview = f": \"{db_article.excerpt[:100]}...\""

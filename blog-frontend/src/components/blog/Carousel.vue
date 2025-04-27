@@ -21,12 +21,12 @@
             class="w-full h-64 object-cover"
           />
           <div class="slide-content absolute bottom-0 left-0 w-full p-4 bg-black bg-opacity-50 text-white">
-            <h3 class="text-xl font-bold">{{ slide.title }}</h3>
-            <p>{{ slide.description }}</p>
+            <h3 class="text-lg font-bold">{{ slide.title }}</h3>
+            <p class="text-sm">{{ slide.description }}</p>
             <router-link
               v-if="slide.id || slide.slug"
               :to="slide.slug ? `/article/${slide.id}`:`/articles/by-slug/${slide.slug}`  "
-              class="mt-2 inline-block px-3 py-1 bg-secondary text-white text-sm rounded hover:bg-opacity-90 transition-colors"
+              class="mt-2 inline-block px-1 py-1 bg-secondary text-white text-sm rounded hover:bg-opacity-90 transition-colors"
             >
               阅读全文
             </router-link>

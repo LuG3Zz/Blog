@@ -78,6 +78,19 @@ export const deleteTag = (id) => {
 };
 
 /**
+ * 批量删除标签
+ * @param {Array<number>} tagIds - 标签ID数组
+ * @returns {Promise} 返回删除结果
+ */
+export const batchDeleteTags = (tagIds) => {
+  return apiClient.post(API_PATHS.TAGS.BATCH_DELETE, {
+    tag_ids: tagIds
+  }, {
+    headers: getAuthHeaders()
+  });
+};
+
+/**
  * 获取具有特定标签的所有文章
  * @param {number} tagId - 标签ID
  * @param {Object} params - 查询参数
@@ -154,6 +167,7 @@ export default {
   createTag,
   updateTag,
   deleteTag,
+  batchDeleteTags,
   getArticlesByTag,
   addTagToArticle,
   updateArticleTags,

@@ -156,12 +156,12 @@
                 </div>
                 <!-- 上传按钮 -->
                 <div v-if="!currentPost.cover_image" class="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg">
-                  <div class="space-y-1 text-center">
+                  <div class="space-y-3 text-center">
                     <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                       <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                     </svg>
-                    <div class="flex text-sm text-gray-600 dark:text-gray-400">
-                      <label for="cover-image" class="relative cursor-pointer bg-white dark:bg-gray-700 rounded-md font-medium text-secondary dark:text-dark-secondary hover:text-secondary-dark focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-secondary">
+                    <div class="flex flex-col sm:flex-row justify-center gap-2">
+                      <label for="cover-image" class="relative cursor-pointer bg-white dark:bg-gray-700 rounded-md font-medium text-secondary dark:text-dark-secondary hover:text-secondary-dark focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-secondary px-4 py-2">
                         <span>上传图片</span>
                         <input
                           id="cover-image"
@@ -171,6 +171,13 @@
                           @change="handleCoverImageUpload"
                         />
                       </label>
+                      <button
+                        type="button"
+                        @click="openFileSelectorForCover"
+                        class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 font-medium"
+                      >
+                        从文件管理选择
+                      </button>
                     </div>
                     <p class="text-xs text-gray-500 dark:text-gray-400">支持 JPG、PNG、GIF、WEBP 格式</p>
                   </div>
@@ -230,9 +237,17 @@
           </button>
           <button
             type="submit"
-            class="px-6 py-3 border border-transparent shadow-sm rounded-lg bg-secondary dark:bg-dark-secondary text-primary dark:text-dark-primary hover:bg-opacity-90 dark:hover:bg-opacity-90 transition-colors duration-200 font-medium"
+            class="px-6 py-3 border border-transparent shadow-sm rounded-lg bg-secondary dark:bg-dark-secondary text-primary dark:text-dark-primary hover:bg-opacity-90 dark:hover:bg-opacity-90 transition-colors duration-200 font-medium relative"
+            :disabled="isSaving"
           >
-            {{ isEdit ? '更新文章' : '保存文章' }}
+            <span v-if="!isSaving">{{ isEdit ? '更新文章' : '保存文章' }}</span>
+            <span v-else class="flex items-center justify-center">
+              <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-primary dark:text-dark-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              {{ isEdit ? '更新中...' : '保存中...' }}
+            </span>
           </button>
         </div>
       </form>
@@ -273,6 +288,7 @@ export default {
 
     // 文件选择器相关状态
     const showFileSelector = ref(false)
+    const fileSelectorMode = ref('editor') // 'editor' 或 'cover'
 
     // 编辑器模式 - 默认使用分屏预览模式
     const currentMode = ref('sv')
@@ -292,6 +308,8 @@ export default {
     const isAILoading = ref(false)
     // 图片上传加载状态
     const isUploading = ref(false)
+    // 文章保存加载状态
+    const isSaving = ref(false)
 
     // 判断是编辑还是新增模式
     const isEdit = computed(() => {
@@ -479,6 +497,7 @@ export default {
             className: 'right',
             icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M4.502 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/><path d="M14.002 13a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2V5A2 2 0 0 1 2 3a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-1.998 2zM14 2H4a1 1 0 0 0-1 1h9.002a2 2 0 0 1 2 2v7A1 1 0 0 0 14 11V2zM2.002 4a1 1 0 0 0-1 1v8l2.646-2.354a.5.5 0 0 1 .63-.062l2.66 1.773 3.71-3.71a.5.5 0 0 1 .577-.094l1.777 1.947V5a1 1 0 0 0-1-1h-10z"/></svg>',
             click: () => {
+              fileSelectorMode.value = 'editor'
               showFileSelector.value = true
             }
           },
@@ -556,6 +575,7 @@ export default {
                       className: 'right',
                       icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M4.502 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/><path d="M14.002 13a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2V5A2 2 0 0 1 2 3a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-1.998 2zM14 2H4a1 1 0 0 0-1 1h9.002a2 2 0 0 1 2 2v7A1 1 0 0 0 14 11V2zM2.002 4a1 1 0 0 0-1 1v8l2.646-2.354a.5.5 0 0 1 .63-.062l2.66 1.773 3.71-3.71a.5.5 0 0 1 .577-.094l1.777 1.947V5a1 1 0 0 0-1-1h-10z"/></svg>',
                       click: () => {
+                        fileSelectorMode.value = 'editor'
                         showFileSelector.value = true
                       }
                     },
@@ -715,6 +735,11 @@ export default {
 
     // 保存文章
     const savePost = async () => {
+      // 如果已经在保存中，防止重复提交
+      if (isSaving.value) {
+        return
+      }
+
       // 获取Vditor内容
       if (vditor.value) {
         currentPost.value.content = vditor.value.getValue()
@@ -727,12 +752,14 @@ export default {
       }
 
       formError.value = ''
+      isSaving.value = true // 设置保存状态为true
 
       try {
         // 从localStorage获取token
         const token = localStorage.getItem('token')
         if (!token) {
           formError.value = '未登录或登录已过期，请重新登录'
+          isSaving.value = false // 重置保存状态
           return
         }
 
@@ -797,6 +824,8 @@ export default {
       } catch (error) {
         console.error('保存文章失败:', error)
         message.error(error.message || '操作失败，请稍后再试')  // 替换 formError
+      } finally {
+        isSaving.value = false // 无论成功或失败，都重置保存状态
       }
     }
 
@@ -910,9 +939,15 @@ export default {
       }
     }
 
+    // 打开文件选择器用于选择封面图
+    const openFileSelectorForCover = () => {
+      fileSelectorMode.value = 'cover'
+      showFileSelector.value = true
+    }
+
     // 处理从文件管理器选择的图片
     const handleFileSelected = (file) => {
-      if (!file || !vditor.value) return
+      if (!file) return
 
       console.log('选择的文件:', file);
 
@@ -936,21 +971,29 @@ export default {
 
       console.log('使用的文件URL:', fileUrl);
 
-      // 获取文件名
-      const fileName = file.original_filename || `图片${Date.now()}`
+      // 根据文件选择器模式处理选择的文件
+      if (fileSelectorMode.value === 'cover') {
+        // 设置为封面图
+        currentPost.value.cover_image = fileUrl
+        message.success('封面图设置成功')
+      } else {
+        // 确保编辑器存在
+        if (!vditor.value) return
 
-      // 构建Markdown格式的图片标记
-      const imageMarkdown = `![${fileName}](${fileUrl})`
-      console.log('插入的Markdown:', imageMarkdown);
+        // 获取文件名
+        const fileName = file.original_filename || `图片${Date.now()}`
 
-      // 在编辑器当前光标位置插入图片
-      vditor.value.insertValue(imageMarkdown)
+        // 构建Markdown格式的图片标记
+        const imageMarkdown = `![${fileName}](${fileUrl})`
+        console.log('插入的Markdown:', imageMarkdown);
+
+        // 在编辑器当前光标位置插入图片
+        vditor.value.insertValue(imageMarkdown)
+        message.success('图片插入成功')
+      }
 
       // 关闭文件选择器
       showFileSelector.value = false
-
-      // 显示成功消息
-      message.success('图片插入成功')
     }
 
     return {
@@ -969,11 +1012,13 @@ export default {
       isAILoading,
       handleAIAssist,
       isUploading,
+      isSaving,
       handleCoverImageUpload,
       removeCoverImage,
       // 文件选择器相关
       showFileSelector,
       handleFileSelected,
+      openFileSelectorForCover,
       // 编辑器模式
       currentMode
     }

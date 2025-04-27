@@ -35,6 +35,10 @@ class CategoryWithCount(CategoryBase):
         "from_attributes": True
     }
 
+class CategoryBatchDeleteRequest(BaseModel):
+    """Schema for batch deleting categories."""
+    category_ids: List[int]
+
 class TagResponse(BaseModel):
     """Schema for tag response."""
     id: int
