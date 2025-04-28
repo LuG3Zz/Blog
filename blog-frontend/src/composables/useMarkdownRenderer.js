@@ -2,6 +2,139 @@ import { computed } from 'vue'
 import MarkdownIt from 'markdown-it'
 import markdownItKatex from 'markdown-it-katex'
 
+// 添加脚注支持
+const footnote = (md) => {
+  // 匹配脚注引用 [^1]
+  const footnoteRefRegex = /\[\^([^\]]+)\]/g;
+  // 匹配脚注定义 [^1]: 脚注内容
+  const footnoteDefRegex = /^\[\^([^\]]+)\]:\s+(.*(?:\n+(?:\s{4}|\t).+)*)/gm;
+
+  // 存储脚注
+  const footnotes = {};
+
+  // 修改渲染器的 render 方法
+  const originalRender = md.render;
+
+  md.render = function(src) {
+    // 清空脚注
+    Object.keys(footnotes).forEach(key => delete footnotes[key]);
+
+    // 提取脚注定义
+    let match;
+    while ((match = footnoteDefRegex.exec(src)) !== null) {
+      const id = match[1];
+      const content = match[2].replace(/^\s{4}/gm, ''); // 移除缩进
+      footnotes[id] = content;
+    }
+
+    // 替换脚注引用
+    let html = originalRender.call(this, src);
+
+    // 如果有脚注，添加脚注区域
+    if (Object.keys(footnotes).length > 0) {
+      let footnotesHtml = '<div class="footnotes"><hr><ol>';
+
+      Object.keys(footnotes).forEach((id, index) => {
+        footnotesHtml += `<li id="fn-${id}"><p>${footnotes[id]} <a href="#fnref-${id}" class="footnote-backref">↩</a></p></li>`;
+      });
+
+      footnotesHtml += '</ol></div>';
+      html += footnotesHtml;
+    }
+
+    return html;
+  };
+
+  // 修改内联规则，处理脚注引用
+  md.inline.ruler.after('emphasis', 'footnote_ref', function(state, silent) {
+    const start = state.pos;
+    const max = state.posMax;
+
+    if (start + 3 > max) return false;
+    if (state.src.charCodeAt(start) !== 0x5B/* [ */) return false;
+    if (state.src.charCodeAt(start + 1) !== 0x5E/* ^ */) return false;
+
+    let pos = start + 2;
+    let id = '';
+
+    // 收集脚注ID
+    while (pos < max && state.src.charCodeAt(pos) !== 0x5D/* ] */) {
+      id += state.src.charAt(pos);
+      pos++;
+    }
+
+    // 没有找到结束的 ]
+    if (pos === max || id.length === 0) return false;
+
+    // 不渲染，只前进
+    if (silent) {
+      state.pos = pos + 1;
+      return true;
+    }
+
+    // 渲染脚注引用
+    state.pos = pos + 1;
+
+    const token = state.push('footnote_ref', '', 0);
+    token.content = id;
+    token.meta = { id };
+
+    return true;
+  });
+
+  // 添加脚注引用的渲染规则
+  md.renderer.rules.footnote_ref = function(tokens, idx) {
+    const id = tokens[idx].meta.id;
+    return `<sup id="fnref-${id}"><a href="#fn-${id}" class="footnote-ref">[${id}]</a></sup>`;
+  };
+}
+// 添加任务列表支持
+const taskLists = (md) => {
+  // 匹配任务列表项 [ ], [x], [X]
+  const taskListRegex = /^\[([ xX])\]\s+/;
+
+  // 修改列表项渲染
+  const originalListItemRender = md.renderer.rules.list_item_open || function(tokens, idx, options, env, self) {
+    return self.renderToken(tokens, idx, options);
+  };
+
+  md.renderer.rules.list_item_open = function(tokens, idx, options, env, self) {
+    const token = tokens[idx];
+    const nextToken = tokens[idx + 1];
+
+    // 检查是否是任务列表项
+    if (nextToken && nextToken.type === 'inline' && nextToken.content.match(taskListRegex)) {
+      // 添加任务列表类
+      token.attrSet('class', (token.attrGet('class') || '') + ' task-list-item');
+
+      // 修改内容，将 [ ] 或 [x] 替换为复选框
+      const match = nextToken.content.match(taskListRegex);
+      const checked = match[1] !== ' ';
+
+      // 替换内容
+      nextToken.content = nextToken.content.replace(
+        taskListRegex,
+        `<input type="checkbox" class="task-list-item-checkbox" ${checked ? 'checked' : ''} disabled> `
+      );
+
+      // 将父列表标记为任务列表
+      let parentToken = null;
+      for (let i = idx - 1; i >= 0; i--) {
+        if (tokens[i].type === 'bullet_list_open' || tokens[i].type === 'ordered_list_open') {
+          parentToken = tokens[i];
+          break;
+        }
+      }
+
+      if (parentToken) {
+        parentToken.attrSet('class', (parentToken.attrGet('class') || '') + ' task-list');
+      }
+    }
+
+    return originalListItemRender(tokens, idx, options, env, self);
+  };
+}
+
 /**
  * 创建并配置Markdown渲染器
  * @returns {Object} 包含渲染函数和Markdown实例的对象
@@ -102,6 +235,48 @@ export function useMarkdownRenderer() {
       return originalHeadingRender(tokens, idx, options, env, self);
     };
   })
+
+  // 增强列表渲染
+  md.use(function(md) {
+    // 增强无序列表开始标签
+    const originalBulletListOpen = md.renderer.rules.bullet_list_open || function(tokens, idx, options, env, self) {
+      return self.renderToken(tokens, idx, options);
+    };
+
+    md.renderer.rules.bullet_list_open = function(tokens, idx, options, env, self) {
+      const token = tokens[idx];
+      token.attrSet('class', (token.attrGet('class') || '') + ' md-list md-bullet-list');
+      return originalBulletListOpen(tokens, idx, options, env, self);
+    };
+
+    // 增强有序列表开始标签
+    const originalOrderedListOpen = md.renderer.rules.ordered_list_open || function(tokens, idx, options, env, self) {
+      return self.renderToken(tokens, idx, options);
+    };
+
+    md.renderer.rules.ordered_list_open = function(tokens, idx, options, env, self) {
+      const token = tokens[idx];
+      token.attrSet('class', (token.attrGet('class') || '') + ' md-list md-ordered-list');
+      return originalOrderedListOpen(tokens, idx, options, env, self);
+    };
+
+    // 增强列表项开始标签
+    const originalListItemOpen = md.renderer.rules.list_item_open || function(tokens, idx, options, env, self) {
+      return self.renderToken(tokens, idx, options);
+    };
+
+    md.renderer.rules.list_item_open = function(tokens, idx, options, env, self) {
+      const token = tokens[idx];
+      token.attrSet('class', (token.attrGet('class') || '') + ' md-list-item');
+      return originalListItemOpen(tokens, idx, options, env, self);
+    };
+  })
+
+  // 添加任务列表支持
+  md.use(taskLists)
+
+  // 添加脚注支持
+  md.use(footnote)
 
   /**
    * 渲染Markdown内容

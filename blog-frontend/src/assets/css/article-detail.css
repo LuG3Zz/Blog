@@ -45,5 +45,355 @@
   display: block;
   width: 100%;
   overflow-x: auto;
-  margin: 1em 0;
+  margin: 1.5em 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  font-size: 0.9em;
+}
+
+.article-content table th {
+  background-color: rgba(0, 0, 0, 0.05);
+  font-weight: 600;
+  text-align: left;
+  padding: 0.75em 1em;
+  border: 1px solid #e2e8f0;
+}
+
+.article-content table td {
+  padding: 0.75em 1em;
+  border: 1px solid #e2e8f0;
+  vertical-align: top;
+}
+
+.article-content table tr:nth-child(even) {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* 暗黑模式表格样式 */
+.dark .article-content table th {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: #4a5568;
+}
+
+.dark .article-content table td {
+  border-color: #4a5568;
+}
+
+.dark .article-content table tr:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* 确保列表正确显示 */
+.article-content ul,
+.article-content ol {
+  position: static !important;
+  display: block !important;
+  margin-top: 1.25em !important;
+  margin-bottom: 1.25em !important;
+  padding-left: 2em !important;
+  list-style-position: outside !important;
+  list-style: initial !important; /* 重置列表样式 */
+}
+
+.article-content ul {
+  list-style-type: disc !important;
+  list-style: disc outside !important; /* 明确指定列表样式和位置 */
+}
+
+.article-content ol {
+  list-style-type: decimal !important;
+  list-style: decimal outside !important; /* 明确指定列表样式和位置 */
+}
+
+.article-content li {
+  position: static !important;
+  display: list-item !important;
+  margin-top: 0.5em !important;
+  margin-bottom: 0.5em !important;
+  line-height: 1.8 !important;
+  list-style: inherit !important; /* 继承父元素的列表样式 */
+}
+
+/* 嵌套列表样式 */
+.article-content ul ul,
+.article-content ol ul {
+  list-style-type: circle !important;
+  list-style: circle outside !important; /* 明确指定列表样式和位置 */
+  margin-top: 0.5em !important;
+  margin-bottom: 0.5em !important;
+}
+
+.article-content ul ol,
+.article-content ol ol {
+  list-style-type: lower-alpha !important;
+  list-style: lower-alpha outside !important; /* 明确指定列表样式和位置 */
+  margin-top: 0.5em !important;
+  margin-bottom: 0.5em !important;
+}
+
+/* 确保列表项内的段落有正确的间距 */
+.article-content li > p {
+  margin-top: 0.5em !important;
+  margin-bottom: 0.5em !important;
+}
+
+/* 确保列表项内的代码块有正确的间距 */
+.article-content li > pre {
+  margin-top: 0.5em !important;
+  margin-bottom: 0.5em !important;
+}
+
+/* 覆盖全局样式对文章内容中段落的影响 */
+.article-content p {
+  text-transform: none !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+  line-height: 1.8 !important;
+}
+
+/* 覆盖全局样式对文章内容中列表项的影响 */
+.article-content li p {
+  text-transform: none !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+  padding: 0 !important;
+}
+
+/* 为markdown-it自定义列表类添加样式 */
+.article-content .md-list {
+  position: static !important;
+  display: block !important;
+  margin-top: 1.25em !important;
+  margin-bottom: 1.25em !important;
+  padding-left: 2em !important;
+  list-style-position: outside !important;
+  list-style: initial !important; /* 重置列表样式 */
+}
+
+.article-content .md-bullet-list {
+  list-style-type: disc !important;
+  list-style: disc outside !important; /* 明确指定列表样式和位置 */
+}
+
+.article-content .md-ordered-list {
+  list-style-type: decimal !important;
+  list-style: decimal outside !important; /* 明确指定列表样式和位置 */
+}
+
+.article-content .md-list-item {
+  position: static !important;
+  display: list-item !important;
+  margin-top: 0.5em !important;
+  margin-bottom: 0.5em !important;
+  line-height: 1.8 !important;
+  list-style: inherit !important; /* 继承父元素的列表样式 */
+}
+
+/* 强制显示列表标识 */
+.article-content ul::before,
+.article-content ol::before {
+  content: none !important; /* 防止伪元素干扰列表标识 */
+}
+
+.article-content ul li::before,
+.article-content ol li::before {
+  content: none !important; /* 防止伪元素干扰列表标识 */
+}
+
+/* 修复可能的列表样式问题 */
+.article-content ul li,
+.article-content ol li {
+  text-indent: 0 !important; /* 确保文本不会缩进 */
+  position: relative !important; /* 确保相对定位 */
+}
+
+/* 确保列表项内容不会被覆盖 */
+.article-content li > * {
+  position: relative !important; /* 确保相对定位 */
+  z-index: 1 !important; /* 确保内容在上层 */
+}
+
+/* 特殊修复：覆盖全局样式中的 * 选择器对列表的影响 */
+.article-content {
+  counter-reset: list-counter;
+}
+
+.article-content ul,
+.article-content ol {
+  all: revert !important; /* 重置所有属性为默认值 */
+  margin-top: 1.25em !important;
+  margin-bottom: 1.25em !important;
+  padding-left: 2em !important;
+}
+
+.article-content ul {
+  list-style: disc outside !important;
+}
+
+.article-content ol {
+  list-style: decimal outside !important;
+}
+
+.article-content li {
+  all: revert !important; /* 重置所有属性为默认值 */
+  display: list-item !important;
+  margin-top: 0.5em !important;
+  margin-bottom: 0.5em !important;
+}
+
+/* 任务列表样式 */
+.article-content .task-list {
+  list-style-type: none !important;
+  padding-left: 1.5em !important;
+}
+
+.article-content .task-list-item {
+  list-style-type: none !important;
+  position: relative !important;
+  padding-left: 0.5em !important;
+  margin-left: 0 !important;
+}
+
+.article-content .task-list-item-checkbox {
+  position: relative !important;
+  margin-right: 0.5em !important;
+  vertical-align: middle !important;
+  appearance: auto !important;
+  -webkit-appearance: checkbox !important;
+  -moz-appearance: checkbox !important;
+  width: 1em !important;
+  height: 1em !important;
+  cursor: default !important;
+}
+
+/* 引用块样式增强 */
+.article-content blockquote {
+  position: relative !important;
+  margin: 1.5em 0 !important;
+  padding: 1em 1.5em !important;
+  border-left: 4px solid #3b82f6 !important; /* 蓝色边框 */
+  background-color: rgba(59, 130, 246, 0.05) !important;
+  border-radius: 0 0.375rem 0.375rem 0 !important;
+  font-style: italic !important;
+  color: #4b5563 !important;
+}
+
+.article-content blockquote::before {
+  content: '"' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0.5em !important;
+  font-size: 2em !important;
+  color: rgba(59, 130, 246, 0.2) !important;
+  font-family: Georgia, serif !important;
+  line-height: 1 !important;
+}
+
+.article-content blockquote p {
+  margin: 0.5em 0 !important;
+}
+
+.article-content blockquote p:first-child {
+  margin-top: 0 !important;
+}
+
+.article-content blockquote p:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* 暗黑模式引用块样式 */
+.dark .article-content blockquote {
+  border-left-color: #60a5fa !important; /* 亮蓝色边框 */
+  background-color: rgba(96, 165, 250, 0.05) !important;
+  color: #e2e8f0 !important;
+}
+
+.dark .article-content blockquote::before {
+  color: rgba(96, 165, 250, 0.2) !important;
+}
+
+/* 水平线样式增强 */
+.article-content hr {
+  height: 0 !important;
+  border: none !important;
+  border-top: 2px solid rgba(0, 0, 0, 0.1) !important;
+  margin: 2em 0 !important;
+  position: relative !important;
+  overflow: visible !important;
+}
+
+.article-content hr::before {
+  content: '§' !important;
+  display: inline-block !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  padding: 0 0.5em !important;
+  background-color: #fff !important;
+  color: #9ca3af !important;
+  font-size: 1.25em !important;
+  line-height: 1 !important;
+}
+
+/* 暗黑模式水平线样式 */
+.dark .article-content hr {
+  border-top-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark .article-content hr::before {
+  background-color: #1f2937 !important;
+  color: #6b7280 !important;
+}
+
+/* 脚注样式 */
+.article-content .footnotes {
+  margin-top: 3em !important;
+  font-size: 0.9em !important;
+  color: #6b7280 !important;
+}
+
+.article-content .footnotes hr {
+  margin: 1em 0 !important;
+}
+
+.article-content .footnotes hr::before {
+  content: none !important;
+}
+
+.article-content .footnotes ol {
+  padding-left: 2em !important;
+}
+
+.article-content .footnotes li {
+  margin-bottom: 0.5em !important;
+}
+
+.article-content .footnotes p {
+  display: inline !important;
+  margin: 0 !important;
+}
+
+.article-content .footnote-ref {
+  font-size: 0.8em !important;
+  text-decoration: none !important;
+  color: #3b82f6 !important;
+  vertical-align: super !important;
+  margin: 0 0.2em !important;
+}
+
+.article-content .footnote-backref {
+  text-decoration: none !important;
+  color: #3b82f6 !important;
+  margin-left: 0.3em !important;
+}
+
+/* 暗黑模式脚注样式 */
+.dark .article-content .footnotes {
+  color: #9ca3af !important;
+}
+
+.dark .article-content .footnote-ref,
+.dark .article-content .footnote-backref {
+  color: #60a5fa !important;
 }

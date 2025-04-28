@@ -224,7 +224,14 @@
               </span>
             </div>
           </div>
-          <div id="vditor" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden shadow-sm" style="height: 600px;"></div>
+          <div class="relative">
+            <div id="vditor" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden shadow-sm" style="height: 600px;"></div>
+
+            <!-- 编辑器加载动画覆盖层 -->
+            <div v-if="isLoading" class="absolute inset-0 bg-white dark:bg-gray-800 bg-opacity-90 dark:bg-opacity-90 flex items-center justify-center z-10 rounded-lg">
+              <LoadingSpinner message="正在加载编辑器和文章内容..." />
+            </div>
+          </div>
         </div>
 
         <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
@@ -265,12 +272,14 @@ import "vditor/dist/index.css"
 import { API_BASE_URL } from '@/config'
 import Modal from '@/components/common/Modal.vue'
 import FileSelector from '@/components/admin/FileSelector.vue'
+import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 
 export default {
   name: 'ArticleEdit',
   components: {
     Modal,
-    FileSelector
+    FileSelector,
+    LoadingSpinner
   },
   setup() {
     const router = useRouter()
@@ -310,6 +319,8 @@ export default {
     const isUploading = ref(false)
     // 文章保存加载状态
     const isSaving = ref(false)
+    // 文章内容加载状态
+    const isLoading = ref(false)
 
     // 判断是编辑还是新增模式
     const isEdit = computed(() => {
@@ -337,6 +348,9 @@ export default {
 
     // 如果是编辑模式，加载文章数据
     const loadPostData = async () => {
+      // 设置加载状态为true
+      isLoading.value = true;
+
       if (isEdit.value && route.query.id) {
         try {
           // 调用API获取文章详情
@@ -397,6 +411,9 @@ export default {
         // 清空标签
         tags.value = []
       }
+
+      // 延迟一点时间再关闭加载状态，确保编辑器有时间初始化
+      // 实际加载状态会在initVditor完成后关闭
     }
 
     // 获取所有标签
@@ -448,6 +465,9 @@ export default {
     // 初始化Vditor编辑器
     const initVditor = () => {
       console.log('初始化Vditor编辑器...');
+
+      // 确保加载状态为true
+      isLoading.value = true;
 
       // 如果已经存在实例，先销毁
       if (vditor.value) {
@@ -595,6 +615,9 @@ export default {
                           console.log('切换模式按钮被点击');
                           console.log('当前模式:', currentMode.value);
 
+                          // 显示加载状态
+                          isLoading.value = true;
+
                           // 切换编辑模式
                           const modes = ['ir', 'wysiwyg', 'sv'];
                           const currentIndex = modes.indexOf(currentMode.value);
@@ -637,6 +660,8 @@ export default {
                         } catch (error) {
                           console.error('切换模式时发生错误:', error);
                           message.error(`切换模式失败: ${error.message}`);
+                          // 出错时也要关闭加载状态
+                          isLoading.value = false;
                         }
                       }
                     },
@@ -699,6 +724,12 @@ export default {
           if (currentPost.value.content) {
             vditor.value.setValue(currentPost.value.content)
           }
+
+          // 内容加载完成后，关闭加载状态
+          setTimeout(() => {
+            isLoading.value = false;
+            console.log('编辑器内容加载完成，关闭加载状态');
+          }, 500); // 延迟500ms确保内容渲染完成
         }
       })
     }
@@ -945,6 +976,12 @@ export default {
       showFileSelector.value = true
     }
 
+    // 打开文件选择器用于编辑器插入图片
+    const openFileSelectorForEditor = () => {
+      fileSelectorMode.value = 'editor'
+      showFileSelector.value = true
+    }
+
     // 处理从文件管理器选择的图片
     const handleFileSelected = (file) => {
       if (!file) return
@@ -1013,12 +1050,14 @@ export default {
       handleAIAssist,
       isUploading,
       isSaving,
+      isLoading,
       handleCoverImageUpload,
       removeCoverImage,
       // 文件选择器相关
       showFileSelector,
       handleFileSelected,
       openFileSelectorForCover,
+      openFileSelectorForEditor,
       // 编辑器模式
       currentMode
     }
