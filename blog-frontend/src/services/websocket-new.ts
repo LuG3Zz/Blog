@@ -1,68 +1,93 @@
 /**
- * WebSocket 服务
- * 处理与后端 WebSocket 连接和消息
+ * WebSocket服务
+ * 提供WebSocket连接、消息发送和接收功能
  */
+import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { useUserStore } from '@/stores/user';
+import { WEBSOCKET } from '@/config';
 
-import { ref, onMounted, onUnmounted, watch } from 'vue';
-import { useUserStore } from '@/stores';
-import { API_BASE_URL, WEBSOCKET } from '@/config';
-
-// WebSocket 连接状态
-export const enum WebSocketStatus {
+// WebSocket连接状态枚举
+export enum WebSocketStatus {
   CONNECTING = 0,
   OPEN = 1,
   CLOSING = 2,
-  CLOSED = 3,
+  CLOSED = 3
 }
 
-// WebSocket 消息类型
-export const enum MessageType {
+// WebSocket连接状态描述
+export const WebSocketStatusText = {
+  [WebSocketStatus.CONNECTING]: '正在连接',
+  [WebSocketStatus.OPEN]: '已连接',
+  [WebSocketStatus.CLOSING]: '正在关闭',
+  [WebSocketStatus.CLOSED]: '未连接'
+}
+
+// 消息类型
+export enum MessageType {
+  NOTIFICATION = 'notification',
+  SYSTEM = 'system',
+  AUTH = 'auth',
+  ANONYMOUS_BROWSING = 'anonymous_browsing',
+  USER_LOGOUT = 'user_logout',
+  USER_LEAVE = 'user_leave',
+  ANONYMOUS_LEAVE = 'anonymous_leave',
   USER_ONLINE = 'user_online',
   USER_OFFLINE = 'user_offline',
-  NOTIFICATION = 'notification',
-  ADMIN_NOTIFICATION = 'admin_notification',
+  ADMIN_NOTIFICATION = 'admin_notification'
 }
 
-// WebSocket 消息接口
+// WebSocket消息接口
 export interface WebSocketMessage {
-  type: MessageType;
+  type: string;
   data: any;
 }
 
-// 用户在线消息接口
+// 用户上线/下线消息接口
 export interface UserOnlineMessage {
   user_id: string;
   username: string;
-  avatar?: string | null;
-  is_admin?: boolean;
+  avatar?: string;
   timestamp?: string;
 }
 
-// 通知消息接口
+// 系统通知消息接口
 export interface NotificationMessage {
-  title: string;
+  title?: string;
   content: string;
-  level: 'info' | 'success' | 'warning' | 'error';
-  timestamp: string;
+  level?: string;
+  timestamp?: string;
 }
 
 // 管理员通知消息接口
 export interface AdminNotificationMessage {
-  title: string;
+  title?: string;
   content: string;
-  level: 'info' | 'success' | 'warning' | 'error';
-  timestamp: string;
+  level?: string;
+  admin_id?: string;
+  admin_name?: string;
+  timestamp?: string;
 }
 
-// 创建 WebSocket 服务
-export function useWebSocket() {
+/**
+ * 使用WebSocket的Hook
+ * @param token 用户令牌
+ * @param maxReconnectAttempts 最大重连次数
+ * @param reconnectInterval 重连间隔（毫秒）
+ * @returns WebSocket相关方法和状态
+ */
+export function useWebSocket(
+  token?: string,
+  maxReconnectAttempts = WEBSOCKET.MAX_RECONNECT_ATTEMPTS,
+  reconnectInterval = WEBSOCKET.RECONNECT_INTERVAL
+) {
+  // WebSocket实例
   const socket = ref<WebSocket | null>(null);
+  // 连接状态
   const status = ref<WebSocketStatus>(WebSocketStatus.CLOSED);
+  // 错误信息
   const error = ref<string | null>(null);
-  const reconnectAttempts = ref(0);
-  const maxReconnectAttempts = WEBSOCKET.MAX_RECONNECT_ATTEMPTS;
-  const reconnectInterval = WEBSOCKET.RECONNECT_INTERVAL;
-
+  // 重连尝试次数
+  const reconnectAttempts = ref<number>(0);
   // 消息处理器
   const messageHandlers = new Map<MessageType, ((data: any) => void)[]>();
 
@@ -85,49 +110,34 @@ export function useWebSocket() {
     }
   };
 
-  // 连接 WebSocket
+  // 连接WebSocket
   const connect = () => {
-    // 检查用户是否已登录
-    const token = localStorage.getItem('token');
-    if (!token) {
-      console.warn('WebSocket: 用户未登录，无法连接 WebSocket');
+    // 如果已经连接，则不再重复连接
+    if (socket.value && [WebSocketStatus.OPEN, WebSocketStatus.CONNECTING].includes(status.value)) {
       return;
     }
 
-    // 关闭现有连接
-    if (socket.value && [WebSocketStatus.OPEN, WebSocketStatus.CONNECTING].includes(status.value as WebSocketStatus)) {
-      socket.value.close();
-    }
-
-    // 创建 WebSocket 连接
+    // 创建WebSocket连接
     try {
-      // 构建 WebSocket URL
-      // 在开发环境中，使用相对路径，让Vite代理处理
-      // 在生产环境中，使用完整URL
-      let wsUrl = '';
-
-      if (API_BASE_URL) {
-        // 生产环境：使用完整URL
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        wsUrl = API_BASE_URL.replace(/^https?:/, wsProtocol) + WEBSOCKET.PATH;
-      } else {
-        // 开发环境：使用相对路径
-        wsUrl = WEBSOCKET.PATH;
-      }
+      // 构建WebSocket URL
+      // 使用完整的URL，包括协议、主机和路径
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsHost = window.location.hostname + (window.location.port ? ':' + window.location.port : '');
+      let wsUrl = `${wsProtocol}//${wsHost}/api/v1${WEBSOCKET.PATH}`;
 
       // 获取或创建匿名用户标识符
       const anonymousId = getOrCreateAnonymousId();
       let hasQueryParam = false;
 
-      // 如果认证方式为 URL，则在 URL 中添加 token
+      // 如果认证方式为URL，则在URL中添加token
       if (WEBSOCKET.AUTH_METHOD === 'url' && token) {
-        // 检查 token 是否已经包含 Bearer 前缀
+        // 检查token是否已经包含Bearer前缀
         let formattedToken = token;
         if (!token.trim().toLowerCase().startsWith('bearer ')) {
           formattedToken = `Bearer ${token}`;
         }
 
-        // 对 token 进行 URL 编码
+        // 对token进行URL编码
         const encodedToken = encodeURIComponent(formattedToken);
         wsUrl += `?${WEBSOCKET.AUTH_PARAM_NAME}=${encodedToken}`;
         hasQueryParam = true;
@@ -151,9 +161,9 @@ export function useWebSocket() {
         status.value = WebSocketStatus.OPEN;
         reconnectAttempts.value = 0;
 
-        // 如果认证方式为 message，则发送认证消息
+        // 如果认证方式为message，则发送认证消息
         if (WEBSOCKET.AUTH_METHOD === 'message' && token) {
-          // 检查 token 是否已经包含 Bearer 前缀
+          // 检查token是否已经包含Bearer前缀
           let formattedToken = token;
           if (!token.trim().toLowerCase().startsWith('bearer ')) {
             formattedToken = `Bearer ${token}`;
@@ -163,7 +173,6 @@ export function useWebSocket() {
         }
 
         // 发送匿名用户浏览消息
-        const anonymousId = getOrCreateAnonymousId();
         if (!token && anonymousId) {
           sendMessage('anonymous_browsing', {
             anonymous_id: anonymousId,
@@ -217,8 +226,6 @@ export function useWebSocket() {
     }
   };
 
-  // 发送消息的通用方法
-
   // 发送消息
   const sendMessage = (type: string, data: any) => {
     if (socket.value && status.value === WebSocketStatus.OPEN) {
@@ -239,7 +246,20 @@ export function useWebSocket() {
     }
   };
 
-  // 组件挂载时连接 WebSocket
+  // 获取或创建匿名用户标识符
+  const getOrCreateAnonymousId = () => {
+    let anonymousId = localStorage.getItem('anonymousId');
+
+    // 如果不存在，创建一个新的匿名ID
+    if (!anonymousId) {
+      anonymousId = 'anonymous_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      localStorage.setItem('anonymousId', anonymousId);
+    }
+
+    return anonymousId;
+  };
+
+  // 组件挂载时连接WebSocket
   onMounted(() => {
     // 获取用户状态管理实例
     const userStore = useUserStore();
@@ -250,7 +270,6 @@ export function useWebSocket() {
     }
 
     // 监听用户登录状态变化
-    // 使用 watch 函数监听状态变化
     const stopWatch = watch(
       () => userStore.isLoggedIn,
       (isLoggedIn) => {
@@ -268,19 +287,6 @@ export function useWebSocket() {
     });
   });
 
-  // 获取或创建匿名用户标识符
-  const getOrCreateAnonymousId = () => {
-    let anonymousId = localStorage.getItem('anonymousId');
-
-    // 如果不存在，创建一个新的匿名 ID
-    if (!anonymousId) {
-      anonymousId = 'anonymous_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      localStorage.setItem('anonymousId', anonymousId);
-    }
-
-    return anonymousId;
-  };
-
   // 组件卸载时关闭连接
   onUnmounted(() => {
     disconnect();
@@ -297,13 +303,13 @@ export function useWebSocket() {
   };
 }
 
-// 创建全局 WebSocket 实例
+// 创建全局WebSocket实例
 export const webSocketService = {
   socket: null as WebSocket | null,
   status: WebSocketStatus.CLOSED,
   messageHandlers: new Map<MessageType, ((data: any) => void)[]>(),
 
-  // 初始化 WebSocket
+  // 初始化WebSocket
   init() {
     // 获取用户令牌（如果已登录）
     const token = localStorage.getItem('token');
@@ -315,32 +321,24 @@ export const webSocketService = {
       this.socket.close();
     }
 
-    // 创建 WebSocket 连接
+    // 创建WebSocket连接
     try {
-      // 构建 WebSocket URL
-      // 在开发环境中，使用相对路径，让Vite代理处理
-      // 在生产环境中，使用完整URL
-      let wsUrl = '';
-
-      if (API_BASE_URL) {
-        // 生产环境：使用完整URL
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        wsUrl = API_BASE_URL.replace(/^https?:/, wsProtocol) + WEBSOCKET.PATH;
-      } else {
-        // 开发环境：使用相对路径
-        wsUrl = WEBSOCKET.PATH;
-      }
+      // 构建WebSocket URL
+      // 使用完整的URL，包括协议、主机和路径
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsHost = window.location.hostname + (window.location.port ? ':' + window.location.port : '');
+      let wsUrl = `${wsProtocol}//${wsHost}/api/v1${WEBSOCKET.PATH}`;
       let hasQueryParam = false;
 
-      // 如果用户已登录且认证方式为 URL，则在 URL 中添加 token
+      // 如果用户已登录且认证方式为URL，则在URL中添加token
       if (WEBSOCKET.AUTH_METHOD === 'url' && token) {
-        // 检查 token 是否已经包含 Bearer 前缀
+        // 检查token是否已经包含Bearer前缀
         let formattedToken = token;
         if (!token.trim().toLowerCase().startsWith('bearer ')) {
           formattedToken = `Bearer ${token}`;
         }
 
-        // 对 token 进行 URL 编码
+        // 对token进行URL编码
         const encodedToken = encodeURIComponent(formattedToken);
         wsUrl += `?${WEBSOCKET.AUTH_PARAM_NAME}=${encodedToken}`;
         hasQueryParam = true;
@@ -362,9 +360,9 @@ export const webSocketService = {
         console.log('WebSocket: 连接已建立');
         this.status = WebSocketStatus.OPEN;
 
-        // 如果认证方式为 message，则发送认证消息
+        // 如果认证方式为message，则发送认证消息
         if (WEBSOCKET.AUTH_METHOD === 'message' && token) {
-          // 检查 token 是否已经包含 Bearer 前缀
+          // 检查token是否已经包含Bearer前缀
           let formattedToken = token;
           if (!token.trim().toLowerCase().startsWith('bearer ')) {
             formattedToken = `Bearer ${token}`;
@@ -416,8 +414,6 @@ export const webSocketService = {
     }
   },
 
-  // 发送消息的方法已在下面实现
-
   // 添加消息处理器
   addMessageHandler(type: MessageType, handler: (data: any) => void) {
     if (!this.messageHandlers.has(type)) {
@@ -461,7 +457,7 @@ export const webSocketService = {
   getOrCreateAnonymousId() {
     let anonymousId = localStorage.getItem('anonymousId');
 
-    // 如果不存在，创建一个新的匿名 ID
+    // 如果不存在，创建一个新的匿名ID
     if (!anonymousId) {
       anonymousId = 'anonymous_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
       localStorage.setItem('anonymousId', anonymousId);
@@ -471,20 +467,20 @@ export const webSocketService = {
   }
 };
 
-// 初始化全局 WebSocket 服务
+// 初始化全局WebSocket服务
 export function initWebSocketService() {
   // 获取用户状态管理实例
   const userStore = useUserStore();
 
-  // 无论用户是否登录，都初始化 WebSocket 连接
+  // 无论用户是否登录，都初始化WebSocket连接
   webSocketService.init();
 
-  // 使用 watch 监听用户登录状态变化
+  // 使用watch监听用户登录状态变化
   watch(
     () => userStore.isLoggedIn,
     (isLoggedIn) => {
       if (isLoggedIn && (!webSocketService.socket || webSocketService.status === WebSocketStatus.CLOSED)) {
-        // 用户登录时，重新连接 WebSocket，使用登录凭证
+        // 用户登录时，重新连接WebSocket，使用登录凭证
         webSocketService.init();
       } else if (!isLoggedIn && webSocketService.socket) {
         // 用户登出时，发送登出消息后断开连接

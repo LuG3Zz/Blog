@@ -22,7 +22,7 @@
 import { computed, onMounted } from 'vue';
 import UserStatusNotification from './UserStatusNotification.vue';
 import { notificationService, initNotificationService, Notification, NotificationType, NotificationLevel } from '@/services/notification';
-import { initWebSocketService } from '@/services/websocket';
+import { initWebSocketService } from '@/services/websocket-new';
 
 // 获取活跃通知
 const activeNotifications = computed(() => {

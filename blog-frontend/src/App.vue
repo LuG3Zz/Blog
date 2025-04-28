@@ -4,28 +4,34 @@
     <Stick :initial-dark-mode="isDark" @update:dark-mode="updateDarkMode" />
     <NotificationContainer />
     <Toast />
+    <WebSocketStatusIndicator v-if="showWebSocketIndicator" />
   </div>
 </template>
 
 <script>
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, ref } from 'vue'
 import { useUserStore, useThemeStore } from './stores'
 import Stick from './components/ui/stick.vue'
 import NotificationContainer from './components/ui/NotificationContainer.vue'
 import Toast from './components/ui/Toast.vue'
-import { initWebSocketService } from './services/websocket'
+import WebSocketStatusIndicator from './components/ui/WebSocketStatusIndicator.vue'
+import { initWebSocketService } from './services/websocket-new'
 
 export default {
   name: 'App',
   components: {
     Stick,
     NotificationContainer,
-    Toast
+    Toast,
+    WebSocketStatusIndicator
   },
   setup() {
     // 获取状态管理实例
     const themeStore = useThemeStore()
     const userStore = useUserStore()
+
+    // 控制WebSocket状态指示器的显示
+    const showWebSocketIndicator = ref(true)
 
     // 初始化主题 (已在main.js中初始化)
     // themeStore.initTheme()
@@ -78,7 +84,8 @@ export default {
 
     return {
       isDark,
-      updateDarkMode
+      updateDarkMode,
+      showWebSocketIndicator
     }
   }
 }

@@ -4,6 +4,7 @@
  */
 
 import apiClient from '../core/apiClient';
+import { API_PATHS } from '../core/apiPaths';
 
 /**
  * 发送通知
@@ -15,7 +16,7 @@ import apiClient from '../core/apiClient';
  * @returns {Promise} 返回发送结果
  */
 export const sendNotification = (data) => {
-  return apiClient.post('/admin/notifications', data);
+  return apiClient.post(API_PATHS.WEBSOCKET.ADMIN_NOTIFICATIONS, data);
 };
 
 /**
@@ -23,7 +24,7 @@ export const sendNotification = (data) => {
  * @returns {Promise} 返回 WebSocket 状态信息
  */
 export const getWebSocketStatus = () => {
-  return apiClient.get('/ws/status');
+  return apiClient.get(API_PATHS.WEBSOCKET.STATUS);
 };
 
 export default {

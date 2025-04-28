@@ -5,8 +5,9 @@ from fastapi import HTTPException, status
 import json
 
 from app import models, schemas
-from app.core.security import get_password_hash, verify_password
+# 避免循环导入
 from app.utils.logging import get_logger
+from app.utils.password import get_password_hash, verify_password
 
 logger = get_logger(__name__)
 

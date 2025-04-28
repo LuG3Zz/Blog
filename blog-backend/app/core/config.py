@@ -49,6 +49,8 @@ class Settings(BaseSettings):
 
     # Database settings
     DATABASE_URL: str = os.getenv("DATABASE_URL", "mysql+pymysql://user:pass@localhost:3306/dbname?charset=utf8mb4")
+    SQL_ECHO: bool = os.getenv("SQL_ECHO", "False").lower() == "true"  # Log SQL queries
+    SQL_ECHO_POOL: bool = os.getenv("SQL_ECHO_POOL", "False").lower() == "true"  # Log connection pool events
 
     # External API settings
     OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")

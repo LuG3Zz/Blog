@@ -70,11 +70,8 @@ app.add_middleware(
 
 # Include all routers with API prefix
 for router in routers:
-    # WebSocket路由不使用API前缀
-    if router.tags and "websocket" in router.tags:
-        app.include_router(router)
-    else:
-        app.include_router(router, prefix=settings.API_V1_STR)
+    # 所有路由都使用API前缀
+    app.include_router(router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 async def root():
@@ -170,7 +167,7 @@ async def add_view_count(request: Request, call_next):
         # Match article detail page paths (with API prefix)
         api_prefix = settings.API_V1_STR
         article_id_match = re.match(f"{api_prefix}/articles/([0-9]+)$", path)
-        article_slug_match = re.match(f"{api_prefix}/articles/by-slug/([\w-]+)$", path)
+        article_slug_match = re.match(f"{api_prefix}/articles/by-slug/([\\w-]+)$", path)
 
         if article_id_match or article_slug_match:
             # Get visitor's real IP address
@@ -224,7 +221,11 @@ if __name__ == "__main__":
         port=port,
         reload=reload,
         workers=workers,
-        ws_ping_interval=20,  # 20秒发送一次ping
-        ws_ping_timeout=20,   # ping超时时间
-        ws_max_size=16777216  # WebSocket消息最大大小16MB
+        ws_ping_interval=10,    # 10秒发送一次ping，减少断连风险
+        ws_ping_timeout=10,     # ping超时时间，减少等待时间
+        ws_max_size=16777216,   # WebSocket消息最大大小16MB
+        log_level="info",       # 日志级别
+        timeout_keep_alive=5,   # 保持连接超时时间（秒）
+        limit_concurrency=1000, # 并发连接数限制
+        backlog=2048            # 连接队列大小
     )

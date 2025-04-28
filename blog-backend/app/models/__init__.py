@@ -9,6 +9,7 @@ from app.models.subscription import Notification
 from app.models.version import ArticleVersion
 from app.models.about import AboutPage
 from app.models.file import File
+from app.models.notification_history import NotificationHistory
 
 # Export all models
 __all__ = [
@@ -22,4 +23,5 @@ __all__ = [
     "ArticleVersion",
     "AboutPage",
     "File",
+    "NotificationHistory",
 ]

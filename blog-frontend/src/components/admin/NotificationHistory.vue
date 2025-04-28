@@ -62,7 +62,7 @@
         </div>
         <p class="mt-1 text-gray-600 dark:text-gray-400">{{ notification.content }}</p>
         <div class="mt-2 text-sm text-gray-500 dark:text-gray-500">
-          {{ formatTime(notification.timestamp) }}
+          {{ formatTime(notification.created_at) }}
         </div>
       </div>
     </div>
@@ -151,7 +151,7 @@ export default {
     // 清空所有通知
     const clearAllNotifications = async () => {
       if (!confirm('确定要清空所有通知历史吗？')) return;
-      
+
       try {
         await notificationHistoryApi.clearNotifications();
         message.success('清空成功');
@@ -164,7 +164,13 @@ export default {
 
     // 格式化时间
     const formatTime = (timestamp) => {
-      return formatDistanceToNow(new Date(timestamp), { addSuffix: true, locale: zhCN });
+      try {
+        if (!timestamp) return '未知时间';
+        return formatDistanceToNow(new Date(timestamp), { addSuffix: true, locale: zhCN });
+      } catch (error) {
+        console.error('格式化时间错误:', error, timestamp);
+        return '无效时间';
+      }
     };
 
     // 监听筛选条件变化

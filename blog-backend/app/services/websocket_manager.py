@@ -4,7 +4,7 @@ import json
 import asyncio
 from datetime import datetime
 from app.utils.logging import get_logger
-from starlette.websockets import WebSocketDisconnect
+from starlette.websockets import WebSocketDisconnect, WebSocketState
 
 logger = get_logger(__name__)
 
@@ -31,8 +31,12 @@ class ConnectionManager:
 
     async def connect(self, websocket: WebSocket, client_id: str, user_id: Optional[str] = None,
                      is_admin: bool = False, ip_address: str = None) -> bool:
-        """建立新的 WebSocket 连接"""
-        await websocket.accept()
+        """
+        将WebSocket连接添加到管理器
+
+        注意：此方法不再调用websocket.accept()，因为连接应该在调用此方法之前已经被接受
+        """
+        # 将连接添加到活跃连接映射
         self.active_connections[client_id] = websocket
 
         # 如果提供了用户ID，添加到用户连接映射
@@ -182,6 +186,13 @@ class ConnectionManager:
                 message = json.dumps(message, ensure_ascii=False)
 
             try:
+                # 检查WebSocket连接状态
+                if websocket.client_state == WebSocketState.DISCONNECTED:
+                    logger.warning(f"WebSocket已断开连接: client_id={client_id}")
+                    self.disconnect(client_id)
+                    return False
+
+                # 发送消息
                 await websocket.send_text(message)
                 return True
             except WebSocketDisconnect:
@@ -223,6 +234,13 @@ class ConnectionManager:
                 continue
 
             try:
+                # 检查WebSocket连接状态
+                if websocket.client_state == WebSocketState.DISCONNECTED:
+                    logger.warning(f"WebSocket已断开连接: client_id={client_id}")
+                    self.disconnect(client_id)
+                    continue
+
+                # 发送消息
                 await websocket.send_text(message)
                 sent_count += 1
             except Exception as e:

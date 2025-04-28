@@ -23,17 +23,20 @@ export default defineConfig(({ command, mode }) => {
     proxy: {
       // 使用通配符代理所有API请求到后端服务器
       // 代理带有API前缀的请求
-      '^/api/v1/(auth|users|articles|categories|comments|tags|search|stats|files|activities|admin|about)': {
+      '^/api/v1': {
         target: 'http://127.0.0.1:8000',
         //target: 'http://39.105.192.244:8000',
         changeOrigin: true,
         secure: true,
         // 设置转发的头部信息，保留客户端真实IP
-        headers: {
-          // 将客户端的IP传递给后端
-          'X-Forwarded-For': '${req.socket.remoteAddress}',
-          'X-Real-IP': '${req.socket.remoteAddress}',
-          'Forwarded': 'for=${req.socket.remoteAddress}'
+        headers: (req) => {
+          // 动态获取客户端IP
+          const clientIP = req.socket.remoteAddress || '127.0.0.1';
+          return {
+            'X-Forwarded-For': clientIP,
+            'X-Real-IP': clientIP,
+            'Forwarded': `for=${clientIP}`
+          };
         },
         // 支持 WebSocket
         ws: true,
@@ -42,20 +45,29 @@ export default defineConfig(({ command, mode }) => {
           proxy.on('error', (err) => {
             console.log('代理错误:', err);
           });
+          proxy.on('proxyReq', (proxyReq, req, res) => {
+            console.log('代理请求:', req.method, req.url);
+          });
+          proxy.on('proxyRes', (proxyRes, req, res) => {
+            console.log('代理响应:', proxyRes.statusCode, req.url);
+          });
         }
       },
       // WebSocket路径单独代理
-      '^/(ws|static)': {
+      '^/ws': {
         target: 'http://127.0.0.1:8000',
         //target: 'http://39.105.192.244:8000',
         changeOrigin: true,
         secure: true,
         // 设置转发的头部信息，保留客户端真实IP
-        headers: {
-          // 将客户端的IP传递给后端
-          'X-Forwarded-For': '${req.socket.remoteAddress}',
-          'X-Real-IP': '${req.socket.remoteAddress}',
-          'Forwarded': 'for=${req.socket.remoteAddress}'
+        headers: (req) => {
+          // 动态获取客户端IP
+          const clientIP = req.socket.remoteAddress || '127.0.0.1';
+          return {
+            'X-Forwarded-For': clientIP,
+            'X-Real-IP': clientIP,
+            'Forwarded': `for=${clientIP}`
+          };
         },
         // 支持 WebSocket
         ws: true,
@@ -63,6 +75,24 @@ export default defineConfig(({ command, mode }) => {
         configure: (proxy) => {
           proxy.on('error', (err) => {
             console.log('代理错误:', err);
+          });
+          proxy.on('proxyReq', (proxyReq, req, res) => {
+            console.log('代理请求:', req.method, req.url);
+          });
+          proxy.on('proxyRes', (proxyRes, req, res) => {
+            console.log('代理响应:', proxyRes.statusCode, req.url);
+          });
+        }
+      },
+      // 静态文件路径单独代理
+      '^/static': {
+        target: 'http://127.0.0.1:8000',
+        //target: 'http://39.105.192.244:8000',
+        changeOrigin: true,
+        secure: true,
+        configure: (proxy) => {
+          proxy.on('error', (err) => {
+            console.log('静态文件代理错误:', err);
           });
         }
       },

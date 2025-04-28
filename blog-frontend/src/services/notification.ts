@@ -4,7 +4,7 @@
  */
 
 import { ref, reactive } from 'vue';
-import { MessageType, UserOnlineMessage, NotificationMessage, AdminNotificationMessage, webSocketService } from './websocket';
+import { MessageType, UserOnlineMessage, NotificationMessage, AdminNotificationMessage, webSocketService } from './websocket-new';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale/zh-CN';
 

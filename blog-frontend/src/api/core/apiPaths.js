@@ -6,6 +6,9 @@
 // API 路径前缀
 const API_PREFIX = '/api/v1';  // 使用后端定义的API前缀
 
+// 导出API前缀，方便其他模块使用
+export const API_PREFIX_STR = API_PREFIX;
+
 // API 路径
 export const API_PATHS = {
   // 认证相关
@@ -108,6 +111,19 @@ export const API_PATHS = {
   // About页面相关
   ABOUT: {
     BASE: `${API_PREFIX}/about`,
+  },
+
+  // WebSocket相关
+  WEBSOCKET: {
+    ADMIN_NOTIFICATIONS: `${API_PREFIX}/ws/admin/notifications`,
+    STATUS: `${API_PREFIX}/ws/status`,
+  },
+
+  // 通知历史相关
+  NOTIFICATION_HISTORY: {
+    BASE: `${API_PREFIX}/notifications/history`,
+    BY_ID: (id) => `${API_PREFIX}/notifications/${id}`,
+    CLEAR_ALL: `${API_PREFIX}/notifications/all`,
   },
 };
 
