@@ -5,6 +5,14 @@
 import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { useUserStore } from '@/stores/user';
 import { WEBSOCKET } from '@/config';
+import { eventBus } from '@/utils/eventBus';
+
+// 扩展Window接口，添加webSocketInitialized属性
+declare global {
+  interface Window {
+    webSocketInitialized?: boolean;
+  }
+}
 
 // WebSocket连接状态枚举
 export enum WebSocketStatus {
@@ -26,6 +34,7 @@ export const WebSocketStatusText = {
 export enum MessageType {
   NOTIFICATION = 'notification',
   SYSTEM = 'system',
+  SYSTEM_NOTIFICATION = 'system_notification',
   AUTH = 'auth',
   ANONYMOUS_BROWSING = 'anonymous_browsing',
   USER_LOGOUT = 'user_logout',
@@ -33,7 +42,10 @@ export enum MessageType {
   ANONYMOUS_LEAVE = 'anonymous_leave',
   USER_ONLINE = 'user_online',
   USER_OFFLINE = 'user_offline',
-  ADMIN_NOTIFICATION = 'admin_notification'
+  ADMIN_NOTIFICATION = 'admin_notification',
+  WELCOME = 'welcome',
+  PING = 'ping',
+  PONG = 'pong'
 }
 
 // WebSocket消息接口
@@ -65,6 +77,14 @@ export interface AdminNotificationMessage {
   level?: string;
   admin_id?: string;
   admin_name?: string;
+  timestamp?: string;
+}
+
+// 欢迎消息接口
+export interface WelcomeMessage {
+  title?: string;
+  content: string;
+  ip_location?: string;
   timestamp?: string;
 }
 
@@ -261,6 +281,12 @@ export function useWebSocket(
 
   // 组件挂载时连接WebSocket
   onMounted(() => {
+    // 如果全局WebSocket已初始化，则不再创建新的连接
+    if (window.webSocketInitialized) {
+      console.log('全局WebSocket已初始化，组件不再创建新的连接');
+      return;
+    }
+
     // 获取用户状态管理实例
     const userStore = useUserStore();
 
@@ -316,10 +342,23 @@ export const webSocketService = {
     // 获取或生成匿名用户标识符
     const anonymousId = this.getOrCreateAnonymousId();
 
+    console.log('初始化WebSocket连接，用户状态:', token ? '已登录' : '匿名用户');
+
     // 关闭现有连接
     if (this.socket && [WebSocketStatus.OPEN, WebSocketStatus.CONNECTING].includes(this.status)) {
+      console.log('关闭现有WebSocket连接');
       this.socket.close();
+      // 等待一段时间，确保连接完全关闭
+      setTimeout(() => this._createConnection(token, anonymousId), 500);
+      return;
     }
+
+    // 创建新连接
+    this._createConnection(token, anonymousId);
+  },
+
+  // 创建WebSocket连接
+  _createConnection(token: string | null, anonymousId: string) {
 
     // 创建WebSocket连接
     try {
@@ -360,6 +399,9 @@ export const webSocketService = {
         console.log('WebSocket: 连接已建立');
         this.status = WebSocketStatus.OPEN;
 
+        // 触发一个自定义事件，通知其他组件WebSocket已连接
+        window.dispatchEvent(new CustomEvent('websocket-connected'));
+
         // 如果认证方式为message，则发送认证消息
         if (WEBSOCKET.AUTH_METHOD === 'message' && token) {
           // 检查token是否已经包含Bearer前缀
@@ -369,6 +411,7 @@ export const webSocketService = {
           }
 
           this.sendMessage('auth', { token: formattedToken });
+          console.log('已发送认证消息');
         }
 
         // 发送匿名用户浏览消息
@@ -380,7 +423,19 @@ export const webSocketService = {
             user_agent: navigator.userAgent,
             timestamp: new Date().toISOString()
           });
+          console.log('已发送匿名用户浏览消息');
         }
+
+        // 发送ping消息，确保连接活跃
+        this.sendMessage('ping', { timestamp: new Date().toISOString() });
+        console.log('已发送ping消息');
+
+        // 设置定时ping，保持连接活跃
+        setInterval(() => {
+          if (this.status === WebSocketStatus.OPEN) {
+            this.sendMessage('ping', { timestamp: new Date().toISOString() });
+          }
+        }, 30000); // 每30秒发送一次ping
       };
 
       // 接收消息时
@@ -392,7 +447,16 @@ export const webSocketService = {
           // 调用对应类型的消息处理器
           const handlers = this.messageHandlers.get(message.type as MessageType);
           if (handlers) {
-            handlers.forEach((handler: (data: any) => void) => handler(message.data));
+            console.log(`WebSocket: 找到 ${handlers.length} 个处理器，类型: ${message.type}`);
+            handlers.forEach((handler: (data: any) => void) => {
+              try {
+                handler(message.data);
+              } catch (handlerErr) {
+                console.error(`WebSocket: 处理器执行失败，类型: ${message.type}`, handlerErr);
+              }
+            });
+          } else {
+            console.warn(`WebSocket: 未找到处理器，类型: ${message.type}`);
           }
         } catch (err) {
           console.error('WebSocket: 解析消息失败', err);
@@ -469,11 +533,220 @@ export const webSocketService = {
 
 // 初始化全局WebSocket服务
 export function initWebSocketService() {
+  // 检查是否已经初始化
+  if (window.webSocketInitialized) {
+    console.log('WebSocket服务已经初始化，跳过重复初始化');
+    // 即使已初始化，也检查连接状态，如果未连接则重新连接
+    if (webSocketService.status === WebSocketStatus.CLOSED) {
+      console.log('WebSocket连接已关闭，尝试重新连接');
+      webSocketService.init();
+    }
+    return;
+  }
+
+  // 设置初始化标志，防止重复初始化
+  window.webSocketInitialized = true;
+
   // 获取用户状态管理实例
   const userStore = useUserStore();
 
+  // 注册消息处理器
+  webSocketService.addMessageHandler(MessageType.WELCOME, (data) => {
+    console.log('收到欢迎消息:', data);
+
+    // 存储欢迎消息，等待页面加载完成后显示
+    const showWelcomeMessage = () => {
+      // 检查是否有用户信息
+      if (data.user_id && data.username) {
+        // 已登录用户，使用用户头像
+        const description = data.content || '欢迎回来！';
+
+        eventBus.emit('notification', {
+          type: 'user_welcome',
+          name: data.username,
+          description: description,
+          icon: '👋',
+          color: '#4f46e5', // indigo-600
+          timestamp: new Date(data.timestamp || new Date().toISOString()),
+          avatar: data.avatar,
+          data,
+        });
+      } else {
+        // 匿名用户，使用系统图标
+        const description = data.content || '欢迎访问我的博客！';
+
+        eventBus.emit('notification', {
+          type: 'system',
+          name: data.title || '欢迎',
+          description: description,
+          icon: '✅',
+          color: '#16a34a', // green-600
+          timestamp: new Date(data.timestamp || new Date().toISOString()),
+          data,
+        });
+      }
+    };
+
+    // 检查页面是否已经加载完成
+    if (document.readyState === 'complete') {
+      // 页面已加载完成，延迟一小段时间再显示欢迎消息，确保所有组件都已渲染
+      setTimeout(showWelcomeMessage, 1000);
+    } else {
+      // 页面尚未加载完成，等待页面加载完成后再显示欢迎消息
+      window.addEventListener('load', () => {
+        // 页面加载完成后，延迟一小段时间再显示欢迎消息
+        setTimeout(showWelcomeMessage, 1000);
+      });
+    }
+  });
+
+  webSocketService.addMessageHandler(MessageType.SYSTEM_NOTIFICATION, (data) => {
+    console.log('收到系统通知:', data);
+
+    // 忽略WebSocket连接相关的系统通知
+    if (data.message && (
+        data.message.includes('WebSocket连接已初始化') ||
+        data.message.includes('WebSocket连接已建立') ||
+        data.message.includes('正在处理')
+    )) {
+      console.log('忽略WebSocket连接相关的系统通知');
+      return;
+    }
+
+    // 处理其他系统通知
+    eventBus.emit('notification', {
+      type: 'system',
+      name: '系统通知',
+      description: data.message || data.content || '系统通知',
+      icon: 'ℹ️',
+      color: '#0891b2', // cyan-600
+      timestamp: new Date(data.timestamp || new Date().toISOString()),
+      data,
+    });
+  });
+
+  webSocketService.addMessageHandler(MessageType.NOTIFICATION, (data) => {
+    console.log('收到通知:', data);
+    eventBus.emit('notification', {
+      type: 'system',
+      name: data.title || '通知',
+      description: data.content,
+      icon: data.level === 'error' ? '❌' : data.level === 'warning' ? '⚠️' : data.level === 'success' ? '✅' : 'ℹ️',
+      color: data.level === 'error' ? '#e11d48' : data.level === 'warning' ? '#ea580c' : data.level === 'success' ? '#16a34a' : '#0891b2',
+      timestamp: new Date(data.timestamp || new Date().toISOString()),
+      data,
+    });
+  });
+
+  webSocketService.addMessageHandler(MessageType.ADMIN_NOTIFICATION, (data) => {
+    console.log('收到管理员通知:', data);
+    eventBus.emit('notification', {
+      type: 'admin',
+      name: data.title || '管理员通知',
+      description: data.content,
+      icon: '💬',
+      color: '#0891b2', // cyan-600
+      timestamp: new Date(data.timestamp || new Date().toISOString()),
+      data,
+    });
+  });
+
+  webSocketService.addMessageHandler(MessageType.USER_ONLINE, (data) => {
+    console.log('收到用户上线消息:', data);
+    console.log('用户上线消息类型:', typeof data);
+    console.log('用户上线消息是否为匿名用户:', data.is_anonymous);
+
+    // 提取IP属地信息
+    const ipLocation = data.ip_location || '';
+    const username = data.original_username || data.username || '用户';
+    const isAnonymous = data.is_anonymous === true;
+
+    // 构建带有IP属地的描述
+    let description = `${username} 已上线`;
+    if (ipLocation) {
+      description = `${username} 已上线 (${ipLocation})`;
+    }
+
+    console.log(`准备显示用户上线通知: ${description}, 是否为匿名用户: ${isAnonymous}`);
+
+    // 创建显示通知的函数
+    const showNotification = () => {
+      console.log(`显示用户上线通知: ${description}, 是否为匿名用户: ${isAnonymous}`);
+
+      // 发送通知
+      const notification = {
+        type: isAnonymous ? 'anonymous_online' : 'user_online',
+        name: username,
+        description: description,
+        icon: '👋',
+        color: isAnonymous ? '#0891b2' : '#4f46e5', // 匿名用户使用青色，已登录用户使用靛蓝色
+        timestamp: new Date(data.timestamp || new Date().toISOString()),
+        avatar: data.avatar,
+        data,
+      };
+
+      console.log('发送用户上线通知到事件总线:', notification);
+      eventBus.emit('notification', notification);
+    };
+
+    // 检查页面是否已经加载完成
+    console.log(`当前页面加载状态: ${document.readyState}`);
+    if (document.readyState === 'complete') {
+      // 页面已加载完成，直接显示通知
+      console.log('页面已加载完成，直接显示通知');
+      showNotification();
+    } else {
+      // 页面尚未加载完成，等待页面加载完成后再显示通知
+      console.log('页面尚未加载完成，等待页面加载完成后再显示通知');
+      window.addEventListener('load', () => {
+        console.log('页面加载完成事件触发，显示通知');
+        showNotification();
+      });
+    }
+  });
+
+  webSocketService.addMessageHandler(MessageType.USER_OFFLINE, (data) => {
+    console.log('用户下线:', data);
+
+    // 提取IP属地信息
+    const ipLocation = data.ip_location || '';
+    const username = data.original_username || data.username || '用户';
+
+    // 构建带有IP属地的描述
+    let description = `${username} 已下线`;
+    if (ipLocation) {
+      description = `${username} 已下线 (${ipLocation})`;
+    }
+
+    // 创建显示通知的函数
+    const showNotification = () => {
+      // 发送通知
+      eventBus.emit('notification', {
+        type: 'user_offline',
+        name: username,
+        description: description,
+        icon: '👋',
+        color: '#7c3aed', // violet-600
+        timestamp: new Date(data.timestamp || new Date().toISOString()),
+        avatar: data.avatar,
+        data,
+      });
+    };
+
+    // 检查页面是否已经加载完成
+    if (document.readyState === 'complete') {
+      // 页面已加载完成，直接显示通知
+      showNotification();
+    } else {
+      // 页面尚未加载完成，等待页面加载完成后再显示通知
+      window.addEventListener('load', showNotification);
+    }
+  });
+
   // 无论用户是否登录，都初始化WebSocket连接
   webSocketService.init();
+
+  console.log('WebSocket服务初始化完成');
 
   // 使用watch监听用户登录状态变化
   watch(
@@ -482,16 +755,19 @@ export function initWebSocketService() {
       if (isLoggedIn && (!webSocketService.socket || webSocketService.status === WebSocketStatus.CLOSED)) {
         // 用户登录时，重新连接WebSocket，使用登录凭证
         webSocketService.init();
+        console.log('用户登录，重新连接WebSocket');
       } else if (!isLoggedIn && webSocketService.socket) {
         // 用户登出时，发送登出消息后断开连接
         if (webSocketService.status === WebSocketStatus.OPEN) {
           webSocketService.sendMessage('user_logout', {
             timestamp: new Date().toISOString()
           });
+          console.log('用户登出，发送登出消息');
         }
         // 断开连接后重新连接，使用匿名模式
         webSocketService.disconnect();
         setTimeout(() => webSocketService.init(), 500);
+        console.log('用户登出，断开连接后重新连接');
       }
     }
   );

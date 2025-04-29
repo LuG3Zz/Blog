@@ -1,6 +1,7 @@
 import json
 import uuid
 import time
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 from fastapi import APIRouter, WebSocket, Depends, HTTPException, Query, status
 from starlette.websockets import WebSocketDisconnect
@@ -16,12 +17,15 @@ from app.schemas.websocket import (
 )
 from app.services.user_service import UserService
 from app.core.database import get_db
-from app.core.security import get_current_user, get_current_admin_user
+from app.core import security
 from app.models.user import User
+from app.models.visitor import Visitor
 from app.utils.logging import get_logger
 from app.utils.ip_utils import get_client_ip
 from app.services.ip_location_service import IPLocationService
 from app.services.unified_cache_service import UnifiedCacheService
+from app.services.visitor_service import VisitorService
+from app import models
 
 logger = get_logger(__name__)
 router = APIRouter(tags=["websocket"], prefix="/ws")
@@ -54,27 +58,8 @@ async def websocket_endpoint(
     client_ip = get_client_ip(websocket)
     logger.debug(f"[性能] 获取客户端IP耗时: {(time.time() - start_time) * 1000:.2f}ms")
 
-    # 发送初始连接确认消息
-    try:
-        initial_message = {
-            "type": MessageType.SYSTEM_NOTIFICATION,
-            "data": {
-                "message": "WebSocket连接已初始化，正在处理...",
-                "client_id": client_id,
-                "status": "initializing"
-            }
-        }
-        await websocket.send_text(json.dumps(initial_message))
-    except Exception as e:
-        logger.error(f"发送初始连接确认消息失败: {str(e)}")
-        # 如果发送失败，可能是连接已断开，我们重新接受连接
-        try:
-            await websocket.accept()
-            await websocket.send_text(json.dumps(initial_message))
-            logger.info("重新接受连接并发送初始消息成功")
-        except Exception as e2:
-            logger.error(f"重新接受连接失败: {str(e2)}")
-            # 如果重新接受连接也失败，我们记录错误并继续，后续操作可能会失败
+    # 不再发送初始连接确认消息，只在日志中记录
+    logger.debug(f"WebSocket连接已初始化，client_id={client_id}")
 
     # 验证用户身份（如果提供了token）
     user_id = None
@@ -106,7 +91,7 @@ async def websocket_endpoint(
                 db = next(get_db())
                 db_start_time = time.time()
                 try:
-                    user = await get_current_user(token, db)
+                    user = await security.get_current_user(token, db)
                     if user:
                         user_id = str(user.id)
                         # 检查用户是否为管理员
@@ -137,35 +122,220 @@ async def websocket_endpoint(
     is_first_connection = await manager.connect(websocket, client_id, user_id, is_admin, client_ip)
     logger.debug(f"[性能] WebSocket连接管理耗时: {(time.time() - connect_start_time) * 1000:.2f}ms")
 
-    # 发送连接成功消息
-    try:
-        welcome_message = {
-            "type": MessageType.SYSTEM_NOTIFICATION,
-            "data": {
-                "message": "WebSocket连接已建立",
-                "client_id": client_id,
-                "user_id": user_id,
-                "is_admin": is_admin,
-                "ip_address": client_ip
-            }
-        }
-        await manager.send_personal_message(welcome_message, client_id)
-    except Exception as e:
-        logger.error(f"发送连接成功消息失败: {str(e)}")
-        # 如果发送失败，我们记录错误并继续，不影响后续操作
+    # 不再发送连接成功消息，只在日志中记录
+    logger.debug(f"WebSocket连接已建立，client_id={client_id}, user_id={user_id}, is_admin={is_admin}, ip_address={client_ip}")
 
     # 获取 IP 属地信息 (使用缓存)
     ip_start_time = time.time()
     ip_location = IPLocationService.get_location(client_ip)
+
+    # 发送欢迎消息（显示给用户）
+    try:
+        # 根据用户是否登录设置不同的欢迎消息
+        avatar = None
+        username = None
+
+        # 构建带有IP属地的欢迎消息
+        welcome_content = f"欢迎来自{ip_location}的朋友访问我的博客"
+
+        if user_id:
+            # 根据user_info的类型获取用户名和头像
+            if isinstance(user_info, dict):
+                username = user_info.get("username", "用户")
+                avatar = user_info.get("avatar")
+                welcome_content = f"欢迎来自{ip_location}的{username}回来！"
+            elif user_info:
+                if hasattr(user_info, 'username'):
+                    username = user_info.username
+                    welcome_content = f"欢迎来自{ip_location}的{username}回来！"
+                if hasattr(user_info, 'avatar'):
+                    avatar = user_info.avatar
+            else:
+                welcome_content = f"欢迎来自{ip_location}的朋友回来！"
+
+        welcome_message = {
+            "type": "welcome",
+            "data": {
+                "title": "欢迎访问",
+                "content": welcome_content,
+                "ip_location": ip_location,
+                "timestamp": datetime.now().isoformat(),
+                "avatar": avatar,
+                "username": username,
+                "user_id": user_id
+            }
+        }
+        await manager.send_personal_message(welcome_message, client_id)
+        logger.info(f"已发送欢迎消息: client_id={client_id}, user_id={user_id}")
+    except Exception as e:
+        logger.error(f"发送欢迎消息失败: {str(e)}")
+        # 如果发送失败，我们记录错误并继续，不影响后续操作
+
+    # 记录IP属地信息获取性能
     logger.debug(f"[性能] 获取IP属地信息耗时: {(time.time() - ip_start_time) * 1000:.2f}ms")
 
     # 记录总连接时间
     logger.info(f"[性能] WebSocket连接总耗时: {(time.time() - start_time) * 1000:.2f}ms")
 
+    # 记录访客信息（仅记录前端访问）
+    try:
+        # 获取请求头中的Referer和User-Agent
+        headers = dict(websocket.headers)
+        referer = headers.get("referer", "")
+        user_agent = headers.get("user-agent", "")
+
+        # 尝试获取用户信息（如果有）
+        user_id = None
+        user_info = None
+
+        # 从查询参数中获取token
+        token_param = websocket.query_params.get("token", "")
+        logger.info(f"查询参数中的token: {token_param}")
+
+        # 获取数据库连接
+        db = next(get_db())
+        try:
+            if token_param and token_param.startswith("bearer "):
+                token = token_param.replace("bearer ", "")
+                logger.info(f"处理后的token: {token[:10]}...")
+                try:
+                    user_info = await security.get_current_user_optional(token, db)
+                    logger.info(f"获取到的用户信息: {user_info}")
+                    if user_info:
+                        user_id = str(user_info.id)
+                        logger.info(f"从查询参数获取到用户信息: user_id={user_id}, username={user_info.username}")
+                    else:
+                        logger.warning(f"未能从token获取用户信息: {token[:10]}...")
+                except Exception as e:
+                    logger.warning(f"解析查询参数中的用户令牌失败: {e}")
+        finally:
+            db.close()
+
+        # 如果查询参数中没有token，尝试从header中获取
+        if not user_info:
+            auth_header = headers.get("authorization", "")
+            logger.info(f"Header中的authorization: {auth_header}")
+
+            # 获取数据库连接
+            db = next(get_db())
+            try:
+                if auth_header and auth_header.startswith("Bearer "):
+                    token = auth_header.replace("Bearer ", "")
+                    logger.info(f"处理后的header token: {token[:10]}...")
+                    try:
+                        user_info = await security.get_current_user_optional(token, db)
+                        logger.info(f"从header获取到的用户信息: {user_info}")
+                        if user_info:
+                            user_id = str(user_info.id)
+                            logger.info(f"从header获取到用户信息: user_id={user_id}, username={user_info.username}")
+                        else:
+                            logger.warning(f"未能从header token获取用户信息: {token[:10]}...")
+                    except Exception as e:
+                        logger.warning(f"解析header中的用户令牌失败: {e}")
+            finally:
+                db.close()
+
+        # 检查是否为前端访问（不是管理端）
+        is_frontend = True
+        if referer:
+            # 如果referer包含admin或manage，则认为是管理端访问
+            if "/admin" in referer or "/manage" in referer:
+                is_frontend = False
+
+        # 如果是前端访问，记录访客信息
+        if is_frontend:
+            # 从referer中提取访问路径
+            path = "/"
+            if referer:
+                try:
+                    from urllib.parse import urlparse
+                    parsed_url = urlparse(referer)
+                    path = parsed_url.path or "/"
+                except Exception as e:
+                    logger.error(f"解析Referer失败: {e}")
+
+            # 记录访客信息
+            db = next(get_db())
+            try:
+                # 检查是否已经记录过该IP的访问（30分钟内，不考虑路径）
+                # 使用UTC时间，因为数据库中的时间戳是UTC时间
+                recent_time = datetime.now(timezone.utc) - timedelta(minutes=30)
+
+                # 查询最近的访问记录，考虑IP地址和client_id
+                # 如果是已登录用户，则检查IP和用户ID的组合
+                if user_id:
+                    # 对于已登录用户，只检查IP和用户ID的组合，忽略client_id
+                    recent_visit = db.query(models.Visitor).filter(
+                        models.Visitor.ip_address == client_ip,
+                        models.Visitor.user_id == user_id,
+                        models.Visitor.visit_time >= recent_time
+                        # 不再检查client_id，允许同一用户在30分钟内多次连接但只记录一次
+                    ).first()
+                    logger.info(f"检查已登录用户的最近访问记录: IP={client_ip}, user_id={user_id}, client_id={client_id}, 结果={recent_visit is not None}")
+                else:
+                    # 如果是匿名用户，则只检查IP，忽略client_id
+                    recent_visit = db.query(models.Visitor).filter(
+                        models.Visitor.ip_address == client_ip,
+                        models.Visitor.user_id.is_(None),  # 确保是匿名用户的记录
+                        models.Visitor.visit_time >= recent_time
+                        # 不再检查client_id，允许同一IP在30分钟内多次连接但只记录一次
+                    ).first()
+                    logger.info(f"检查匿名用户的最近访问记录: IP={client_ip}, client_id={client_id}, 结果={recent_visit is not None}")
+
+                # 添加额外的日志，帮助调试
+                logger.info(f"访客记录检查结果: recent_visit={recent_visit}, user_id={user_id}, client_ip={client_ip}, client_id={client_id}")
+
+                # 如果没有最近的访问记录，则创建新记录
+                if not recent_visit:
+                    # 获取用户信息
+                    visitor_name = "访客"
+
+                    # 记录用户认证信息
+                    logger.info(f"WebSocket连接用户认证信息: user_id={user_id}, user_info={user_info}, client_id={client_id}")
+
+                    # 如果已经获取到了用户信息，直接使用
+                    if user_info:
+                        if hasattr(user_info, 'username'):
+                            visitor_name = user_info.username
+                        elif isinstance(user_info, dict) and 'username' in user_info:
+                            visitor_name = user_info['username']
+                        logger.info(f"使用已获取的用户信息: user_id={user_id}, username={visitor_name}, client_id={client_id}")
+                    # 如果只有user_id但没有user_info，从数据库获取
+                    elif user_id:
+                        try:
+                            user_db = db.query(User).filter(User.id == user_id).first()
+                            if user_db:
+                                visitor_name = user_db.username
+                                logger.info(f"从数据库获取用户信息: user_id={user_id}, username={visitor_name}, client_id={client_id}")
+                            else:
+                                logger.warning(f"未找到用户信息: user_id={user_id}, client_id={client_id}")
+                        except Exception as e:
+                            logger.error(f"获取用户信息失败: {e}, client_id={client_id}")
+
+                    # 创建访客记录
+                    visitor_record = VisitorService.create_visitor_record(
+                        db=db,
+                        ip_address=client_ip,
+                        path=path,
+                        user_agent_string=user_agent,
+                        referer=referer,
+                        visitor_name=visitor_name,
+                        user_id=user_id,
+                        client_id=client_id
+                    )
+                    logger.info(f"已记录WebSocket访客: IP={client_ip}, 用户={visitor_name}, IP属地={ip_location}, 记录ID={visitor_record.id}, client_id={client_id}")
+                else:
+                    logger.debug(f"跳过记录WebSocket访客（30分钟内已记录）: IP={client_ip}, 用户={recent_visit.visitor_name or '访客'}, client_id={client_id}, 最近记录ID={recent_visit.id}, 最近记录时间={recent_visit.visit_time}")
+            finally:
+                db.close()
+    except Exception as e:
+        logger.error(f"记录WebSocket访客失败: {e}", exc_info=True)
+
     # 如果是已登录用户且是该用户在该 IP 上的第一个连接，广播用户上线消息
     if user_id and is_first_connection and not manager.is_user_ip_notified(user_id, client_ip):
         # 使用已经获取的用户信息，避免再次查询数据库
         notify_start_time = time.time()
+        logger.info(f"准备发送用户上线通知: user_id={user_id}, client_ip={client_ip}, is_first_connection={is_first_connection}")
 
         if user_info:
             # 将用户名与 IP 属地信息拼接
@@ -173,12 +343,15 @@ async def websocket_endpoint(
             if isinstance(user_info, dict):
                 username = user_info.get("username", "用户")
                 avatar = user_info.get("avatar")
+                logger.info(f"用户信息(dict): username={username}, avatar={avatar}")
             else:
                 # 如果user_info是User对象
                 username = getattr(user_info, "username", "用户")
                 avatar = getattr(user_info, "avatar", None)
+                logger.info(f"用户信息(object): username={username}, avatar={avatar}")
 
             username_with_location = f"{username} 来自 {ip_location}"
+            logger.info(f"用户上线: {username_with_location}")
 
             online_message = UserOnlineMessage(
                 data={
@@ -188,40 +361,65 @@ async def websocket_endpoint(
                     "ip_location": ip_location,
                     "avatar": avatar,
                     "is_admin": is_admin,
-                    "is_anonymous": False
+                    "is_anonymous": False,
+                    "timestamp": datetime.now().isoformat()
                 }
             )
-            await manager.broadcast(online_message.model_dump(), exclude=client_id)
+
+            # 记录要发送的消息
+            logger.info(f"发送用户上线消息: {online_message.model_dump()}")
+
+            # 广播消息
+            sent_count = await manager.broadcast(online_message.model_dump(), exclude=client_id)
+            logger.info(f"用户上线消息已发送给 {sent_count} 个连接")
 
             # 标记该用户-IP 组合已发送过上线通知
             manager.mark_user_ip_notified(user_id, client_ip)
+            logger.info(f"已标记用户-IP组合已通知: {user_id}:{client_ip}")
 
             logger.debug(f"[性能] 发送用户上线通知耗时: {(time.time() - notify_start_time) * 1000:.2f}ms")
 
     # 如果是匿名用户且是该 IP 的第一个连接，广播匿名用户上线消息
-    elif not user_id and is_first_connection and not manager.is_anonymous_ip_notified(client_ip):
-        notify_start_time = time.time()
+    elif not user_id and is_first_connection:
+        # 检查是否已经发送过上线通知
+        is_notified = manager.is_anonymous_ip_notified(client_ip)
+        logger.info(f"匿名用户连接检查: client_ip={client_ip}, is_first_connection={is_first_connection}, is_notified={is_notified}")
 
-        # 创建匿名用户信息
-        visitor_name = f"访客 来自 {ip_location}"
+        if not is_notified:
+            notify_start_time = time.time()
+            logger.info(f"准备发送匿名用户上线通知: client_ip={client_ip}, is_first_connection={is_first_connection}")
 
-        online_message = UserOnlineMessage(
-            data={
-                "user_id": None,
-                "username": visitor_name,
-                "original_username": "访客",
-                "ip_location": ip_location,
-                "avatar": None,  # 匿名用户没有头像
-                "is_admin": False,
-                "is_anonymous": True
-            }
-        )
-        await manager.broadcast(online_message.model_dump(), exclude=client_id)
+            # 创建匿名用户信息
+            visitor_name = f"访客 来自 {ip_location}"
+            logger.info(f"匿名用户上线: {visitor_name}")
 
-        # 标记该 IP 地址已发送过上线通知
-        manager.mark_anonymous_ip_notified(client_ip)
+            online_message = UserOnlineMessage(
+                data={
+                    "user_id": None,
+                    "username": visitor_name,
+                    "original_username": "访客",
+                    "ip_location": ip_location,
+                    "avatar": None,  # 匿名用户没有头像
+                    "is_admin": False,
+                    "is_anonymous": True,
+                    "timestamp": datetime.now().isoformat()
+                }
+            )
 
-        logger.debug(f"[性能] 发送匿名用户上线通知耗时: {(time.time() - notify_start_time) * 1000:.2f}ms")
+            # 记录要发送的消息
+            logger.info(f"发送匿名用户上线消息: {online_message.model_dump()}")
+
+            # 广播消息
+            sent_count = await manager.broadcast(online_message.model_dump(), exclude=client_id)
+            logger.info(f"匿名用户上线消息已发送给 {sent_count} 个连接")
+
+            # 标记该 IP 地址已发送过上线通知
+            manager.mark_anonymous_ip_notified(client_ip)
+            logger.info(f"已标记匿名IP已通知: {client_ip}")
+
+            logger.debug(f"[性能] 发送匿名用户上线通知耗时: {(time.time() - notify_start_time) * 1000:.2f}ms")
+        else:
+            logger.info(f"匿名用户已经发送过上线通知，跳过: client_ip={client_ip}")
 
     try:
         # 消息处理循环
@@ -239,6 +437,21 @@ async def websocket_endpoint(
                     # 心跳检测
                     pong_message = PongMessage()
                     await manager.send_personal_message(pong_message.model_dump(), client_id)
+
+                elif message_type == MessageType.USER_LEAVE:
+                    # 用户离开（页面关闭）
+                    logger.info(f"用户离开消息: user_id={user_id}, client_id={client_id}")
+                    # 不需要特殊处理，WebSocket断开连接时会自动处理用户下线逻辑
+
+                elif message_type == MessageType.ANONYMOUS_LEAVE:
+                    # 匿名用户离开（页面关闭）
+                    logger.info(f"匿名用户离开消息: client_id={client_id}")
+                    # 不需要特殊处理，WebSocket断开连接时会自动处理用户下线逻辑
+
+                elif message_type == MessageType.USER_LOGOUT:
+                    # 用户登出
+                    logger.info(f"用户登出消息: user_id={user_id}, client_id={client_id}")
+                    # 不需要特殊处理，WebSocket断开连接时会自动处理用户下线逻辑
 
                 elif message_type == MessageType.ADMIN_NOTIFICATION and is_admin:
                     # 管理员通知
@@ -410,7 +623,7 @@ async def websocket_endpoint(
 @router.post("/admin/notifications", response_model=Dict[str, Any])
 async def send_admin_notification(
     notification: AdminNotificationRequest,
-    current_user: User = Depends(get_current_admin_user),
+    current_user: User = Depends(security.get_current_admin_user),
     db: Session = Depends(get_db)
 ):
     """管理员发送全站通知"""
@@ -469,7 +682,7 @@ async def send_admin_notification(
         }
 
 @router.get("/status", response_model=Dict[str, Any])
-async def get_websocket_status(current_user: User = Depends(get_current_admin_user)):
+async def get_websocket_status(current_user: User = Depends(security.get_current_admin_user)):
     """获取WebSocket连接状态"""
     # 验证用户是否为管理员
     if current_user.role != "admin":

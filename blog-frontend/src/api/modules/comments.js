@@ -34,10 +34,28 @@ export const createComment = (articleId, content, parentId = null, anonymousName
     }
   }
 
+  // 添加更详细的日志记录
   console.log(`发送评论请求到 ${API_PATHS.COMMENTS.BASE}`, commentData);
   console.log('评论请求包含认证令牌:', !!token);
+  console.log('完整请求URL:', API_PATHS.COMMENTS.BASE);
 
-  return apiClient.post(API_PATHS.COMMENTS.BASE, commentData);
+  // 使用 try-catch 包装请求，以便更好地捕获和记录错误
+  try {
+    return apiClient.post(API_PATHS.COMMENTS.BASE, commentData)
+      .then(response => {
+        console.log('评论创建成功:', response);
+        return response;
+      })
+      .catch(error => {
+        console.error('评论创建失败:', error);
+        console.error('请求URL:', API_PATHS.COMMENTS.BASE);
+        console.error('请求数据:', commentData);
+        throw error;
+      });
+  } catch (error) {
+    console.error('评论请求异常:', error);
+    throw error;
+  }
 };
 
 /**

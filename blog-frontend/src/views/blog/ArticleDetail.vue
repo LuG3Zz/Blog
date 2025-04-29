@@ -129,10 +129,10 @@
                 {{ post.like_count }} 点赞
               </button>
               <span v-if="post.is_featured" class="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="#FFD700" viewBox="0 0 24 24" stroke="#F59E0B">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                 </svg>
-                精选
+                <span class="text-yellow-500 dark:text-yellow-400 font-medium">精选</span>
               </span>
             </div>
           </div>
@@ -224,7 +224,8 @@
                 </div>
               </div>
 
-              <div class="flex items-center justify-between">
+              <!-- 文章底部信息和操作按钮 -->
+              <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
                 <div class="flex items-center">
                   <span class="text-gray-600 dark:text-gray-400">分类：</span>
                   <span class="ml-2 px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full text-sm">
@@ -234,6 +235,33 @@
                 <div class="text-gray-600 dark:text-gray-400">
                   发布日期：{{ post.date }}
                 </div>
+              </div>
+
+              <!-- 分享和下载按钮 -->
+              <div class="flex flex-wrap items-center gap-3 mt-6 mb-2 animate__animated animate__fadeIn animate__delay-3s">
+                <!-- 分享按钮 -->
+                <button
+                  @click="shareArticle"
+                  class="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800/40 transition-colors duration-300"
+                  title="分享文章"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                  </svg>
+                  分享文章
+                </button>
+
+                <!-- 下载MD按钮 -->
+                <button
+                  @click="downloadMarkdown"
+                  class="flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-300 rounded-lg hover:bg-green-100 dark:hover:bg-green-800/40 transition-colors duration-300"
+                  title="下载Markdown文件"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  下载Markdown
+                </button>
               </div>
             </div>
 
@@ -283,6 +311,7 @@ import { Breadcrumb, ScrollIsland, CodeBlock } from '@/components/ui'
 import 'katex/dist/katex.min.css' // 导入 KaTeX 样式
 import { useUserStore } from '@/stores'
 import { isAdmin, hasRole } from '@/utils/permission'
+import message from '@/utils/message'
 
 
 // 导入组合式函数
@@ -470,6 +499,118 @@ export default {
       }
     }
 
+    // 分享文章
+    const shareArticle = () => {
+      if (!post.value) return
+
+      try {
+        // 获取当前页面URL
+        const url = window.location.href
+
+        // 尝试使用现代API复制到剪贴板
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(() => {
+            message.success('文章链接已复制到剪贴板')
+          }).catch(err => {
+            console.error('复制失败:', err)
+            // 回退到传统方法
+            fallbackCopyToClipboard(url)
+          })
+        } else {
+          // 回退到传统方法
+          fallbackCopyToClipboard(url)
+        }
+      } catch (error) {
+        console.error('分享文章失败:', error)
+        message.error('分享失败，请手动复制链接')
+      }
+    }
+
+    // 传统的复制到剪贴板方法
+    const fallbackCopyToClipboard = (text) => {
+      const textArea = document.createElement('textarea')
+      textArea.value = text
+      textArea.style.position = 'fixed'
+      textArea.style.left = '-999999px'
+      textArea.style.top = '-999999px'
+      document.body.appendChild(textArea)
+      textArea.focus()
+      textArea.select()
+
+      try {
+        const successful = document.execCommand('copy')
+        if (successful) {
+          message.success('文章链接已复制到剪贴板')
+        } else {
+          message.error('复制失败，请手动复制链接')
+        }
+      } catch (err) {
+        console.error('复制失败:', err)
+        message.error('复制失败，请手动复制链接')
+      }
+
+      document.body.removeChild(textArea)
+    }
+
+    // 下载Markdown文件
+    const downloadMarkdown = () => {
+      if (!post.value || !markdownContent.value) return
+
+      try {
+        // 创建文件内容
+        let mdContent = `# ${post.value.title}\n\n`
+
+        // 添加文章元数据
+        mdContent += `> 作者: ${post.value.author?.username || '匿名作者'}\n`
+        mdContent += `> 分类: ${post.value.category || '未分类'}\n`
+        mdContent += `> 发布时间: ${post.value.date}\n`
+
+        // 添加标签
+        const tags = getPostTags()
+        if (tags.length > 0) {
+          mdContent += `> 标签: ${tags.join(', ')}\n`
+        }
+
+        mdContent += '\n---\n\n'
+
+        // 添加文章摘要
+        if (post.value.excerpt) {
+          mdContent += `**摘要**: ${post.value.excerpt}\n\n---\n\n`
+        }
+
+        // 添加文章正文内容
+        mdContent += markdownContent.value
+
+        // 添加文章来源
+        mdContent += `\n\n---\n\n> 本文来自: [${window.location.hostname}](${window.location.href})`
+
+        // 创建Blob对象
+        const blob = new Blob([mdContent], { type: 'text/markdown;charset=utf-8' })
+
+        // 创建下载链接
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+
+        // 设置文件名 - 使用文章标题，并移除不合法的文件名字符
+        const fileName = `${post.value.title.replace(/[\\/:*?"<>|]/g, '_')}.md`
+        link.download = fileName
+
+        // 触发下载
+        document.body.appendChild(link)
+        link.click()
+
+        // 清理
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+
+        message.success('Markdown文件下载成功')
+      } catch (error) {
+        console.error('下载Markdown文件失败:', error)
+        message.error('下载失败，请稍后重试')
+      }
+    }
+
     return {
       post,
       loading,
@@ -487,7 +628,9 @@ export default {
       formatDate,
       articleHeadings,
       canEditArticle,
-      editArticle
+      editArticle,
+      shareArticle,
+      downloadMarkdown
     }
   }
 }

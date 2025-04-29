@@ -99,7 +99,7 @@
       <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4">相关文章</h3>
       <div v-if="relatedArticles.length > 0" class="space-y-4">
         <div v-for="article in relatedArticles" :key="article.id" class="group">
-          <router-link :to="`/article/${article.id}`" class="block">
+          <div class="cursor-pointer" @click="navigateToArticle(article.id)">
             <div class="relative mb-2 overflow-hidden rounded-lg aspect-[16/9] bg-gray-100 dark:bg-gray-700">
               <img
                 v-if="article.cover_image && !article.cover_image.includes('undefined')"
@@ -130,7 +130,7 @@
                 {{ article.category?.name || article.category }}
               </span>
             </div>
-          </router-link>
+          </div>
         </div>
       </div>
       <div v-else class="text-center py-6 text-gray-500 dark:text-gray-400">
@@ -257,13 +257,34 @@ export default {
       event.target.onerror = null // 防止循环请求
     }
 
+    // 导航到文章详情页
+    const navigateToArticle = (articleId) => {
+      if (!articleId) return
+
+      // 使用router.push导航到文章详情页
+      router.push(`/article/${articleId}`)
+
+      // 导航后滚动到页面顶部
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+
+      // 可选：刷新页面以确保所有内容都重新加载
+      // 如果使用这种方法，需要确保不会造成无限刷新循环
+      if (router.currentRoute.value.params.id !== articleId.toString()) {
+        // 只有当导航到不同的文章时才刷新
+        setTimeout(() => {
+          window.location.reload()
+        }, 100)
+      }
+    }
+
     return {
       relatedArticles,
       getArticleImage,
       handleImageError,
       formatDate,
       getRoleName,
-      navigateToAuthorProfile
+      navigateToAuthorProfile,
+      navigateToArticle
     }
   }
 }

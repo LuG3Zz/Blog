@@ -42,7 +42,7 @@ export const API_PATHS = {
 
   // 评论相关
   COMMENTS: {
-    BASE: `${API_PREFIX}/comments`,
+    BASE: `${API_PREFIX}/comments/`, // 注意：这里添加了尾部斜杠，与后端路由匹配
     BY_ARTICLE_ID: (id) => `${API_PREFIX}/comments/${id}`, // 获取指定文章的评论
     BY_ID: (id) => `${API_PREFIX}/comments/${id}`, // 更新或删除评论
     LIKE: (id) => `${API_PREFIX}/comments/${id}/like`, // 点赞评论
@@ -124,6 +124,13 @@ export const API_PATHS = {
     BASE: `${API_PREFIX}/notifications/history`,
     BY_ID: (id) => `${API_PREFIX}/notifications/${id}`,
     CLEAR_ALL: `${API_PREFIX}/notifications/all`,
+  },
+
+  // 访客记录相关
+  VISITORS: {
+    BASE: `${API_PREFIX}/visitors`,
+    STATISTICS: `${API_PREFIX}/visitors/statistics`,
+    BATCH_DELETE: `${API_PREFIX}/visitors/batch-delete`,
   },
 };
 

@@ -21,6 +21,7 @@ import * as statsApi from './modules/stats';
 import * as notificationsApi from './modules/notifications';
 import * as notificationHistoryApi from './modules/notificationHistory';
 import * as aboutApi from './modules/about';
+import * as visitorsApi from './modules/visitors';
 
 // 导出所有 API 模块
 export {
@@ -38,7 +39,8 @@ export {
   statsApi,
   notificationsApi,
   notificationHistoryApi,
-  aboutApi
+  aboutApi,
+  visitorsApi
 };
 
 // 为了向后兼容，保留原来的导出名称
@@ -55,6 +57,7 @@ export const notificationApi = notificationsApi;
 // notificationHistoryApi 已经在上面导出，这里不需要重复导出
 export const aboutPageApi = aboutApi;
 // statsApi 已经在上面导出，这里不需要重复导出
+export const visitorApi = visitorsApi;
 
 // 默认导出所有 API
 export default {
@@ -72,5 +75,6 @@ export default {
   stats: statsApi,
   notifications: notificationsApi,
   notificationHistory: notificationHistoryApi,
-  about: aboutApi
+  about: aboutApi,
+  visitors: visitorsApi
 };

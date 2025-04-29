@@ -19,7 +19,7 @@ def main():
 
     # 根据环境设置参数
     reload = env == "development"
-    workers = 1 if env == "development" else 4
+    workers = 4 if env == "development" else 4
 
     # 从环境变量获取主机和端口
     host = os.getenv("HOST", "127.0.0.1" if env == "development" else "0.0.0.0")

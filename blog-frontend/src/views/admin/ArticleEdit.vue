@@ -207,7 +207,30 @@
         <!-- 内容编辑器 (占据整行) -->
         <div class="mt-8">
           <div class="flex items-center justify-between mb-4">
-            <label for="content" class="text-lg font-semibold text-gray-900 dark:text-gray-100">内容</label>
+            <div class="flex items-center">
+              <label for="content" class="text-lg font-semibold text-gray-900 dark:text-gray-100">内容</label>
+              <!-- 导入MD文件按钮 -->
+              <button
+                type="button"
+                @click="triggerImportMdFile"
+                class="ml-3 px-3 py-1.5 text-sm bg-blue-500/20 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 rounded-md hover:bg-blue-500/30 dark:hover:bg-blue-500/30 transition-colors duration-200 flex items-center gap-1.5"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                导入MD文件
+              </button>
+              <!-- 隐藏的文件输入框 -->
+              <input
+                type="file"
+                ref="mdFileInput"
+                class="hidden"
+                accept=".md,.markdown"
+                @change="handleMdFileImport"
+              />
+            </div>
             <div class="flex items-center">
               <span class="text-sm text-gray-500 dark:text-gray-400 mr-2">当前模式:</span>
               <span class="px-2 py-1 text-xs font-medium rounded-md"
@@ -523,6 +546,16 @@ export default {
           },
           'table',
           '|',
+          {
+            name: 'import-md',
+            tipPosition: 's',
+            tip: '导入MD文件',
+            className: 'right',
+            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8.5 11.5a.5.5 0 0 1-1 0V7.707L6.354 8.854a.5.5 0 1 1-.708-.708l2-2a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 7.707V11.5z"/><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/></svg>',
+            click: () => {
+              triggerImportMdFile();
+            }
+          },
           'undo',
           'redo',
           '|',
@@ -601,6 +634,16 @@ export default {
                     },
                     'table',
                     '|',
+                    {
+                      name: 'import-md',
+                      tipPosition: 's',
+                      tip: '导入MD文件',
+                      className: 'right',
+                      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8.5 11.5a.5.5 0 0 1-1 0V7.707L6.354 8.854a.5.5 0 1 1-.708-.708l2-2a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 7.707V11.5z"/><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/></svg>',
+                      click: () => {
+                        triggerImportMdFile();
+                      }
+                    },
                     'undo',
                     'redo',
                     '|',
@@ -1033,6 +1076,75 @@ export default {
       showFileSelector.value = false
     }
 
+    // 触发导入MD文件
+    const mdFileInput = ref(null);
+
+    const triggerImportMdFile = () => {
+      mdFileInput.value.click();
+    };
+
+    // 处理MD文件导入
+    const handleMdFileImport = async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // 验证文件类型
+      if (!file.name.toLowerCase().endsWith('.md') && !file.name.toLowerCase().endsWith('.markdown')) {
+        message.error('请选择Markdown文件（.md或.markdown格式）');
+        return;
+      }
+
+      try {
+        // 显示加载状态
+        isLoading.value = true;
+
+        // 读取文件内容
+        const reader = new FileReader();
+
+        reader.onload = (e) => {
+          try {
+            const content = e.target.result;
+
+            // 设置编辑器内容
+            if (vditor.value) {
+              vditor.value.setValue(content);
+              message.success('Markdown文件导入成功');
+
+              // 尝试从文件内容中提取标题
+              const titleMatch = content.match(/^#\s+(.+)$/m);
+              if (titleMatch && titleMatch[1] && !currentPost.value.title) {
+                currentPost.value.title = titleMatch[1].trim();
+              }
+            } else {
+              message.error('编辑器未初始化，请刷新页面后重试');
+            }
+          } catch (error) {
+            console.error('处理文件内容时出错:', error);
+            message.error(`导入失败: ${error.message || '未知错误'}`);
+          } finally {
+            isLoading.value = false;
+            // 清空input的value，确保可以重复上传同一个文件
+            event.target.value = '';
+          }
+        };
+
+        reader.onerror = () => {
+          message.error('读取文件失败');
+          isLoading.value = false;
+          event.target.value = '';
+        };
+
+        // 开始读取文件
+        reader.readAsText(file);
+
+      } catch (error) {
+        console.error('导入MD文件失败:', error);
+        message.error(`导入失败: ${error.message || '未知错误'}`);
+        isLoading.value = false;
+        event.target.value = '';
+      }
+    };
+
     return {
       currentPost,
       categories,
@@ -1059,7 +1171,11 @@ export default {
       openFileSelectorForCover,
       openFileSelectorForEditor,
       // 编辑器模式
-      currentMode
+      currentMode,
+      // MD文件导入相关
+      mdFileInput,
+      triggerImportMdFile,
+      handleMdFileImport
     }
   }
 }

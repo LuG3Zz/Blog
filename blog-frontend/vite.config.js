@@ -47,9 +47,12 @@ export default defineConfig(({ command, mode }) => {
           });
           proxy.on('proxyReq', (proxyReq, req, res) => {
             console.log('代理请求:', req.method, req.url);
+            console.log('代理请求头:', proxyReq.getHeaders());
+            console.log('原始请求头:', req.headers);
           });
           proxy.on('proxyRes', (proxyRes, req, res) => {
             console.log('代理响应:', proxyRes.statusCode, req.url);
+            console.log('响应头:', proxyRes.headers);
           });
         }
       },

@@ -1,7 +1,17 @@
 <template>
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
     <div class="flex justify-between items-center mb-6">
-      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">通知历史</h2>
+      <div>
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">通知历史</h2>
+        <button
+          @click="toggleTimeFormat"
+          class="mt-1 text-xs text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+          title="切换时间显示格式"
+        >
+          <i class="fas fa-sync-alt mr-1"></i>
+          {{ useAbsoluteTime ? '显示相对时间' : '显示绝对时间' }}
+        </button>
+      </div>
       <button
         @click="clearAllNotifications"
         class="px-3 py-1 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md"
@@ -98,8 +108,7 @@
 <script>
 import { ref, watch } from 'vue';
 import { notificationHistoryApi } from '@/api';
-import { formatDistanceToNow } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+import { formatRelativeTime, formatDateTimeWithTimeZone, getCurrentTimeZone } from '@/utils/date-utils';
 import message from '@/utils/message';
 
 export default {
@@ -162,15 +171,22 @@ export default {
       }
     };
 
+    // 时间格式切换
+    const useAbsoluteTime = ref(false);
+
+    // 获取当前时区
+    const timeZone = getCurrentTimeZone();
+
+    // 切换时间显示格式
+    const toggleTimeFormat = () => {
+      useAbsoluteTime.value = !useAbsoluteTime.value;
+    };
+
     // 格式化时间
     const formatTime = (timestamp) => {
-      try {
-        if (!timestamp) return '未知时间';
-        return formatDistanceToNow(new Date(timestamp), { addSuffix: true, locale: zhCN });
-      } catch (error) {
-        console.error('格式化时间错误:', error, timestamp);
-        return '无效时间';
-      }
+      return useAbsoluteTime.value
+        ? formatDateTimeWithTimeZone(timestamp)
+        : formatRelativeTime(timestamp);
     };
 
     // 监听筛选条件变化
@@ -188,8 +204,11 @@ export default {
       total,
       pages,
       filter,
+      useAbsoluteTime,
+      timeZone,
       deleteNotification,
       clearAllNotifications,
+      toggleTimeFormat,
       formatTime
     };
   }

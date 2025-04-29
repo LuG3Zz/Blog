@@ -14,6 +14,8 @@ from app.routers import routers
 from app.utils.logging import get_logger
 from app.services.unified_cache_service import UnifiedCacheService
 from app.services.ip_location_service import IPLocationService
+# 不再使用HTTP中间件记录访客
+# from app.middleware import record_visitor
 
 # Initialize logger
 logger = get_logger(__name__)
@@ -66,6 +68,9 @@ app.add_middleware(
     GZipMiddleware,
     minimum_size=1000  # 只压缩大于 1KB 的响应
 )
+
+# 不再使用HTTP中间件记录访客，改为使用WebSocket连接记录
+# app.middleware("http")(record_visitor)
 
 
 # Include all routers with API prefix

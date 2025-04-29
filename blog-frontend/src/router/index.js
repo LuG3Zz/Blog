@@ -17,6 +17,7 @@ const ActivityManage = () => import('../views/admin/ActivityManage.vue')
 const NotificationManage = () => import('../views/admin/NotificationManage.vue')
 const AboutManage = () => import('../views/admin/AboutManage.vue')
 const FileManager = () => import('../views/admin/FileManager.vue')
+const VisitorManagement = () => import('../views/admin/VisitorManagement.vue')
 
 // 导入 UI 组件
 import { UnauthorizedAccess } from '../components/ui'
@@ -147,6 +148,15 @@ const routes = [
         meta: {
           requiresAuth: true,
           title: '文件管理'
+        }
+      },
+      {
+        path: 'visitors',
+        name: 'VisitorManagement',
+        component: VisitorManagement,
+        meta: {
+          requiresAuth: true,
+          title: '访客记录'
         }
       }
     ]

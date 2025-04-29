@@ -188,9 +188,8 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { postApi, categoryApi } from '@/api'
 import message from '@/utils/message.js'
-// 删除 Vditor 相关导入
-import { format } from 'date-fns'
-import { zhCN } from 'date-fns/locale'
+// 使用自定义日期工具函数
+import { formatDateTimeWithTimeZone } from '@/utils/date-utils'
 import DeleteConfirmDialog from '@/components/common/DeleteConfirmDialog.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import { ErrorDisplay, LoadingSpinner, EmptyState } from '@/components/ui'
@@ -243,7 +242,8 @@ export default {
     const formatDate = (dateString) => {
       if (!dateString) return ''
       try {
-        return format(new Date(dateString), 'yyyy-MM-dd HH:mm', { locale: zhCN })
+        // 使用自定义日期工具函数，将UTC时间转换为本地时间
+        return formatDateTimeWithTimeZone(dateString)
       } catch (error) {
         console.error('日期格式化错误:', error)
         return dateString

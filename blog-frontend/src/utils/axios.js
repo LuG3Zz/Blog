@@ -84,6 +84,10 @@ instance.interceptors.response.use(
   async error => {
     const originalRequest = error.config;
 
+    // 添加更详细的错误日志
+    console.error('请求失败:', error);
+    console.error('请求配置:', originalRequest);
+
     // 如果是认证错误且不是登录请求本身
     if (error.response && error.response.status === 401 &&
         !originalRequest._retry &&
@@ -103,6 +107,14 @@ instance.interceptors.response.use(
     }
 
     if (error.response) {
+      // 记录完整的请求和响应信息
+      console.error('请求方法:', originalRequest.method);
+      console.error('请求URL:', originalRequest.url);
+      console.error('请求头:', originalRequest.headers);
+      console.error('请求数据:', originalRequest.data);
+      console.error('响应状态:', error.response.status);
+      console.error('响应头:', error.response.headers);
+
       switch (error.response.status) {
         case 401:
           console.error('未授权，请先登录');
@@ -112,6 +124,7 @@ instance.interceptors.response.use(
           break;
         case 404:
           console.error('请求的资源不存在');
+          console.error('请求URL:', originalRequest.url);
           break;
         case 500:
           console.error('服务器错误');
@@ -124,8 +137,12 @@ instance.interceptors.response.use(
       if (error.response.data) {
         console.error('错误详情:', error.response.data);
       }
+    } else if (error.request) {
+      // 请求已发送但没有收到响应
+      console.error('请求已发送但没有收到响应:', error.request);
     } else {
-      console.error('网络错误:', error.message);
+      // 请求设置错误
+      console.error('请求设置错误:', error.message);
     }
 
     return Promise.reject(error);

@@ -15,7 +15,7 @@ import Stick from './components/ui/stick.vue'
 import NotificationContainer from './components/ui/NotificationContainer.vue'
 import Toast from './components/ui/Toast.vue'
 import WebSocketStatusIndicator from './components/ui/WebSocketStatusIndicator.vue'
-import { initWebSocketService } from './services/websocket-new'
+import { initWebSocketService, webSocketService, WebSocketStatus } from './services/websocket-new'
 
 export default {
   name: 'App',
@@ -44,13 +44,23 @@ export default {
       themeStore.setTheme(value)
     }
 
+    // 立即初始化WebSocket服务，不等待组件挂载
+    // 这确保了WebSocket在应用启动时就开始连接
+    initWebSocketService();
+
     // 初始化平滑滚动和用户状态
     onMounted(async () => {
       // 初始化用户状态
       userStore.initState()
 
-      // 初始化 WebSocket 服务
-      initWebSocketService();
+      // 确保WebSocket连接是活跃的
+      // 如果连接已关闭，尝试重新连接
+      if (!window.webSocketInitialized || webSocketService.status === WebSocketStatus.CLOSED) {
+        console.log('确保WebSocket连接活跃');
+        initWebSocketService();
+      } else {
+        console.log('WebSocket连接已活跃，状态:', webSocketService.status);
+      }
 
       // 初始化平滑滚动
       try {
@@ -90,17 +100,3 @@ export default {
   }
 }
 </script>
-
-<style>
-@import './assets/css/style.css';
-
-/* 隐藏滚动条 */
-::-webkit-scrollbar {
-  display: none;
-}
-
-* {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
-}
-</style>

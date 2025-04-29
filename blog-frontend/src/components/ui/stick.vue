@@ -31,14 +31,14 @@
 
   .simple-text {
     position: absolute;
-    bottom: -35px;
-    width: 120px;
+    bottom: -10px;
+    width: 80px;
     text-align: center;
     color: #333;
     background-color: rgba(255, 255, 255, 0.9);
     border-radius: 20px;
-    padding: 5px 10px;
-    font-size: 14pt;
+    
+    font-size: 10pt;
     font-weight: 700;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);

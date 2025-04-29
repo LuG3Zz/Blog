@@ -1,78 +1,49 @@
 <template>
   <div class="fixed inset-x-0 top-20 z-40 flex flex-col items-center gap-2 pointer-events-none">
     <TransitionGroup name="notification">
-      <div v-for="notification in activeNotifications" :key="notification.id" class="notification-item pointer-events-auto">
+      <div v-for="notification in notifications" :key="notification.id" class="notification-item pointer-events-auto">
         <UserStatusNotification
-          :name="getNotificationTitle(notification)"
-          :description="notification.content"
+          :name="notification.name"
+          :description="notification.description"
           :time="formatTime(notification.timestamp)"
-          :icon="getNotificationIcon(notification)"
-          :color="getNotificationColor(notification)"
-          :avatar="getNotificationAvatar(notification)"
+          :icon="notification.icon"
+          :color="notification.color"
+          :avatar="notification.avatar"
           :first-letter="getFirstLetter(notification)"
-          @click="markAsRead(notification.id)"
-          @close="closeNotification(notification.id)"
+          @click="removeNotification(notification.id)"
+          @close="removeNotification(notification.id)"
         />
       </div>
     </TransitionGroup>
   </div>
 </template>
 
-<script lang="ts" setup>
-import { computed, onMounted } from 'vue';
+<script setup>
+import { ref, onMounted, onUnmounted } from 'vue';
+import { formatDistanceToNow } from 'date-fns';
+import { zhCN } from 'date-fns/locale/zh-CN';
 import UserStatusNotification from './UserStatusNotification.vue';
-import { notificationService, initNotificationService, Notification, NotificationType, NotificationLevel } from '@/services/notification';
 import { initWebSocketService } from '@/services/websocket-new';
+import { eventBus } from '@/utils/eventBus';
 
-// 获取活跃通知
-const activeNotifications = computed(() => {
-  console.log('当前通知列表:', notificationService.notifications);
-  return notificationService.notifications.filter((n: Notification) => !n.read).slice(0, 3);
-});
+// 通知列表
+const notifications = ref([]);
 
-// 获取通知标题
-const getNotificationTitle = (notification: Notification): string => {
-  switch (notification.type) {
-    case NotificationType.USER_ONLINE:
-      return notification.data?.username || '用户上线';
-    case NotificationType.USER_OFFLINE:
-      return notification.data?.username || '用户下线';
-    case NotificationType.SYSTEM:
-      return notification.title;
-    default:
-      return notification.title;
+// 格式化时间
+const formatTime = (timestamp) => {
+  try {
+    return formatDistanceToNow(new Date(timestamp), { addSuffix: true, locale: zhCN });
+  } catch (error) {
+    console.error('格式化时间出错:', error);
+    return '刚刚';
   }
-};
-
-// 获取通知图标
-const getNotificationIcon = (notification: Notification): string => {
-  return notificationService.getNotificationIcon(notification.type, notification.level);
-};
-
-// 获取通知颜色
-const getNotificationColor = (notification: Notification): string => {
-  // 如果是用户上线或下线通知，且没有头像，使用基于用户名的颜色
-  if (
-    (notification.type === NotificationType.USER_ONLINE ||
-     notification.type === NotificationType.USER_OFFLINE) &&
-    !getNotificationAvatar(notification)
-  ) {
-    const username = notification.data?.username || '';
-    if (username) {
-      return getUserColor(username);
-    }
-  }
-  // 否则使用默认颜色
-  return notificationService.getNotificationColor(notification.type, notification.level);
 };
 
 // 生成用户名的首字母
-const getFirstLetter = (notification: Notification): string => {
-  if (
-    notification.type === NotificationType.USER_ONLINE ||
-    notification.type === NotificationType.USER_OFFLINE
-  ) {
-    const username = notification.data?.username || '';
+const getFirstLetter = (notification) => {
+  if (notification.type === 'user_online' || notification.type === 'anonymous_online' ||
+      notification.type === 'user_offline' || notification.type === 'user_welcome') {
+    const username = notification.name || '';
     if (username) {
       // 获取用户名的第一个字符，并转为大写
       return username.charAt(0).toUpperCase();
@@ -81,104 +52,77 @@ const getFirstLetter = (notification: Notification): string => {
   return '';
 };
 
-// 根据用户名生成随机颜色
-const getUserColor = (username: string): string => {
-  // 预定义的颜色数组，这些颜色都比较适合作为背景色
-  const colors = [
-    '#4f46e5', // indigo-600
-    '#0891b2', // cyan-600
-    '#0d9488', // teal-600
-    '#7c3aed', // violet-600
-    '#c026d3', // fuchsia-600
-    '#db2777', // pink-600
-    '#e11d48', // rose-600
-    '#ea580c', // orange-600
-    '#65a30d', // lime-600
-    '#16a34a', // green-600
-  ];
+// 添加通知
+const addNotification = (notification) => {
+  console.log('添加通知:', notification);
 
-  // 使用用户名的字符码之和作为随机数生成器的种子
-  let sum = 0;
-  for (let i = 0; i < username.length; i++) {
-    sum += username.charCodeAt(i);
+  const id = Date.now().toString();
+  notifications.value.unshift({
+    id,
+    ...notification
+  });
+
+  // 限制通知数量
+  if (notifications.value.length > 3) {
+    notifications.value = notifications.value.slice(0, 3);
   }
 
-  // 使用这个和来选择颜色
-  return colors[sum % colors.length];
+  // 5秒后自动移除通知
+  setTimeout(() => {
+    removeNotification(id);
+  }, 5000);
+
+  // 打印当前通知列表
+  console.log('当前通知列表:', notifications.value);
 };
 
-// 获取通知头像
-const getNotificationAvatar = (notification: Notification): string | null => {
-  // 如果是用户上线或下线通知，尝试获取用户头像
-  if (
-    notification.type === NotificationType.USER_ONLINE ||
-    notification.type === NotificationType.USER_OFFLINE
-  ) {
-    // 检查头像是否为 null 或空字符串
-    const avatar = notification.data?.avatar;
-
-    if (avatar && typeof avatar === 'string' && avatar.trim() !== '') {
-      // 如果头像是相对路径，添加基础 URL
-      if (avatar.startsWith('/')) {
-        return `${window.location.origin}${avatar}`;
-      }
-      return avatar;
-    }
-  }
-  return null; // 返回 null，让组件显示首字母
-};
-
-// 格式化时间
-const formatTime = (timestamp: Date): string => {
-  return notificationService.formatTime(timestamp);
-};
-
-// 标记通知为已读
-const markAsRead = (id: string): void => {
-  notificationService.markAsRead(id);
-};
-
-// 关闭通知
-const closeNotification = (id: string): void => {
-  // 如果是当前显示的通知，则关闭它
-  if (notificationService.currentNotification.value?.id === id) {
-    notificationService.closeCurrentNotification();
-  } else {
-    // 否则只标记为已读
-    notificationService.markAsRead(id);
+// 移除通知
+const removeNotification = (id) => {
+  const index = notifications.value.findIndex(n => n.id === id);
+  if (index !== -1) {
+    notifications.value.splice(index, 1);
   }
 };
 
-// 组件挂载时初始化服务
+// 监听通知事件
+const handleNotification = (notification) => {
+  console.log('NotificationContainer: 收到通知事件', notification);
+  addNotification(notification);
+};
+
+// 组件挂载时初始化
 onMounted(() => {
+  // 检查页面是否已经加载完成
+  if (document.readyState === 'complete') {
+    // 页面已加载完成，直接初始化
+    initWebSocketAndListeners();
+  } else {
+    // 页面尚未加载完成，等待页面加载完成后再初始化
+    window.addEventListener('load', initWebSocketAndListeners);
+  }
+});
+
+// 初始化WebSocket服务和事件监听器
+const initWebSocketAndListeners = () => {
+  console.log('页面加载完成，初始化WebSocket服务和通知监听器');
+
+  // 先监听通知事件，确保在WebSocket连接之前注册
+  console.log('NotificationContainer: 注册通知事件监听器');
+  eventBus.on('notification', handleNotification);
+
+  // 然后初始化WebSocket服务
+  console.log('NotificationContainer: 初始化WebSocket服务');
   initWebSocketService();
-  initNotificationService();
+};
 
-//   // 测试通知（开发环境）
-//   const isDev = process.env.NODE_ENV === 'development';
-//   if (isDev) {
-//     setTimeout(() => {
-//       notificationService.addNotification({
-//         type: NotificationType.USER_ONLINE,
-//         title: '用户上线',
-//         content: '张三 已上线',
-//         level: NotificationLevel.INFO,
-//         timestamp: new Date(),
-//         data: { username: '张三', user_id: '123', timestamp: new Date().toISOString() },
-//       });
-//     }, 1000);
+// 组件卸载时清理
+onUnmounted(() => {
+  // 移除事件监听
+  eventBus.off('notification', handleNotification);
 
-//     setTimeout(() => {
-//       notificationService.addNotification({
-//         type: NotificationType.SYSTEM,
-//         title: '系统通知',
-//         content: '系统将于今晚23:00进行维护，预计持续1小时。',
-//         level: NotificationLevel.WARNING,
-//         timestamp: new Date(),
-//       });
-//     }, 1000);
-//   }
- });
+  // 移除页面加载完成的事件监听器
+  window.removeEventListener('load', initWebSocketAndListeners);
+});
 </script>
 
 <style scoped>

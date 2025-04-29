@@ -1,9 +1,23 @@
 <template>
   <div class="recent-activities bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:shadow-lg relative">
-    <h2 class="title-animation text-xl font-bold mb-4 text-gray-800 dark:text-white relative inline-block">
-      最近活动
-      <span class="absolute bottom-0 left-0 w-full h-0.5 bg-blue-500 transform scale-x-0 transition-transform duration-300 origin-left group-hover:scale-x-100"></span>
-    </h2>
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="title-animation text-xl font-bold text-gray-800 dark:text-white relative inline-block">
+        最近活动
+        <span class="absolute bottom-0 left-0 w-full h-0.5 bg-blue-500 transform scale-x-0 transition-transform duration-300 origin-left group-hover:scale-x-100"></span>
+      </h2>
+      <button
+        @click="toggleTimeFormat"
+        class="text-xs text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
+        title="切换时间显示格式"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        <span class="hidden sm:inline">
+          {{ useAbsoluteTime ? '相对时间' : '绝对时间' }}
+        </span>
+      </button>
+    </div>
 
     <!-- 加载状态 -->
     <LoadingSpinner v-if="loading" message="正在加载活动数据..." />
@@ -71,8 +85,7 @@
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { activityApi, userApi } from '@/api'
-import { formatDistanceToNow } from 'date-fns'
-import { zhCN } from 'date-fns/locale'
+import { formatRelativeTime, formatDateTimeWithTimeZone, getCurrentTimeZone } from '@/utils/date-utils'
 import { ErrorDisplay, LoadingSpinner, EmptyState } from '@/components/ui'
 
 export default {
@@ -150,17 +163,23 @@ export default {
       }
     }
 
+    // 时间格式切换
+    const useAbsoluteTime = ref(false);
+
+    // 获取当前时区
+    const timeZone = getCurrentTimeZone();
+
+    // 切换时间显示格式
+    const toggleTimeFormat = () => {
+      useAbsoluteTime.value = !useAbsoluteTime.value;
+    };
+
     // 格式化时间
     const formatTime = (dateString) => {
       if (!dateString) return ''
-      try {
-        return formatDistanceToNow(new Date(dateString), {
-          addSuffix: true,
-          locale: zhCN
-        })
-      } catch (error) {
-        return dateString
-      }
+      return useAbsoluteTime.value
+        ? formatDateTimeWithTimeZone(dateString)
+        : formatRelativeTime(dateString);
     }
 
     // 获取用户首字母
@@ -346,7 +365,10 @@ export default {
       fetchActivities,
       navigateToActivity,
       scrollContainer,
-      isLoggedIn
+      isLoggedIn,
+      useAbsoluteTime,
+      toggleTimeFormat,
+      timeZone
     }
   }
 }

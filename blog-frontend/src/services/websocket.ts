@@ -7,6 +7,13 @@ import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useUserStore } from '@/stores';
 import { API_BASE_URL, WEBSOCKET } from '@/config';
 
+// 扩展Window接口，添加webSocketInitialized属性
+declare global {
+  interface Window {
+    webSocketInitialized?: boolean;
+  }
+}
+
 // WebSocket 连接状态
 export const enum WebSocketStatus {
   CONNECTING = 0,
@@ -21,6 +28,10 @@ export const enum MessageType {
   USER_OFFLINE = 'user_offline',
   NOTIFICATION = 'notification',
   ADMIN_NOTIFICATION = 'admin_notification',
+  WELCOME = 'welcome',
+  SYSTEM_NOTIFICATION = 'system_notification',
+  PING = 'ping',
+  PONG = 'pong',
 }
 
 // WebSocket 消息接口
@@ -51,6 +62,14 @@ export interface AdminNotificationMessage {
   title: string;
   content: string;
   level: 'info' | 'success' | 'warning' | 'error';
+  timestamp: string;
+}
+
+// 欢迎消息接口
+export interface WelcomeMessage {
+  title: string;
+  content: string;
+  ip_location?: string;
   timestamp: string;
 }
 
@@ -178,8 +197,30 @@ export function useWebSocket() {
       // 接收消息时
       socket.value.onmessage = (event: MessageEvent) => {
         try {
-          const message = JSON.parse(event.data) as WebSocketMessage;
+          const message = JSON.parse(event.data);
           console.log('WebSocket: 收到消息', message);
+
+          // 处理欢迎消息
+          if (message.type === 'welcome') {
+            // 显示欢迎消息
+            const welcomeData = message.data as WelcomeMessage;
+            console.log('收到欢迎消息:', welcomeData);
+
+            // 使用Element Plus的消息通知
+            import('element-plus').then(({ ElNotification }) => {
+              ElNotification({
+                title: welcomeData.title || '欢迎',
+                message: welcomeData.content,
+                type: 'success',
+                duration: 5000,
+                position: 'bottom-right'
+              });
+            }).catch(err => {
+              console.error('加载Element Plus失败:', err);
+              // 使用原生alert作为备选
+              alert(`${welcomeData.title || '欢迎'}: ${welcomeData.content}`);
+            });
+          }
 
           // 调用对应类型的消息处理器
           const handlers = messageHandlers.get(message.type as MessageType);
@@ -241,6 +282,12 @@ export function useWebSocket() {
 
   // 组件挂载时连接 WebSocket
   onMounted(() => {
+    // 如果全局WebSocket已初始化，则不再创建新的连接
+    if (window.webSocketInitialized) {
+      console.log('全局WebSocket已初始化，组件不再创建新的连接');
+      return;
+    }
+
     // 获取用户状态管理实例
     const userStore = useUserStore();
 
@@ -388,8 +435,30 @@ export const webSocketService = {
       // 接收消息时
       this.socket.onmessage = (event: MessageEvent) => {
         try {
-          const message = JSON.parse(event.data) as WebSocketMessage;
+          const message = JSON.parse(event.data);
           console.log('WebSocket: 收到消息', message);
+
+          // 处理欢迎消息
+          if (message.type === 'welcome') {
+            // 显示欢迎消息
+            const welcomeData = message.data as WelcomeMessage;
+            console.log('收到欢迎消息:', welcomeData);
+
+            // 使用Element Plus的消息通知
+            import('element-plus').then(({ ElNotification }) => {
+              ElNotification({
+                title: welcomeData.title || '欢迎',
+                message: welcomeData.content,
+                type: 'success',
+                duration: 5000,
+                position: 'bottom-right'
+              });
+            }).catch(err => {
+              console.error('加载Element Plus失败:', err);
+              // 使用原生alert作为备选
+              alert(`${welcomeData.title || '欢迎'}: ${welcomeData.content}`);
+            });
+          }
 
           // 调用对应类型的消息处理器
           const handlers = this.messageHandlers.get(message.type as MessageType);

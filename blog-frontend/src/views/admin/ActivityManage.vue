@@ -189,6 +189,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { activityApi, userApi } from '@/api'
 import message from '@/utils/message'
+import { formatDateTimeWithTimeZone } from '@/utils/date-utils'
 
 export default {
   name: 'ActivityManage',
@@ -280,15 +281,10 @@ export default {
     const formatDate = (dateString) => {
       if (!dateString) return '未知时间'
       try {
-        const date = new Date(dateString)
-        return date.toLocaleString('zh-CN', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit'
-        })
+        // 使用自定义日期工具函数，将UTC时间转换为本地时间
+        return formatDateTimeWithTimeZone(dateString)
       } catch (error) {
+        console.error('日期格式化错误:', error)
         return '日期格式错误'
       }
     }

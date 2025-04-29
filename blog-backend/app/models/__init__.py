@@ -10,6 +10,7 @@ from app.models.version import ArticleVersion
 from app.models.about import AboutPage
 from app.models.file import File
 from app.models.notification_history import NotificationHistory
+from app.models.visitor import Visitor
 
 # Export all models
 __all__ = [
@@ -24,4 +25,5 @@ __all__ = [
     "AboutPage",
     "File",
     "NotificationHistory",
+    "Visitor",
 ]

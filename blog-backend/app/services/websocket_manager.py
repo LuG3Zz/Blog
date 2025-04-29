@@ -46,11 +46,19 @@ class ConnectionManager:
             self.user_connections[user_id].append(client_id)
 
         # 如果提供了 IP 地址，添加到 IP 连接映射
-        is_first_user_ip = False
+        is_first_connection = False
         if ip_address:
+            # 检查是否是该 IP 的第一个连接
+            is_first_ip = ip_address not in self.ip_connections
+
             # 添加到 IP 连接映射
-            if ip_address not in self.ip_connections:
+            if is_first_ip:
                 self.ip_connections[ip_address] = []
+                # 对于匿名用户，如果是该 IP 的第一个连接，则标记为第一个连接
+                if not user_id:
+                    is_first_connection = True
+                    logger.info(f"匿名用户的第一个IP连接: ip={ip_address}, client_id={client_id}")
+
             self.ip_connections[ip_address].append(client_id)
 
             # 如果有用户 ID，记录 IP 地址与用户的映射
@@ -61,7 +69,9 @@ class ConnectionManager:
                 # 检查是否是该用户在该 IP 上的第一个连接
                 if user_ip_key not in self.user_ip_connections:
                     self.user_ip_connections[user_ip_key] = []
-                    is_first_user_ip = True
+                    is_first_connection = True
+                    logger.info(f"用户的第一个IP连接: user_id={user_id}, ip={ip_address}, client_id={client_id}")
+
                 self.user_ip_connections[user_ip_key].append(client_id)
 
                 # 更新 IP 地址用户映射
@@ -73,10 +83,10 @@ class ConnectionManager:
         if is_admin:
             self.admin_connections.append(client_id)
 
-        logger.info(f"WebSocket 连接已建立: client_id={client_id}, user_id={user_id}, is_admin={is_admin}, ip={ip_address}")
+        logger.info(f"WebSocket 连接已建立: client_id={client_id}, user_id={user_id}, is_admin={is_admin}, ip={ip_address}, is_first_connection={is_first_connection}")
 
-        # 返回是否是该用户在该 IP 上的第一个连接
-        return is_first_user_ip
+        # 返回是否是第一个连接（对于已登录用户是该用户在该 IP 上的第一个连接，对于匿名用户是该 IP 的第一个连接）
+        return is_first_connection
 
     def disconnect(self, client_id: str) -> Optional[tuple]:
         """断开 WebSocket 连接，返回 (user_id, ip_address) 元组或 (None, ip_address) 元组"""
@@ -165,11 +175,15 @@ class ConnectionManager:
 
     def is_anonymous_ip_notified(self, ip_address: str) -> bool:
         """检查匿名 IP 地址是否已经发送过上线通知"""
-        return ip_address in self.notified_anonymous_ips
+        is_notified = ip_address in self.notified_anonymous_ips
+        logger.info(f"检查匿名IP是否已通知: ip={ip_address}, is_notified={is_notified}")
+        return is_notified
 
     def mark_anonymous_ip_notified(self, ip_address: str) -> None:
         """标记匿名 IP 地址已发送过上线通知"""
+        logger.info(f"标记匿名IP已通知: ip={ip_address}")
         self.notified_anonymous_ips.add(ip_address)
+        logger.info(f"已通知的匿名IP数量: {len(self.notified_anonymous_ips)}")
 
     def get_users_by_ip(self, ip_address: str) -> Set[str]:
         """通过 IP 地址获取用户 ID 集合"""

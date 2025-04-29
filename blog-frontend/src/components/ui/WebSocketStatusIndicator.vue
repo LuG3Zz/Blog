@@ -14,6 +14,9 @@
         <span class="status-label">WebSocket:</span>
         <span class="status-value" :class="statusClass">{{ statusText }}</span>
       </div>
+      <div class="status-desc">
+        <span class="text-xs text-gray-500">用于记录访客信息</span>
+      </div>
       <div class="status-actions">
         <span v-if="showReconnectButton" class="reconnect-button" @click.stop="reconnect">重连</span>
         <span v-else-if="status === WebSocketStatus.OPEN" class="disconnect-button" @click.stop="disconnect">断开</span>
@@ -24,13 +27,18 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-import { WebSocketStatus, WebSocketStatusText, useWebSocket } from '@/services/websocket-new';
+import { WebSocketStatus, WebSocketStatusText, useWebSocket, webSocketService } from '@/services/websocket-new';
 
 // 状态指示器是否展开
 const isExpanded = ref(false);
 
 // 获取WebSocket状态
 const { status, connect, disconnect } = useWebSocket();
+
+// 监听状态变化，记录日志
+watch(status, (newStatus, oldStatus) => {
+  console.log(`WebSocketStatusIndicator: 状态变化 ${WebSocketStatusText[oldStatus]} -> ${WebSocketStatusText[newStatus]}`);
+});
 
 // 计算状态文本
 const statusText = computed(() => {
@@ -68,9 +76,31 @@ const reconnect = () => {
   connect();
 };
 
+// 存储事件处理函数的引用，以便正确移除
+const handleWebSocketConnected = () => {
+  console.log('WebSocketStatusIndicator: 收到WebSocket连接事件');
+  // 获取WebSocket服务的真实状态
+  const realStatus = webSocketService.status;
+  console.log('WebSocketStatusIndicator: 真实连接状态:', WebSocketStatusText[realStatus]);
+
+  // 如果组件状态与真实状态不一致，更新组件状态
+  if (status.value !== realStatus) {
+    console.log(`WebSocketStatusIndicator: 状态不一致，从 ${WebSocketStatusText[status.value]} 更新为 ${WebSocketStatusText[realStatus]}`);
+    status.value = realStatus;
+  }
+};
+
+// 监听WebSocket连接状态变化
+onMounted(() => {
+  // 监听自定义事件
+  window.addEventListener('websocket-connected', handleWebSocketConnected);
+});
+
 // 组件卸载时断开连接
 onUnmounted(() => {
   disconnect();
+  // 移除事件监听器
+  window.removeEventListener('websocket-connected', handleWebSocketConnected);
 });
 </script>
 
@@ -137,6 +167,11 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.status-desc {
+  margin-top: 2px;
+  margin-bottom: 4px;
 }
 
 .status-label {

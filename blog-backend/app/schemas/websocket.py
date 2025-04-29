@@ -12,6 +12,9 @@ class MessageType(str, Enum):
     ERROR = "error"  # 错误消息
     PING = "ping"  # 心跳检测
     PONG = "pong"  # 心跳响应
+    USER_LEAVE = "user_leave"  # 用户离开（页面关闭）
+    ANONYMOUS_LEAVE = "anonymous_leave"  # 匿名用户离开（页面关闭）
+    USER_LOGOUT = "user_logout"  # 用户登出
 
 class WebSocketMessage(BaseModel):
     """WebSocket 消息模型"""

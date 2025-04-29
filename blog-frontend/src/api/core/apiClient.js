@@ -114,6 +114,7 @@ const apiClient = {
    */
   post: createApiMethod(
     async (url, data = {}, options = {}) => {
+      // 添加更详细的日志记录
       console.log('发送 POST 请求:', {
         url,
         data: data instanceof FormData ? '[FormData]' : data,
@@ -135,13 +136,25 @@ const apiClient = {
         headers['Content-Type'] = 'application/json';
       }
 
-      const response = await axios.post(url, requestData, {
-        ...options,
-        headers
-      });
+      // 记录完整的请求信息
+      console.log('完整请求URL:', url);
+      console.log('请求头:', headers);
+      console.log('请求数据:', data instanceof FormData ? '[FormData]' : JSON.stringify(data, null, 2));
 
-      console.log('收到 POST 响应:', response);
-      return response;
+      try {
+        const response = await axios.post(url, requestData, {
+          ...options,
+          headers
+        });
+
+        console.log('收到 POST 响应:', response);
+        return response;
+      } catch (error) {
+        console.error('POST 请求失败:', error);
+        console.error('请求URL:', url);
+        console.error('请求数据:', data instanceof FormData ? '[FormData]' : JSON.stringify(data, null, 2));
+        throw error;
+      }
     },
     '提交数据失败'
   ),
