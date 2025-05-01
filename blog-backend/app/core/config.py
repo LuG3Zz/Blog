@@ -76,6 +76,11 @@ class Settings(BaseSettings):
     REDIS_USE_SSL: bool = os.getenv("REDIS_USE_SSL", "False").lower() == "true"
     USE_REDIS_CACHE: bool = os.getenv("USE_REDIS_CACHE", "True").lower() == "true"
 
+    # Email settings
+    RESEND_API_KEY: str = os.getenv("RESEND_API_KEY", "")
+    SITE_NAME: str = os.getenv("SITE_NAME", "BrownLu的博客")
+    EMAIL_FROM: str = os.getenv("EMAIL_FROM", "noreply@example.com")
+
     model_config = {
         "case_sensitive": True
     }

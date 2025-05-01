@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6">
+  <div class="p-6" @click="handleOutsideClick">
     <h1 class="text-2xl font-bold mb-6 dark:text-white">用户管理</h1>
 
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
@@ -13,7 +13,7 @@
         </button>
       </div>
 
-      <div class="overflow-x-auto">
+      <div class="overflow-x-auto" style="overflow: visible;">
         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead class="bg-gray-50 dark:bg-gray-700">
             <tr>
@@ -47,17 +47,49 @@
 
               <!-- 角色列 -->
               <td class="px-6 py-4 whitespace-nowrap">
-                <span
-                  class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
-                  :class="{
-                    'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200': user.role === 'admin',
-                    'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200': user.role === 'editor',
-                    'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200': user.role === 'user',
-                    'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300': !user.role
-                  }"
-                >
-                  {{ getRoleName(user.role) }}
-                </span>
+                <div class="relative inline-block" style="position: relative;">
+                  <span
+                    @click="toggleRoleDropdown(user)"
+                    class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full cursor-pointer hover:opacity-80 transition-opacity"
+                    :class="{
+                      'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200': user.role === 'admin',
+                      'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200': user.role === 'editor',
+                      'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200': user.role === 'author',
+                      'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200': user.role === 'user',
+                      'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300': !user.role
+                    }"
+                  >
+                    {{ getRoleName(user.role) }}
+                    <i class="fas fa-caret-down ml-1 text-xs"></i>
+                  </span>
+
+                  <!-- 角色下拉菜单 -->
+                  <div
+                    v-if="activeDropdownUserId === user.id"
+                    class="absolute z-50 top-full mt-1 left-0 w-36 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 text-sm ring-1 ring-black ring-opacity-5 focus:outline-none"
+                    style="position: absolute; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);"
+                  >
+                    <div
+                      v-for="role in availableRoles"
+                      :key="role.value"
+                      @click="changeUserRole(user, role.value)"
+                      class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer flex items-center"
+                      :class="{'font-semibold': user.role === role.value}"
+                    >
+                      <span
+                        class="w-2 h-2 rounded-full mr-2"
+                        :class="{
+                          'bg-red-500': role.value === 'admin',
+                          'bg-blue-500': role.value === 'editor',
+                          'bg-yellow-500': role.value === 'author',
+                          'bg-green-500': role.value === 'user'
+                        }"
+                      ></span>
+                      {{ role.label }}
+                      <i v-if="user.role === role.value" class="fas fa-check ml-auto text-green-500"></i>
+                    </div>
+                  </div>
+                </div>
               </td>
 
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{{ user.email }}</td>
@@ -81,11 +113,12 @@
                   查看资料
                 </button>
                 <button
-                  class="text-red-500 hover:text-red-700"
+                  class="text-red-500 hover:text-red-700 mr-3"
                   @click="deleteUser(user.id)"
                 >
                   删除
                 </button>
+
               </td>
             </tr>
           </tbody>
@@ -138,6 +171,8 @@
         </div>
       </div>
     </div>
+
+
   </div>
 </template>
 
@@ -145,6 +180,8 @@
 import { ref, onMounted } from 'vue'
 import { adminApi } from '@/api'
 import { useRouter } from 'vue-router'
+import message from '@/utils/message'
+import { API_PATHS } from '@/api/core/apiPaths'
 
 export default {
   name: 'UserManage',
@@ -154,6 +191,18 @@ export default {
     const showAddModal = ref(false)
     const isEditing = ref(false)
     const currentUser = ref({ id: null, username: '', email: '' })
+
+    // 角色管理相关
+    const activeDropdownUserId = ref(null)
+    const isUpdatingRole = ref(false)
+
+    // 可用角色列表
+    const availableRoles = [
+      { value: 'admin', label: '管理员' },
+      { value: 'editor', label: '编辑' },
+      { value: 'author', label: '作者' },
+      { value: 'user', label: '普通用户' }
+    ]
 
     // 获取用户列表
     const fetchUsers = async () => {
@@ -248,6 +297,66 @@ export default {
       return roleMap[role] || '普通用户'
     }
 
+    // 切换角色下拉菜单
+    const toggleRoleDropdown = (user) => {
+      // 如果点击的是当前打开的下拉菜单，则关闭它
+      if (activeDropdownUserId.value === user.id) {
+        activeDropdownUserId.value = null
+      } else {
+        // 否则打开新的下拉菜单
+        activeDropdownUserId.value = user.id
+      }
+    }
+
+    // 处理点击外部关闭下拉菜单
+    const handleOutsideClick = (event) => {
+      // 如果点击的是角色徽章，让toggleRoleDropdown处理
+      if (event.target.closest('.rounded-full')) {
+        return
+      }
+
+      // 如果点击的是下拉菜单选项，让changeUserRole处理
+      if (event.target.closest('.px-4.py-2')) {
+        return
+      }
+
+      // 关闭所有下拉菜单
+      activeDropdownUserId.value = null
+    }
+
+    // 更改用户角色
+    const changeUserRole = async (user, newRole) => {
+      // 如果角色没有变化，则不执行任何操作
+      if (user.role === newRole) {
+        activeDropdownUserId.value = null
+        return
+      }
+
+      console.log(`尝试将用户 ${user.username}(ID: ${user.id}) 的角色从 ${user.role} 更改为 ${newRole}`)
+
+      isUpdatingRole.value = true
+      try {
+        console.log('调用 API:', `${API_PATHS.USERS.ADMIN}/${user.id}/role`, { role: newRole })
+        const updatedUser = await adminApi.updateUserRole(user.id, newRole)
+        console.log('API 返回结果:', updatedUser)
+
+        // 更新本地列表
+        const index = users.value.findIndex(u => u.id === user.id)
+        if (index !== -1) {
+          users.value[index] = updatedUser
+        }
+
+        message.success(`已将用户 ${user.username} 的角色更新为 ${getRoleName(newRole)}`)
+        activeDropdownUserId.value = null
+      } catch (error) {
+        console.error('更新用户角色失败:', error)
+        console.error('错误详情:', error.response?.data || error.message)
+        message.error('更新用户角色失败: ' + (error.response?.data?.detail || '未知错误'))
+      } finally {
+        isUpdatingRole.value = false
+      }
+    }
+
     return {
       users,
       showAddModal,
@@ -258,7 +367,14 @@ export default {
       saveUser,
       viewProfile,
       formatDate,
-      getRoleName
+      getRoleName,
+      // 角色管理相关
+      activeDropdownUserId,
+      isUpdatingRole,
+      availableRoles,
+      toggleRoleDropdown,
+      handleOutsideClick,
+      changeUserRole
     }
   }
 }
@@ -287,5 +403,40 @@ tbody tr:hover {
 
 .dark tbody tr:hover {
   background-color: rgba(55, 65, 81, 0.5);
+}
+
+/* 角色徽章样式 */
+.rounded-full {
+  transition: all 0.2s ease;
+}
+
+.rounded-full:hover {
+  opacity: 0.9;
+  transform: scale(1.05);
+}
+
+/* 下拉菜单样式 */
+.absolute {
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 确保下拉菜单在暗色模式下可见 */
+.dark .absolute {
+  background-color: #1f2937;
+  border-color: #374151;
+}
+
+/* 确保下拉菜单不被遮挡 */
+.relative {
+  position: relative !important;
+}
+
+td {
+  position: static !important;
 }
 </style>

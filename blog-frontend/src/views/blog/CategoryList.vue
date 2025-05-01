@@ -78,10 +78,20 @@ export default {
 
     // 查看分类下的文章
     const viewCategoryArticles = (categoryName) => {
-      router.push({
-        path: '/articles',
-        query: { category: categoryName }
-      })
+      // 根据分类名称查找分类ID
+      const category = categories.value.find(c => c.name === categoryName);
+      if (category && category.id) {
+        // 如果找到分类ID，跳转到分类详情页
+        router.push({
+          path: `/categories/${category.id}`
+        });
+      } else {
+        // 如果没有找到分类ID，使用旧的方式跳转
+        router.push({
+          path: '/articles',
+          query: { category: categoryName }
+        });
+      }
     }
 
     onMounted(() => {

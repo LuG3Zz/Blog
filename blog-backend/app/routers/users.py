@@ -10,6 +10,8 @@ from app.core.database import get_db
 from app.core.config import settings
 from app.services.user_service import UserService
 from app.services.comment_service import CommentService
+from app.services.site_settings_service import SiteSettingsService
+from app.services.email_service import EmailService
 from app.utils.pagination import PaginationParams
 from app.schemas.comment import CommentResponse
 from app.schemas.user import UserCreate, UserInDB, UserLogin, UserUpdate, UserResponse, UserRole
@@ -22,13 +24,55 @@ router = APIRouter(prefix="/users", tags=['users'])
 @router.post("/", response_model=UserInDB)
 @router.post("", response_model=UserInDB)  # 添加无尾部斜杠的路由
 async def create_user(user: UserCreate, db: Session = Depends(get_db)):
+    """
+    创建新用户
+
+    - **username**: 用户名
+    - **email**: 邮箱
+    - **password**: 密码
+    - **verification_code**: 邮箱验证码（如果系统设置要求）
+
+    返回创建的用户信息
+    """
+    # 检查用户名是否已存在
     db_user = db.query(models.User).filter(models.User.username == user.username).first()
     if db_user:
-        raise HTTPException(status_code=400, detail="Username already registered")
+        raise HTTPException(status_code=400, detail="用户名已被注册")
+
+    # 检查邮箱是否已存在
+    email_user = db.query(models.User).filter(models.User.email == user.email).first()
+    if email_user:
+        raise HTTPException(status_code=400, detail="邮箱已被注册")
+
+    # 检查系统设置是否要求邮箱验证
+    settings = SiteSettingsService.get_settings(db)
+    email_verified = False
+
+    if settings and settings.require_email_verification:
+        # 如果系统要求邮箱验证，检查验证码
+        if not user.verification_code:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="需要提供邮箱验证码"
+            )
+
+        # 验证验证码
+        is_valid = EmailService.verify_code(user.email, user.verification_code)
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="验证码无效或已过期"
+            )
+
+        # 验证通过，设置邮箱已验证
+        email_verified = True
+
+    # 创建用户
     hashed_password = security.get_password_hash(user.password)
     db_user = models.User(
         username=user.username,
         email=user.email,
+        email_verified=email_verified,
         hashed_password=hashed_password,
         created_at=datetime.now(timezone.utc)
     )

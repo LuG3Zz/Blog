@@ -131,10 +131,12 @@ export const likeComment = (commentId) => {
 };
 
 /**
- * 获取待审核评论列表（仅管理员可用）
+ * 获取待审核评论列表（管理员可查看所有，编辑可查看自己文章的）
  * @param {Object} [options] - 查询选项
  * @param {number} [options.page=1] - 页码
  * @param {number} [options.pageSize=10] - 每页数量
+ * @param {number} [options.articleId] - 文章ID（编辑角色筛选自己文章的评论）
+ * @param {boolean} [options.parentOnly=false] - 是否只获取父评论
  * @returns {Promise} 返回待审核评论列表
  */
 export const fetchPendingComments = (options = {}) => {
@@ -143,11 +145,21 @@ export const fetchPendingComments = (options = {}) => {
     page_size: options.pageSize || 10
   };
 
+  // 如果提供了文章ID，添加到查询参数
+  if (options.articleId) {
+    params.article_id = options.articleId;
+  }
+
+  // 如果指定了只获取父评论
+  if (options.parentOnly) {
+    params.parent_only = true;
+  }
+
   return apiClient.get(API_PATHS.COMMENTS.PENDING, { params });
 };
 
 /**
- * 审核通过评论（仅管理员可用）
+ * 审核通过评论（管理员可审核所有，编辑可审核自己文章的）
  * @param {number} commentId - 评论ID
  * @returns {Promise} 返回审核结果
  */
@@ -163,6 +175,7 @@ export const approveComment = (commentId) => {
  * @param {string} [options.sortBy='newest'] - 排序方式（newest, oldest, most_liked）
  * @param {boolean} [options.approvedOnly=null] - 审核状态筛选（true: 已审核, false: 未审核, null: 所有）
  * @param {number} [options.userId=null] - 按用户ID筛选
+ * @param {boolean} [options.parentOnly=false] - 是否只获取父评论
  * @returns {Promise} 返回评论列表
  */
 export const fetchAllComments = (options = {}) => {
@@ -173,6 +186,11 @@ export const fetchAllComments = (options = {}) => {
     approved_only: options.approvedOnly,
     user_id: options.userId
   };
+
+  // 如果指定了只获取父评论
+  if (options.parentOnly) {
+    params.parent_only = true;
+  }
 
   return apiClient.get(API_PATHS.COMMENTS.ALL, { params });
 };

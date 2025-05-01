@@ -3,21 +3,21 @@
     <div class="container mx-auto">
       <div class="flex flex-col md:flex-row justify-between items-center">
         <div class="mb-4 md:mb-0">
-          <h3 class="text-xl font-bold uppercase">BrownLu的博客</h3>
-          <p class="text-sm mt-2">与你共享美好生活</p>
+          <h3 class="text-xl font-bold uppercase">{{ siteTitle }}</h3>
+          <p class="text-sm mt-2">{{ siteSubtitle }}</p>
         </div>
-        
+
         <div class="flex flex-col md:flex-row gap-8">
           <div>
             <h4 class="text-lg font-medium mb-2">链接</h4>
             <ul class="space-y-1">
-              <li><router-link to="/" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors">首页</router-link></li>
-              <li><router-link to="/articles" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors">文章</router-link></li>
-              <li><router-link to="/categories" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors">分类</router-link></li>
-              <li><router-link to="/about" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors">关于</router-link></li>
+              <li><router-link to="/" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors">{{ navItems.Home || '首页' }}</router-link></li>
+              <li><router-link to="/articles" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors">{{ navItems.ArticleList || '文章' }}</router-link></li>
+              <li><router-link to="/categories" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors">{{ navItems.CategoryList || '分类' }}</router-link></li>
+              <li><router-link to="/about" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors">{{ navItems.About || '关于' }}</router-link></li>
             </ul>
           </div>
-          
+
           <div>
             <h4 class="text-lg font-medium mb-2">联系我</h4>
             <ul class="space-y-1">
@@ -28,17 +28,41 @@
           </div>
         </div>
       </div>
-      
+
       <div class="border-t border-gray-700 mt-8 pt-6 text-center text-sm">
-        <p>&copy; {{ new Date().getFullYear() }} BrownLu的博客. 保留所有权利.</p>
+        <p>{{ footerText }}</p>
       </div>
     </div>
   </footer>
 </template>
 
 <script>
+import { computed } from 'vue'
+import { useSiteSettingsStore } from '@/stores'
+
 export default {
-  name: 'Footer'
+  name: 'Footer',
+  setup() {
+    const siteSettingsStore = useSiteSettingsStore()
+
+    // 获取网站设置
+    const siteTitle = computed(() => siteSettingsStore.siteTitle || 'BrownLu的博客')
+    const siteSubtitle = computed(() => siteSettingsStore.siteSubtitle || '与你共享美好生活')
+    const footerText = computed(() => siteSettingsStore.footerText || `© ${new Date().getFullYear()} BrownLu的博客. 保留所有权利.`)
+    const navItems = computed(() => siteSettingsStore.navText || {
+      Home: '首页',
+      ArticleList: '文章',
+      CategoryList: '分类',
+      About: '关于'
+    })
+
+    return {
+      siteTitle,
+      siteSubtitle,
+      footerText,
+      navItems
+    }
+  }
 }
 </script>
 

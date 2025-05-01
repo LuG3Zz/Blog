@@ -94,7 +94,9 @@
               <span :class="{ 'hidden': isCollapsed }">标签管理</span>
             </router-link>
 
+            <!-- 用户管理（仅超级管理员可见） -->
             <router-link
+              v-if="isUserSuperAdmin"
               to="/admin/users"
               active-class="bg-gray-200 dark:bg-gray-700"
               class="flex items-center py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -118,7 +120,9 @@
               <span :class="{ 'hidden': isCollapsed }">评论管理</span>
             </router-link>
 
+            <!-- 活动管理（仅超级管理员可见） -->
             <router-link
+              v-if="isUserSuperAdmin"
               to="/admin/activities"
               active-class="bg-gray-200 dark:bg-gray-700"
               class="flex items-center py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -130,7 +134,9 @@
               <span :class="{ 'hidden': isCollapsed }">活动管理</span>
             </router-link>
 
+            <!-- 通知管理（仅超级管理员可见） -->
             <router-link
+              v-if="isUserSuperAdmin"
               to="/admin/notifications"
               active-class="bg-gray-200 dark:bg-gray-700"
               class="flex items-center py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -142,7 +148,9 @@
               <span :class="{ 'hidden': isCollapsed }">通知管理</span>
             </router-link>
 
+            <!-- 关于页面管理（仅超级管理员可见） -->
             <router-link
+              v-if="isUserSuperAdmin"
               to="/admin/about"
               active-class="bg-gray-200 dark:bg-gray-700"
               class="flex items-center py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -166,7 +174,9 @@
               <span :class="{ 'hidden': isCollapsed }">文件管理</span>
             </router-link>
 
+            <!-- 访客记录（仅超级管理员可见） -->
             <router-link
+              v-if="isUserSuperAdmin"
               to="/admin/visitors"
               active-class="bg-gray-200 dark:bg-gray-700"
               class="flex items-center py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -177,6 +187,37 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
               </svg>
               <span :class="{ 'hidden': isCollapsed }">访客记录</span>
+            </router-link>
+
+            <!-- 订阅管理（仅超级管理员可见） -->
+            <router-link
+              v-if="isUserSuperAdmin"
+              to="/admin/subscriptions"
+              active-class="bg-gray-200 dark:bg-gray-700"
+              class="flex items-center py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+              :class="{ 'justify-center px-2': isCollapsed, 'px-4': !isCollapsed }"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" :class="{ 'mr-3': !isCollapsed }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              <span :class="{ 'hidden': isCollapsed }">订阅管理</span>
+            </router-link>
+
+
+
+            <!-- 系统设置（仅超级管理员可见） -->
+            <router-link
+              v-if="isUserSuperAdmin"
+              to="/admin/settings"
+              active-class="bg-gray-200 dark:bg-gray-700"
+              class="flex items-center py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+              :class="{ 'justify-center px-2': isCollapsed, 'px-4': !isCollapsed }"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" :class="{ 'mr-3': !isCollapsed }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span :class="{ 'hidden': isCollapsed }">系统设置</span>
             </router-link>
           </div>
         </nav>
@@ -196,7 +237,7 @@ import { useRouter } from 'vue-router'
 import { userApi } from '@/api'
 import { useUserStore } from '@/stores'
 import message from '@/utils/message'
-import { isAdmin } from '@/utils/permission'
+import { isAdmin, isSuperAdmin, isEditor } from '@/utils/permission'
 
 export default {
   name: 'Admin',
@@ -263,11 +304,32 @@ export default {
       router.push('/login')
     }
 
+    // 检查用户是否有权限访问特定页面
+    const canAccessPage = (requiresSuperAdmin = false) => {
+      if (requiresSuperAdmin) {
+        return isSuperAdmin(userStore.userInfo)
+      }
+      return true
+    }
+
+    // 检查用户是否为编辑
+    const isUserEditor = computed(() => {
+      return isEditor(userStore.userInfo)
+    })
+
+    // 检查用户是否为超级管理员
+    const isUserSuperAdmin = computed(() => {
+      return isSuperAdmin(userStore.userInfo)
+    })
+
     return {
       isCollapsed,
       toggleSidebar,
       logout,
-      userInfo
+      userInfo,
+      isUserEditor,
+      isUserSuperAdmin,
+      canAccessPage
     }
   }
 }

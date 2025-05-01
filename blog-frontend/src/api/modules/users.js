@@ -86,15 +86,21 @@ export const login = async (credentials) => {
  * @param {string} userData.username - 用户名
  * @param {string} userData.email - 邮箱
  * @param {string} userData.password - 密码
+ * @param {string} [userData.verification_code] - 邮箱验证码（如果启用了邮箱验证）
  * @returns {Promise} 返回包含注册结果的Promise对象
  */
 export const register = (userData) => {
-  // 根据 API 文档，注册需要的字段是 username、email 和 password
+  // 构建注册数据
   const registerData = {
     username: userData.username,
     email: userData.email,
     password: userData.password
   };
+
+  // 如果提供了验证码，添加到请求数据中
+  if (userData.verification_code) {
+    registerData.verification_code = userData.verification_code;
+  }
 
   return apiClient.post(API_PATHS.USERS.BASE, registerData);
 };

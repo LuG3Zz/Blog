@@ -84,11 +84,20 @@ export const getActivityHeatmap = (params = {}) => {
   });
 };
 
+/**
+ * 获取订阅统计数据
+ * @returns {Promise} 返回订阅统计数据
+ */
+export const getSubscriptionStats = () => {
+  return apiClient.get(API_PATHS.STATS.SUBSCRIPTIONS);
+};
+
 export default {
   getOverviewStats,
   getPopularArticles,
   getActivityTimeline,
   getCategoryDistribution,
   getUserActivity,
-  getActivityHeatmap
+  getActivityHeatmap,
+  getSubscriptionStats
 };

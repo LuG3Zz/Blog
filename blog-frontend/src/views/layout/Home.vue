@@ -35,11 +35,12 @@
             <PopularArticles class="mt-5 animate__animated animate__fadeInRight animate__delay-1s"/>
             <FlipClock class="animate__animated animate__fadeInRight animate__delay-2s animate-hover-scale" />
             <RecentActivities class="animate__animated animate__fadeInRight animate__delay-3s" />
+            <SiteSubscription class="animate__animated animate__fadeInRight animate__delay-4s" />
           </div>
         </div>
       </section>
       <section class="w-full h-auto border-t-2 border-secondary dark:border-t-2 dark:border-dark-secondary p-0 m-0 overflow-hidden animate__animated animate__fadeIn animate__delay-4s">
-        <div class="w-full h-32 bg-cover bg-center" style="background-image: url('https://see.fontimg.com/api/rf5/nRWO0/YjYzZjZhMjcyNzM5NDM0ZGE2NmY1NzM1OTAwNmZiOWUudHRm/SGkgICBCcm93bmx1/scoreboard-type-italic-personal.png?r=fs&h=70&w=10000&fg=000000&bg=FFFFFF&s=57')"></div>
+        <div class="w-full h-32 bg-cover bg-center" :style="bannerImage ? `background-image: url('${bannerImage}')` : `background-image: url('https://see.fontimg.com/api/rf5/nRWO0/YjYzZjZhMjcyNzM5NDM0ZGE2NmY1NzM1OTAwNmZiOWUudHRm/SGkgICBCcm93bmx1/scoreboard-type-italic-personal.png?r=fs&h=70&w=10000&fg=000000&bg=FFFFFF&s=57')`"></div>
         <div class="flex w-full h-auto gap-8 px-8">
           <div class="w-1/5 h-full overflow-y-auto p-4">
             <Categories v-model="selectedCategory" :categories="homeData.categories" class="animate__animated animate__fadeInLeft animate__delay-5s" />
@@ -51,7 +52,7 @@
       </section>
     </template>
     <section class="flex justify-center items-center">
-      <h1 class="text-6xl font-extrabold uppercase tracking-tight leading-tight text-secondary dark:text-dark-secondary animate__animated animate__zoomIn animate__delay-1s animate__infinite animate__slow">🎉欢迎来到BrownLu的博客🎉</h1>
+      <h1 class="text-6xl font-extrabold uppercase tracking-tight leading-tight text-secondary dark:text-dark-secondary animate__animated animate__zoomIn animate__delay-1s animate__infinite animate__slow">🎉欢迎来到{{ siteTitle }}🎉</h1>
     </section>
     <Footer class="animate__animated animate__fadeInUp animate__delay-4s" />
 
@@ -63,12 +64,13 @@
 </template>
 
 <script>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { Navbar, Footer } from '../../components/layout'
-import { UserProfile, ActivityHeatmap, RecentActivities, SocialMedia, Categories, PostsList, Carousel, StatsOverview, PopularArticles, CategoryDistribution, Hitokoto } from '../../components/blog'
+import { UserProfile, ActivityHeatmap, RecentActivities, SocialMedia, Categories, PostsList, Carousel, StatsOverview, PopularArticles, CategoryDistribution, Hitokoto, SiteSubscription } from '../../components/blog'
 import { HandLoader, Stick ,FlipClock} from '../../components/ui'
 import { homeApi } from '../../api'
 import message from '../../utils/message.js'
+import { useSiteSettingsStore } from '../../stores'
 
 export default {
   name: 'Home',
@@ -88,7 +90,8 @@ export default {
     RecentActivities,
     Stick,
     FlipClock,
-    Hitokoto
+    Hitokoto,
+    SiteSubscription
   },
   setup() {
     const selectedCategory = ref('')
@@ -98,6 +101,11 @@ export default {
 
     // 暗黑模式状态
     const isDarkMode = ref(false)
+
+    // 获取系统设置
+    const siteSettingsStore = useSiteSettingsStore()
+    const bannerImage = computed(() => siteSettingsStore.bannerImage)
+    const siteTitle = computed(() => siteSettingsStore.siteTitle || 'BrownLu的博客')
 
     // 检查系统偏好和本地存储
     onMounted(() => {
@@ -241,7 +249,9 @@ export default {
       processActivityData,
       getSocialData,
       isDarkMode,
-      FlipClock
+      FlipClock,
+      bannerImage,
+      siteTitle
     }
   }
 }

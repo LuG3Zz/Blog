@@ -10,7 +10,7 @@
 
 <script>
 import { onMounted, computed, ref } from 'vue'
-import { useUserStore, useThemeStore } from './stores'
+import { useUserStore, useThemeStore, useSiteSettingsStore } from './stores'
 import Stick from './components/ui/stick.vue'
 import NotificationContainer from './components/ui/NotificationContainer.vue'
 import Toast from './components/ui/Toast.vue'
@@ -29,6 +29,7 @@ export default {
     // 获取状态管理实例
     const themeStore = useThemeStore()
     const userStore = useUserStore()
+    const siteSettingsStore = useSiteSettingsStore()
 
     // 控制WebSocket状态指示器的显示
     const showWebSocketIndicator = ref(true)
@@ -52,6 +53,9 @@ export default {
     onMounted(async () => {
       // 初始化用户状态
       userStore.initState()
+
+      // 初始化系统设置
+      siteSettingsStore.initSettings()
 
       // 确保WebSocket连接是活跃的
       // 如果连接已关闭，尝试重新连接

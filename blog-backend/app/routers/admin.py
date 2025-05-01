@@ -3,11 +3,12 @@
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from typing import Optional
 
 from app import models
 from app.core import security
 from app.core.database import get_db
-from app.schemas.user import UserCreate, UserResponse, UserRole
+from app.schemas.user import UserCreate, UserResponse, UserRole, UserUpdate
 from app.core.permissions import is_admin
 from app.services.user_service import UserService
 
@@ -80,3 +81,65 @@ async def list_users(
         users = [user for user in users if user.role == role]
 
     return users
+
+
+@router.patch("/users/{user_id}/role", response_model=UserResponse)
+async def update_user_role(
+    user_id: int,
+    role_data: dict,
+    current_user: models.User = Depends(security.get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    更新用户角色（管理员专用）
+
+    - **user_id**: 用户ID
+    - **role_data**: 包含角色信息的JSON对象，格式为 {"role": "角色名称"}
+      角色名称可以是: admin, editor, author, user
+
+    返回更新后的用户信息
+    """
+    # 检查当前用户是否为管理员
+    if not is_admin(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="只有管理员可以修改用户角色"
+        )
+
+    # 检查用户是否存在
+    user = UserService.get_user_by_id(db, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="用户不存在"
+        )
+
+    # 不允许修改自己的角色
+    if user_id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="不能修改自己的角色"
+        )
+
+    # 从请求体中获取角色
+    role_value = role_data.get('role')
+    if not role_value:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="必须提供角色参数"
+        )
+
+    try:
+        # 将字符串转换为枚举值
+        role_enum = UserRole(role_value)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"无效的角色值: {role_value}，有效值为: {[r.value for r in UserRole]}"
+        )
+
+    # 更新用户角色
+    user_update = UserUpdate(role=role_enum)
+    updated_user = UserService.update_user(db, user_id, user_update)
+
+    return updated_user

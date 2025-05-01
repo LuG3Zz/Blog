@@ -282,6 +282,7 @@ async def get_all_comments(
     sort_by: str = Query("newest", description="排序方式: newest, oldest, most_liked"),
     approved_only: Optional[bool] = Query(None, description="审核状态筛选，True表示已审核，False表示未审核，None表示全部"),
     user_id: Optional[int] = Query(None, description="用户ID筛选"),
+    parent_only: bool = Query(True, description="是否只返回顶层评论"),
     db: Session = Depends(get_db),
     authorization: Optional[str] = Header(None)
 ):
@@ -294,6 +295,7 @@ async def get_all_comments(
     - **sort_by**: 排序方式，可选值: newest(最新), oldest(最旧), most_liked(最多点赞)
     - **approved_only**: 审核状态筛选，True表示已审核，False表示未审核，None表示全部
     - **user_id**: 按用户ID筛选
+    - **parent_only**: 是否只返回顶层评论，默认为True
 
     返回分页的评论列表。非管理员用户只能看到已审核的评论。
     """
@@ -342,7 +344,8 @@ async def get_all_comments(
         approved_only=approved_only,
         user_id=user_id,
         sort_by=sort_by,
-        current_user=current_user  # 传递当前用户信息
+        current_user=current_user,  # 传递当前用户信息
+        parent_only=parent_only  # 是否只返回顶层评论
     )
 
     return comments
@@ -351,22 +354,67 @@ async def get_all_comments(
 async def get_pending_comments(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(10, ge=1, le=100, description="每页数量"),
+    article_id: Optional[int] = Query(None, description="文章ID，用于编辑筛选自己文章的评论"),
+    parent_only: bool = Query(True, description="是否只返回顶层评论"),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(security.get_current_user)
 ):
-    """获取待审核评论列表（仅管理员可用）"""
-    # 检查用户是否为管理员
-    if current_user.role != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="只有管理员可以查看待审核评论"
-        )
+    """
+    获取待审核评论列表（管理员可查看所有，编辑可查看自己文章的）
 
+    参数:
+    - **page**: 页码，从1开始
+    - **page_size**: 每页数量，范围1-100
+    - **article_id**: 文章ID，用于编辑筛选自己文章的评论
+    - **parent_only**: 是否只返回顶层评论，默认为True
+    """
     # 创建分页参数
     params = PaginationParams(page=page, page_size=page_size)
 
+    # 检查用户角色
+    is_admin = current_user.role == "admin"
+    is_editor = current_user.role == "editor"
+
+    # 如果是编辑但没有指定文章ID，则需要获取编辑的所有文章ID
+    editor_article_ids = None
+    if is_editor and not is_admin:
+        if article_id:
+            # 检查文章是否属于该编辑
+            article = db.query(models.Article).filter(models.Article.id == article_id).first()
+            if not article or article.author_id != current_user.id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="您只能查看自己文章的待审核评论"
+                )
+            editor_article_ids = [article_id]
+        else:
+            # 获取编辑的所有文章ID
+            editor_articles = db.query(models.Article).filter(models.Article.author_id == current_user.id).all()
+            editor_article_ids = [article.id for article in editor_articles]
+            if not editor_article_ids:
+                # 如果编辑没有文章，返回空结果
+                return CommentPaginationResponse(
+                    items=[],
+                    total=0,
+                    page=page,
+                    page_size=page_size,
+                    total_pages=0
+                )
+
+    # 如果既不是管理员也不是编辑，则没有权限
+    if not is_admin and not is_editor:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="只有管理员和编辑可以查看待审核评论"
+        )
+
     # 获取待审核评论
-    comments = CommentService.get_pending_comments(db=db, params=params)
+    comments = CommentService.get_pending_comments(
+        db=db,
+        params=params,
+        article_ids=editor_article_ids,  # 如果是编辑，只获取其文章的评论
+        parent_only=parent_only  # 是否只返回顶层评论
+    )
 
     return comments
 
@@ -376,12 +424,33 @@ async def approve_comment(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(security.get_current_user)
 ):
-    """审核通过评论（仅管理员可用）"""
-    # 检查用户是否为管理员
-    if current_user.role != "admin":
+    """审核通过评论（管理员可审核所有，编辑可审核自己文章的）"""
+    # 检查用户角色
+    is_admin = current_user.role == "admin"
+    is_editor = current_user.role == "editor"
+
+    # 获取评论信息
+    db_comment = CommentService.get_comment_by_id(db, comment_id)
+    if not db_comment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="评论不存在"
+        )
+
+    # 如果是编辑，检查评论是否属于自己的文章
+    if is_editor and not is_admin:
+        # 获取文章信息
+        article = db.query(models.Article).filter(models.Article.id == db_comment.article_id).first()
+        if not article or article.author_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="您只能审核自己文章下的评论"
+            )
+    # 如果既不是管理员也不是编辑，则没有权限
+    elif not is_admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="只有管理员可以审核评论"
+            detail="只有管理员和编辑可以审核评论"
         )
 
     try:

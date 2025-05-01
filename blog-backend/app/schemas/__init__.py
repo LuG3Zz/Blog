@@ -30,7 +30,9 @@ from app.schemas.ai_assist import (
 )
 from app.schemas.subscription import (
     NotificationBase, NotificationCreate, NotificationResponse,
-    SubscriptionBase, CategorySubscriptionCreate, AuthorSubscriptionCreate, SubscriptionResponse
+    SubscriptionBase, CategorySubscriptionCreate, AuthorSubscriptionCreate, SubscriptionResponse,
+    EmailSubscriptionBase, EmailSubscriptionCreate, EmailSubscriptionResponse,
+    EmailSubscriptionUpdate, EmailSubscriptionUnsubscribe
 )
 from app.schemas.version import (
     ArticleVersionBase, ArticleVersionCreate, ArticleVersionResponse, ArticleVersionDiff
@@ -39,6 +41,9 @@ from app.schemas.websocket import (
     MessageType, WebSocketMessage, UserOnlineMessage, UserOfflineMessage,
     AdminNotificationMessage, SystemNotificationMessage, ErrorMessage,
     PingMessage, PongMessage, AdminNotificationRequest
+)
+from app.schemas.site_settings import (
+    SiteSettingsBase, SiteSettingsCreate, SiteSettingsUpdate, SiteSettingsResponse
 )
 
 # Export all schemas
@@ -69,6 +74,8 @@ __all__ = [
     # Subscription and notification schemas
     "NotificationBase", "NotificationCreate", "NotificationResponse",
     "SubscriptionBase", "CategorySubscriptionCreate", "AuthorSubscriptionCreate", "SubscriptionResponse",
+    "EmailSubscriptionBase", "EmailSubscriptionCreate", "EmailSubscriptionResponse",
+    "EmailSubscriptionUpdate", "EmailSubscriptionUnsubscribe",
 
     # Version control schemas
     "ArticleVersionBase", "ArticleVersionCreate", "ArticleVersionResponse", "ArticleVersionDiff",
@@ -77,4 +84,7 @@ __all__ = [
     "MessageType", "WebSocketMessage", "UserOnlineMessage", "UserOfflineMessage",
     "AdminNotificationMessage", "SystemNotificationMessage", "ErrorMessage",
     "PingMessage", "PongMessage", "AdminNotificationRequest",
+
+    # Site settings schemas
+    "SiteSettingsBase", "SiteSettingsCreate", "SiteSettingsUpdate", "SiteSettingsResponse",
 ]

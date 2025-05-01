@@ -5,6 +5,7 @@
 ## 功能特性
 
 - 用户注册、登录和认证
+- 邮箱验证码注册功能
 - 文章的创建、更新、删除和查询
 - 评论的添加和管理
 - 文章分类管理
@@ -150,6 +151,11 @@ PORT=8000
 RELOAD=True
 WORKERS=1
 TRUSTED_HOSTS=127.0.0.1,localhost,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+
+# 邮件配置（用于邮箱验证功能）
+RESEND_API_KEY=re_your_resend_api_key
+SITE_NAME=BrownLu的博客
+EMAIL_FROM=noreply@yourdomain.com
 ```
 
 4. 运行应用
@@ -274,3 +280,57 @@ curl -X POST http://localhost:8000/articles/ai-assist \
 2. 文章内容需不少于50个字符
 3. 确保服务端已安装python-dotenv依赖
 4. API密钥请妥善保管，不要提交到版本库
+5. 邮箱验证功能需要配置有效的Resend API密钥
+
+## 邮箱验证功能
+
+### 功能概述
+
+系统支持用户注册时进行邮箱验证，管理员可以在系统设置中开启或关闭此功能。
+
+### 配置步骤
+
+1. 在 `.env` 文件中配置以下参数：
+   ```
+   RESEND_API_KEY=re_your_resend_api_key  # 从 Resend.com 获取
+   SITE_NAME=您的网站名称
+   EMAIL_FROM=noreply@yourdomain.com      # 发件人邮箱
+   ```
+
+2. 运行数据库迁移脚本添加必要的字段：
+   ```bash
+   python -m migrations.add_email_verification
+   ```
+
+3. 在管理后台的系统设置中开启"要求邮箱验证"选项。
+
+### API 接口
+
+#### 发送验证码
+
+```http
+POST /api/v1/email/send-verification
+Content-Type: application/json
+
+{
+  "email": "user@example.com"
+}
+```
+
+#### 验证验证码
+
+```http
+POST /api/v1/email/verify-code
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "code": "123456"
+}
+```
+
+### 注意事项
+
+1. 验证码有效期为10分钟
+2. 同一邮箱60秒内只能请求一次验证码
+3. 需要有效的Resend API密钥才能发送邮件

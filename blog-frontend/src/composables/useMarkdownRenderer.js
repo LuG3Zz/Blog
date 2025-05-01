@@ -1,6 +1,8 @@
 import { computed } from 'vue'
 import MarkdownIt from 'markdown-it'
 import markdownItKatex from 'markdown-it-katex'
+// 导入任务列表插件
+import markdownItTaskLists from 'markdown-it-task-lists'
 
 // 添加脚注支持
 const footnote = (md) => {
@@ -88,52 +90,7 @@ const footnote = (md) => {
     return `<sup id="fnref-${id}"><a href="#fn-${id}" class="footnote-ref">[${id}]</a></sup>`;
   };
 }
-// 添加任务列表支持
-const taskLists = (md) => {
-  // 匹配任务列表项 [ ], [x], [X]
-  const taskListRegex = /^\[([ xX])\]\s+/;
-
-  // 修改列表项渲染
-  const originalListItemRender = md.renderer.rules.list_item_open || function(tokens, idx, options, env, self) {
-    return self.renderToken(tokens, idx, options);
-  };
-
-  md.renderer.rules.list_item_open = function(tokens, idx, options, env, self) {
-    const token = tokens[idx];
-    const nextToken = tokens[idx + 1];
-
-    // 检查是否是任务列表项
-    if (nextToken && nextToken.type === 'inline' && nextToken.content.match(taskListRegex)) {
-      // 添加任务列表类
-      token.attrSet('class', (token.attrGet('class') || '') + ' task-list-item');
-
-      // 修改内容，将 [ ] 或 [x] 替换为复选框
-      const match = nextToken.content.match(taskListRegex);
-      const checked = match[1] !== ' ';
-
-      // 替换内容
-      nextToken.content = nextToken.content.replace(
-        taskListRegex,
-        `<input type="checkbox" class="task-list-item-checkbox" ${checked ? 'checked' : ''} disabled> `
-      );
-
-      // 将父列表标记为任务列表
-      let parentToken = null;
-      for (let i = idx - 1; i >= 0; i--) {
-        if (tokens[i].type === 'bullet_list_open' || tokens[i].type === 'ordered_list_open') {
-          parentToken = tokens[i];
-          break;
-        }
-      }
-
-      if (parentToken) {
-        parentToken.attrSet('class', (parentToken.attrGet('class') || '') + ' task-list');
-      }
-    }
-
-    return originalListItemRender(tokens, idx, options, env, self);
-  };
-}
+// 不再需要自定义任务列表实现，使用官方插件
 
 /**
  * 创建并配置Markdown渲染器
@@ -272,8 +229,8 @@ export function useMarkdownRenderer() {
     };
   })
 
-  // 添加任务列表支持
-  md.use(taskLists)
+  // 添加任务列表支持 - 使用官方插件
+  md.use(markdownItTaskLists)
 
   // 添加脚注支持
   md.use(footnote)

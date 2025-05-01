@@ -2,14 +2,14 @@
   <nav class="flex justify-between items-center px-8 py-4 bg-secondary/80 dark:bg-dark-primary/80 backdrop-blur-md text-primary dark:text-dark-secondary sticky top-0 z-50 shadow-lg border-b border-white/10 dark:border-black/10">
     <div class="navbar-brand">
       <router-link to="/" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors">
-        <h2 class="text-2xl font-bold uppercase m-0">😊BrownLu的博客</h2>
+        <h2 class="text-2xl font-bold uppercase m-0">{{ siteTitle }}</h2>
       </router-link>
     </div>
     <div class="flex gap-6">
-      <router-link to="/" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors uppercase font-medium" :class="{ 'active': $route.path === '/' }">首页</router-link>
-      <router-link to="/articles" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors uppercase font-medium" :class="{ 'active': $route.path.includes('/article') }">文章</router-link>
-      <router-link to="/categories" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors uppercase font-medium" :class="{ 'active': $route.path.includes('/categories') }">分类</router-link>
-      <router-link to="/about" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors uppercase font-medium" :class="{ 'active': $route.path === '/about' }">关于</router-link>
+      <router-link to="/" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors uppercase font-medium" :class="{ 'active': $route.path === '/' }">{{ navItems.Home || '首页' }}</router-link>
+      <router-link to="/articles" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors uppercase font-medium" :class="{ 'active': $route.path.includes('/article') }">{{ navItems.ArticleList || '文章' }}</router-link>
+      <router-link to="/categories" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors uppercase font-medium" :class="{ 'active': $route.path.includes('/categories') }">{{ navItems.CategoryList || '分类' }}</router-link>
+      <router-link to="/about" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors uppercase font-medium" :class="{ 'active': $route.path === '/about' }">{{ navItems.About || '关于' }}</router-link>
     </div>
     <div class="flex items-center gap-4">
       <!-- 搜索按钮 -->
@@ -28,7 +28,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
         </svg>
       </button>
-      <router-link v-if="!isLoggedIn" to="/login" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors uppercase font-medium">登录</router-link>
+      <router-link v-if="!isLoggedIn" to="/login" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors uppercase font-medium">{{ navItems.Login || '登录' }}</router-link>
       <!-- 如果已登录但正在加载用户信息，显示加载状态 -->
       <div v-else-if="isLoadingUserInfo" class="flex items-center gap-2 text-primary dark:text-dark-secondary">
         <div class="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center overflow-hidden animate-pulse">
@@ -70,7 +70,7 @@
             <span class="font-medium">{{ userInfo?.username || '用户' }}</span>
             <span class="text-xs opacity-70 flex items-center gap-1">
               <span v-if="userInfo?.is_admin" class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">管理员</span>
-              <span v-else-if="userInfo?.role === 'editor'" class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">编辑</span>
+              <span v-else-if="userInfo?.is_editor" class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">编辑</span>
               <span v-else class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">用户</span>
             </span>
           </div>
@@ -120,7 +120,7 @@
                 <div class="flex items-center gap-2">
                   <div class="font-medium text-gray-900 dark:text-gray-100">{{ userInfo?.username || '用户' }}</div>
                   <span v-if="userInfo?.is_admin" class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">管理员</span>
-                  <span v-else-if="userInfo?.role === 'editor'" class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">编辑</span>
+                  <span v-else-if="userInfo?.is_editor" class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">编辑</span>
                 </div>
                 <div class="text-xs text-gray-500 dark:text-gray-400">{{ userInfo?.email || '未设置邮箱' }}</div>
               </div>
@@ -139,8 +139,9 @@
             <span>个人资料</span>
           </router-link>
 
+          <!-- 后台管理链接（管理员和编辑可见） -->
           <router-link
-            v-if="userInfo?.is_admin"
+            v-if="userInfo?.is_admin || userInfo?.is_editor"
             to="/admin"
             class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
             @click="showUserMenu = false"
@@ -173,9 +174,10 @@
 <script>
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useUserStore, useThemeStore } from '@/stores'
+import { useUserStore, useThemeStore, useSiteSettingsStore } from '@/stores'
 import message from '../../utils/message'
 import { usersApi } from '@/api'
+import { isAdmin, isSuperAdmin, isEditor } from '@/utils/permission'
 
 export default {
   name: 'Navbar',
@@ -183,6 +185,7 @@ export default {
     const router = useRouter()
     const userStore = useUserStore()
     const themeStore = useThemeStore()
+    const siteSettingsStore = useSiteSettingsStore()
 
     // 使用全局主题状态
     const isDark = computed(() => themeStore.isDark)
@@ -273,13 +276,9 @@ export default {
       if (apiUserInfo.value) {
         const info = { ...apiUserInfo.value }
 
-        // 根据用户角色判断是否为管理员
-        if (info.role) {
-          info.is_admin = ['admin', 'administrator'].includes(info.role.toLowerCase())
-        } else if (info.is_admin === undefined) {
-          // 默认非管理员
-          info.is_admin = false
-        }
+        // 使用权限检查函数判断用户角色
+        info.is_admin = isSuperAdmin(info)  // 只有超级管理员才设置 is_admin 为 true
+        info.is_editor = isEditor(info)     // 添加 is_editor 属性
 
         // 确保有用户 ID
         if (!info.id && info.user_id) {
@@ -295,17 +294,11 @@ export default {
         try {
           const parsedInfo = JSON.parse(userInfoStr)
 
-          // 根据用户角色判断是否为管理员
+          // 根据用户角色判断权限
           if (parsedInfo) {
-            // 如果数据中有 role 字段，使用它来判断
-            if (parsedInfo.role) {
-              parsedInfo.is_admin = ['admin', 'administrator'].includes(parsedInfo.role.toLowerCase())
-            }
-            // 如果有 is_admin 字段，直接使用
-            else if (parsedInfo.is_admin === undefined) {
-              // 默认非管理员
-              parsedInfo.is_admin = false
-            }
+            // 使用权限检查函数判断用户角色
+            parsedInfo.is_admin = isSuperAdmin(parsedInfo)  // 只有超级管理员才设置 is_admin 为 true
+            parsedInfo.is_editor = isEditor(parsedInfo)     // 添加 is_editor 属性
 
             // 确保有用户 ID
             if (!parsedInfo.id && parsedInfo.user_id) {
@@ -335,6 +328,16 @@ export default {
       }
     }
 
+    // 获取网站设置
+    const siteTitle = computed(() => siteSettingsStore.siteTitle || 'BrownLu的博客')
+    const navItems = computed(() => siteSettingsStore.navText || {
+      Home: '首页',
+      ArticleList: '文章',
+      CategoryList: '分类',
+      About: '关于',
+      Login: '登录'
+    })
+
     return {
       isDark,
       toggleTheme,
@@ -347,7 +350,9 @@ export default {
       isLoadingUserInfo,
       userInfoError,
       fetchUserInfo, // 导出获取用户信息的函数，便于手动刷新
-      handleAvatarError // 导出头像错误处理函数
+      handleAvatarError, // 导出头像错误处理函数
+      siteTitle,
+      navItems
     }
   }
 }

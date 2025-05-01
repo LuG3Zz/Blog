@@ -68,8 +68,8 @@
         </div>
       </div>
 
-      <!-- 待审核评论 -->
-      <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300">
+      <!-- 待审核评论（仅超级管理员可见） -->
+      <div v-if="isUserSuperAdmin" class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300">
         <div class="flex items-center">
           <div class="p-3 rounded-full bg-amber-100 dark:bg-amber-900 mr-4">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-500 dark:text-amber-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -81,6 +81,24 @@
             <p class="text-2xl font-semibold text-gray-800 dark:text-white">{{ stats.pendingComments || 0 }}</p>
             <div class="flex items-center mt-1 space-x-2">
               <router-link to="/admin/comments" class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">管理评论</router-link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 订阅统计 -->
+      <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300">
+        <div class="flex items-center">
+          <div class="p-3 rounded-full bg-green-100 dark:bg-green-900 mr-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-500 dark:text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500 dark:text-gray-400 uppercase">订阅总数</p>
+            <p class="text-2xl font-semibold text-gray-800 dark:text-white">{{ stats.totalSubscriptions || 0 }}</p>
+            <div class="flex items-center mt-1 space-x-2">
+              <span class="text-xs text-gray-500 dark:text-gray-400">活跃: {{ stats.activeSubscriptions || 0 }}</span>
             </div>
           </div>
         </div>
@@ -248,6 +266,7 @@ import { zhCN } from 'date-fns/locale/zh-CN'
 import { useUserStore } from '@/stores'
 import message from '@/utils/message'
 import { Chart, registerables } from 'chart.js'
+import { isSuperAdmin } from '@/utils/permission'
 
 // 注册所有 Chart.js 组件
 Chart.register(...registerables)
@@ -265,7 +284,10 @@ export default {
       totalUsers: 0,
       totalComments: 0,
       totalLikes: 0,
-      pendingComments: 0
+      pendingComments: 0,
+      // 订阅统计
+      totalSubscriptions: 0,
+      activeSubscriptions: 0
     })
 
     // 热门文章
@@ -274,14 +296,26 @@ export default {
     // 获取统计数据
     const fetchStats = async () => {
       try {
-        // 并行请求多个统计数据
-        const [overviewResponse, pendingCommentsResponse, popularArticlesResponse] = await Promise.all([
+        // 检查用户是否为超级管理员
+        const userInfo = userStore.userInfo
+        const isUserSuperAdmin = isSuperAdmin(userInfo)
+
+        // 准备请求数组
+        const requests = [
           statsApi.getOverviewStats(),
-          commentApi.fetchPendingComments({ pageSize: 1 }),
           statsApi.getPopularArticles({ limit: 5, period: 'month' })
-        ])
+        ]
+
+        // 只有超级管理员才能获取待审核评论
+        if (isUserSuperAdmin) {
+          requests.push(commentApi.fetchPendingComments({ pageSize: 1 }))
+        }
+
+        // 并行请求多个统计数据
+        const responses = await Promise.all(requests)
 
         // 处理概览统计数据
+        const overviewResponse = responses[0]
         if (overviewResponse) {
           console.log('获取到的统计概览数据:', overviewResponse)
           stats.value = {
@@ -293,12 +327,19 @@ export default {
           }
         }
 
-        // 处理待审核评论数据
-        stats.value.pendingComments = pendingCommentsResponse?.total || 0
-
         // 处理热门文章数据
+        const popularArticlesResponse = responses[1]
         if (Array.isArray(popularArticlesResponse)) {
           popularArticles.value = popularArticlesResponse
+        }
+
+        // 处理待审核评论数据（仅超级管理员）
+        if (isUserSuperAdmin && responses.length > 2) {
+          const pendingCommentsResponse = responses[2]
+          stats.value.pendingComments = pendingCommentsResponse?.total || 0
+        } else {
+          // 非超级管理员不显示待审核评论数据
+          stats.value.pendingComments = 0
         }
 
         // 获取分类总数
@@ -310,6 +351,20 @@ export default {
         } catch (err) {
           console.error('获取分类总数失败:', err)
           stats.value.totalCategories = 0
+        }
+
+        // 获取订阅统计数据
+        try {
+          const subscriptionStats = await statsApi.getSubscriptionStats()
+          if (subscriptionStats) {
+            console.log('获取到的订阅统计数据:', subscriptionStats)
+            stats.value.totalSubscriptions = subscriptionStats.total_subscriptions || 0
+            stats.value.activeSubscriptions = subscriptionStats.active_subscriptions || 0
+          }
+        } catch (err) {
+          console.error('获取订阅统计数据失败:', err)
+          stats.value.totalSubscriptions = 0
+          stats.value.activeSubscriptions = 0
         }
       } catch (err) {
         console.error('获取统计数据失败:', err)
@@ -379,6 +434,11 @@ export default {
       const now = new Date()
       const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }
       return now.toLocaleDateString('zh-CN', options)
+    })
+
+    // 检查用户是否为超级管理员
+    const isUserSuperAdmin = computed(() => {
+      return isSuperAdmin(userStore.userInfo)
     })
 
     // 获取活动时间线数据
@@ -664,6 +724,7 @@ export default {
       currentDate,
       loading,
       error,
+      isUserSuperAdmin,
 
       // 活动时间线相关
       timelineDays,

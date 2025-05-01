@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, Enum
+from sqlalchemy import Column, Integer, String, Text, DateTime, Enum, Boolean
 import enum
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
@@ -21,6 +21,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, index=True)
     email = Column(String(100), unique=True, index=True)
+    email_verified = Column(Boolean, default=False)  # 邮箱是否已验证
     hashed_password = Column(String(255))
     avatar = Column(String(255))
     bio = Column(Text, nullable=True)

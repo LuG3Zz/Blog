@@ -99,6 +99,18 @@ export const getCategoryDistribution = () => {
   return apiClient.get(API_PATHS.STATS.CATEGORY_DISTRIBUTION);
 };
 
+/**
+ * 更新用户角色
+ * @param {number} userId - 用户ID
+ * @param {string} role - 新角色 (admin, editor, author, user)
+ * @returns {Promise} 返回包含更新后用户信息的Promise对象
+ */
+export const updateUserRole = (userId, role) => {
+  console.log('API调用 updateUserRole:', userId, role);
+  // 使用 JSON 格式发送请求体，而不是查询参数
+  return apiClient.patch(`${API_PATHS.USERS.ADMIN}/${userId}/role`, { role });
+};
+
 export default {
   getUsers,
   getUserById,
@@ -107,5 +119,6 @@ export default {
   deleteUser,
   getSystemStats,
   getUserActivity,
-  getCategoryDistribution
+  getCategoryDistribution,
+  updateUserRole
 };

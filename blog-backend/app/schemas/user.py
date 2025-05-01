@@ -19,6 +19,7 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     """Schema for user creation."""
     password: str = Field(..., min_length=6)
+    verification_code: Optional[str] = None
 
 class UserUpdate(BaseModel):
     """Schema for user updates."""
@@ -27,6 +28,7 @@ class UserUpdate(BaseModel):
     avatar: Optional[str] = None
     bio: Optional[str] = None
     social_media: Optional[Dict[str, str]] = None
+    role: Optional[UserRole] = None
 
 class UserLogin(BaseModel):
     """Schema for user login."""
@@ -38,6 +40,7 @@ class UserInDB(UserBase):
     id: int
     created_at: datetime
     updated_at: datetime
+    email_verified: bool = False
     avatar: Optional[str] = None
     bio: Optional[str] = None
     social_media: Optional[Dict[str, str]] = None
@@ -64,6 +67,7 @@ class UserResponse(BaseModel):
     id: int
     username: str
     email: EmailStr
+    email_verified: bool = False
     avatar: Optional[str] = None
     bio: Optional[str] = None
     social_media: Optional[Dict[str, str]] = None
@@ -78,13 +82,16 @@ class UserResponse(BaseModel):
 
     @classmethod
     def model_validate(cls, obj, *args, **kwargs):
-        # 如果 social_media 是字符串，尝试将其解析为 JSON
-        if hasattr(obj, 'social_media') and isinstance(obj.social_media, str) and obj.social_media:
-            try:
-                import json
-                obj.social_media = json.loads(obj.social_media)
-            except json.JSONDecodeError:
-                obj.social_media = None
+        # 处理 social_media 字段
+        if hasattr(obj, 'social_media') and obj.social_media:
+            if isinstance(obj.social_media, str):
+                try:
+                    import json
+                    obj.social_media = json.loads(obj.social_media)
+                except json.JSONDecodeError:
+                    obj.social_media = {}
+            elif obj.social_media is None:
+                obj.social_media = {}
         return super().model_validate(obj, *args, **kwargs)
 
 class UserBriefResponse(BaseModel):
@@ -100,11 +107,60 @@ class UserBriefResponse(BaseModel):
 
     @classmethod
     def model_validate(cls, obj, *args, **kwargs):
-        # 如果 social_media 是字符串，尝试将其解析为 JSON
-        if hasattr(obj, 'social_media') and isinstance(obj.social_media, str) and obj.social_media:
-            try:
-                import json
-                obj.social_media = json.loads(obj.social_media)
-            except json.JSONDecodeError:
-                obj.social_media = None
+        # 如果是 SQLAlchemy 模型对象，先转换为字典
+        if hasattr(obj, '__table__'):
+            data = {
+                'id': getattr(obj, 'id', None),
+                'username': getattr(obj, 'username', None),
+                'avatar': getattr(obj, 'avatar', None),
+                'social_media': None
+            }
+
+            # 处理 social_media 字段
+            if hasattr(obj, 'social_media') and obj.social_media:
+                if isinstance(obj.social_media, str):
+                    try:
+                        import json
+                        data['social_media'] = json.loads(obj.social_media)
+                    except json.JSONDecodeError:
+                        data['social_media'] = {}
+                else:
+                    data['social_media'] = obj.social_media
+
+            return super().model_validate(data, *args, **kwargs)
+
         return super().model_validate(obj, *args, **kwargs)
+
+class UserBriefNoSocial(BaseModel):
+    """Schema for brief user response without social media field."""
+    id: int
+    username: str
+    avatar: Optional[str] = None
+
+    model_config = {
+        "from_attributes": True
+    }
+
+    @classmethod
+    def model_validate(cls, obj, *args, **kwargs):
+        # 如果是 SQLAlchemy 模型对象，先转换为字典
+        if hasattr(obj, '__table__'):
+            data = {
+                'id': getattr(obj, 'id', None),
+                'username': getattr(obj, 'username', None),
+                'avatar': getattr(obj, 'avatar', None)
+            }
+            return super().model_validate(data, *args, **kwargs)
+
+        return super().model_validate(obj, *args, **kwargs)
+
+
+class EmailVerification(BaseModel):
+    """邮箱验证码请求"""
+    email: EmailStr
+
+
+class VerifyEmailCode(BaseModel):
+    """验证邮箱验证码"""
+    email: EmailStr
+    code: str

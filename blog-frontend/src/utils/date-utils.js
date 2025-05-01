@@ -110,13 +110,66 @@ export const formatDateTimeWithTimeZone = (utcTimeString, showSeconds = true) =>
 };
 
 /**
- * 格式化为日期（如"2023年01月01日"）
+ * 格式化为中国时区(UTC+8)的日期时间格式
  * @param {string} utcTimeString - UTC时间字符串
- * @returns {string} 格式化后的日期字符串
+ * @param {boolean} showSeconds - 是否显示秒，默认为true
+ * @param {boolean} showTimeZone - 是否显示时区信息，默认为false
+ * @returns {string} 格式化后的日期时间字符串
  */
-export const formatDate = (utcTimeString) => {
-  return formatDateTime(utcTimeString, 'yyyy年MM月dd日');
+export const formatDateTimeChinaTimeZone = (utcTimeString, showSeconds = true, showTimeZone = false) => {
+  try {
+    if (!utcTimeString) return '未知时间';
+
+    // 创建日期对象
+    const utcDate = new Date(utcTimeString);
+
+    // 检查日期是否有效
+    if (isNaN(utcDate.getTime())) {
+      console.error('无效的UTC时间字符串:', utcTimeString);
+      return '无效时间';
+    }
+
+    // 手动添加8小时，转换为中国时区(UTC+8)
+    const chinaTime = new Date(utcDate.getTime() + 8 * 60 * 60 * 1000);
+
+    // 获取时区信息（仅在需要显示时区时使用）
+    let timeZoneString = '';
+    if (showTimeZone) {
+      timeZoneString = ' +08:00'; // 中国标准时间 UTC+8
+    }
+
+    // 格式化日期部分
+    const year = chinaTime.getUTCFullYear();
+    const month = (chinaTime.getUTCMonth() + 1).toString().padStart(2, '0');
+    const day = chinaTime.getUTCDate().toString().padStart(2, '0');
+
+    // 基本日期格式
+    let formattedDate = `${year}-${month}-${day}`;
+
+    // 如果需要包含时间
+    const hours = chinaTime.getUTCHours().toString().padStart(2, '0');
+    const minutes = chinaTime.getUTCMinutes().toString().padStart(2, '0');
+
+    if (showSeconds) {
+      const seconds = chinaTime.getUTCSeconds().toString().padStart(2, '0');
+      formattedDate += ` ${hours}:${minutes}:${seconds}`;
+    } else {
+      formattedDate += ` ${hours}:${minutes}`;
+    }
+
+    // 添加时区信息（如果需要）
+    if (showTimeZone) {
+      formattedDate += timeZoneString;
+    }
+
+    return formattedDate;
+  } catch (error) {
+    console.error('格式化中国时区日期时间错误:', error, utcTimeString);
+    return '无效时间';
+  }
 };
+
+// formatDate 函数已删除，请使用 formatDateTime 或 formatDateTimeChinaTimeZone 函数
 
 /**
  * 格式化为时间（如"12:30:45"）

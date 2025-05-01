@@ -263,6 +263,16 @@
                   下载Markdown
                 </button>
               </div>
+
+              <!-- 订阅表单 -->
+              <div class="mt-8 animate__animated animate__fadeIn animate__delay-3s">
+                <SubscriptionForm
+                  v-if="post && post.author"
+                  type="author"
+                  :reference-id="post.author.id"
+                  :reference-name="post.author.username"
+                />
+              </div>
             </div>
 
             <!-- 评论区分隔 -->
@@ -308,6 +318,7 @@ import { postApi, usersApi } from '@/api'
 import { Navbar } from '@/components/layout'
 import { CommentSection, ArticleToc, ArticleSidebar, AiSummary } from '@/components/blog'
 import { Breadcrumb, ScrollIsland, CodeBlock } from '@/components/ui'
+import SubscriptionForm from '@/components/blog/SubscriptionForm.vue'
 import 'katex/dist/katex.min.css' // 导入 KaTeX 样式
 import { useUserStore } from '@/stores'
 import { isAdmin, hasRole } from '@/utils/permission'
@@ -334,7 +345,8 @@ export default {
     ArticleSidebar,
     AiSummary,
     Breadcrumb,
-    ScrollIsland
+    ScrollIsland,
+    SubscriptionForm
   },
   setup() {
     const route = useRoute()

@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 import json
 
 from app import models
-from app.schemas.comment import CommentBase, CommentCreate, CommentResponse, CommentUpdate, CommentWithReplies, CommentBrief
+from app.schemas.comment import CommentBase, CommentCreate, CommentResponse, CommentUpdate, CommentWithReplies, CommentBrief, CommentBriefNoSocial
 from app.utils.logging import get_logger
 from app.utils.pagination import PaginationParams, PagedResponse
 from app.services.content_filter_service import ContentFilterService
@@ -422,9 +422,32 @@ class CommentService:
             }
 
     @staticmethod
-    def get_pending_comments(db: Session, params: PaginationParams) -> PagedResponse[CommentResponse]:
-        """Get pending comments for admin approval."""
+    def get_pending_comments(
+        db: Session,
+        params: PaginationParams,
+        article_ids: Optional[List[int]] = None,
+        parent_only: bool = False
+    ) -> PagedResponse[CommentResponse]:
+        """
+        Get pending comments for admin approval.
+
+        Args:
+            db: Database session
+            params: Pagination parameters
+            article_ids: Optional list of article IDs to filter by (for editors)
+            parent_only: Whether to return only top-level comments
+        """
         query = db.query(models.Comment).filter(models.Comment.is_approved == False)
+
+        # 如果指定了文章ID列表，则只获取这些文章的评论
+        if article_ids is not None:
+            if not article_ids:  # 如果是空列表，返回空结果
+                return PagedResponse.create([], 0, params)
+            query = query.filter(models.Comment.article_id.in_(article_ids))
+
+        # Filter for parent comments only if requested
+        if parent_only:
+            query = query.filter(models.Comment.parent_id == None)
 
         # Get total count before pagination
         total = query.count()
@@ -461,20 +484,87 @@ class CommentService:
                     except json.JSONDecodeError:
                         user_social_media[user.id] = None
 
+        # 获取所有回复评论的父评论ID
+        parent_ids = [comment.parent_id for comment in comments if comment.parent_id is not None]
+
+        # 批量获取父评论
+        parent_comments = {}
+        if parent_ids:
+            parent_records = db.query(models.Comment).filter(
+                models.Comment.id.in_(parent_ids)
+            ).all()
+            parent_comments = {parent.id: parent for parent in parent_records}
+
         # Convert to schema
         result = []
+
+        # 如果只获取父评论，则需要获取每个父评论的回复
+        if parent_only:
+            # 获取所有父评论的ID
+            parent_ids = [comment.id for comment in comments]
+
+            # 获取所有回复
+            replies_query = db.query(models.Comment).filter(
+                models.Comment.parent_id.in_(parent_ids),
+                models.Comment.is_approved == False  # 只获取待审核的回复
+            )
+
+            # 如果指定了文章ID列表，则只获取这些文章的评论回复
+            if article_ids is not None and article_ids:
+                replies_query = replies_query.filter(models.Comment.article_id.in_(article_ids))
+
+            # 获取所有回复
+            all_replies = replies_query.all()
+
+            # 按父评论ID组织回复
+            replies_by_parent = {}
+            for reply in all_replies:
+                if reply.parent_id not in replies_by_parent:
+                    replies_by_parent[reply.parent_id] = []
+                replies_by_parent[reply.parent_id].append(reply)
+
         for comment in comments:
-            comment_dict = CommentResponse.model_validate(comment)
+            # 如果是回复评论且不是只获取父评论，确保父评论信息可用
+            if not parent_only and comment.parent_id and comment.parent_id in parent_comments:
+                # 将父评论对象设置到当前评论的parent属性
+                comment.parent = parent_comments[comment.parent_id]
+
+            # 创建评论字典
+            if parent_only:
+                # 使用带有回复的模型
+                comment_dict = CommentWithReplies.model_validate(comment)
+            else:
+                # 使用普通评论模型
+                comment_dict = CommentResponse.model_validate(comment)
+
             comment_dict.article_title = article_titles.get(comment.article_id)
 
             # 设置评论者名称
             if comment.user_id:
                 comment_dict.commenter_name = users.get(comment.user_id, "未知用户")
-                # 设置用户的社交媒体字段
-                if comment_dict.user and comment.user_id in user_social_media:
-                    comment_dict.user.social_media = user_social_media[comment.user_id]
+                # 不再处理社交媒体字段
             else:
                 comment_dict.commenter_name = comment.anonymous_name or "匿名用户"
+
+            # 如果只获取父评论，添加回复
+            if parent_only and comment.id in replies_by_parent:
+                replies = replies_by_parent[comment.id]
+                replies_with_names = []
+
+                for reply in replies:
+                    # 使用不包含社交媒体字段的模型
+                    reply_dict = CommentBriefNoSocial.model_validate(reply)
+
+                    # 设置回复者名称
+                    if reply.user_id:
+                        reply_dict.commenter_name = users.get(reply.user_id, "未知用户")
+                        # 不再处理社交媒体字段
+                    else:
+                        reply_dict.commenter_name = reply.anonymous_name or "匿名用户"
+
+                    replies_with_names.append(reply_dict)
+
+                comment_dict.replies = replies_with_names
 
             result.append(comment_dict)
 
@@ -488,7 +578,8 @@ class CommentService:
         approved_only: Optional[bool] = None,
         user_id: Optional[int] = None,
         sort_by: str = "newest",
-        current_user: Optional[models.User] = None
+        current_user: Optional[models.User] = None,
+        parent_only: bool = False
     ) -> PagedResponse[CommentResponse]:
         """Get all comments with pagination and filtering.
 
@@ -498,6 +589,8 @@ class CommentService:
             approved_only: Filter by approval status (None for all, True for approved only, False for pending only)
             user_id: Filter by user ID
             sort_by: Sorting method ("newest", "oldest", "most_liked")
+            current_user: Optional current user object
+            parent_only: Whether to return only top-level comments
 
         Returns:
             Paginated response with comments
@@ -511,6 +604,10 @@ class CommentService:
 
         if user_id is not None:
             query = query.filter(models.Comment.user_id == user_id)
+
+        # Filter for parent comments only if requested
+        if parent_only:
+            query = query.filter(models.Comment.parent_id == None)
 
         # Apply sorting
         if sort_by == "oldest":
@@ -528,6 +625,16 @@ class CommentService:
 
         # 获取所有评论相关的文章ID
         article_ids = [comment.article_id for comment in comments]
+
+        # 获取所有回复评论的父评论ID
+        parent_ids = [comment.parent_id for comment in comments if comment.parent_id is not None]
+
+        # 获取父评论内容
+        parent_comments = {}
+        if parent_ids:
+            parent_query = db.query(models.Comment).filter(models.Comment.id.in_(parent_ids))
+            for parent in parent_query.all():
+                parent_comments[parent.id] = parent
 
         # 获取文章标题
         articles = db.query(models.Article.id, models.Article.title).filter(
@@ -555,17 +662,58 @@ class CommentService:
                     except json.JSONDecodeError:
                         user_social_media[user.id] = None
 
+        # 获取所有回复评论的父评论ID
+        parent_ids = [comment.parent_id for comment in comments if comment.parent_id is not None]
+
+        # 批量获取父评论
+        parent_comments = {}
+        if parent_ids:
+            parent_records = db.query(models.Comment).filter(
+                models.Comment.id.in_(parent_ids)
+            ).all()
+            parent_comments = {parent.id: parent for parent in parent_records}
+
         # Convert to schema
         result = []
-        for comment in comments:
-            # 处理用户的社交媒体字段
-            if comment.user and comment.user.social_media and isinstance(comment.user.social_media, str):
-                try:
-                    comment.user.social_media = json.loads(comment.user.social_media)
-                except json.JSONDecodeError:
-                    comment.user.social_media = None
 
-            comment_dict = CommentResponse.model_validate(comment)
+        # 如果只获取父评论，则需要获取每个父评论的回复
+        if parent_only:
+            # 获取所有父评论的ID
+            parent_ids = [comment.id for comment in comments]
+
+            # 获取所有回复
+            replies_query = db.query(models.Comment).filter(
+                models.Comment.parent_id.in_(parent_ids)
+            )
+
+            # 如果需要过滤已审核评论
+            if approved_only is not None:
+                replies_query = replies_query.filter(models.Comment.is_approved == approved_only)
+
+            # 获取所有回复
+            all_replies = replies_query.all()
+
+            # 按父评论ID组织回复
+            replies_by_parent = {}
+            for reply in all_replies:
+                if reply.parent_id not in replies_by_parent:
+                    replies_by_parent[reply.parent_id] = []
+                replies_by_parent[reply.parent_id].append(reply)
+
+        for comment in comments:
+            # 如果是回复评论且不是只获取父评论，确保父评论信息可用
+            if not parent_only and comment.parent_id and comment.parent_id in parent_comments:
+                # 将父评论对象设置到当前评论的parent属性
+                comment.parent = parent_comments[comment.parent_id]
+
+            # 创建评论字典
+            if parent_only:
+                # 使用带有回复的模型
+                comment_dict = CommentWithReplies.model_validate(comment)
+            else:
+                # 使用普通评论模型
+                comment_dict = CommentResponse.model_validate(comment)
+
             comment_dict.article_title = article_titles.get(comment.article_id)
 
             # 设置评论者名称
@@ -573,19 +721,37 @@ class CommentService:
                 # 如果是当前登录用户的评论，直接使用当前用户对象
                 if current_user and current_user.id == comment.user_id:
                     comment_dict.commenter_name = current_user.username
-                    # 处理当前用户的社交媒体字段
-                    if current_user.social_media:
-                        try:
-                            comment_dict.user.social_media = json.loads(current_user.social_media) if isinstance(current_user.social_media, str) else current_user.social_media
-                        except json.JSONDecodeError:
-                            comment_dict.user.social_media = None
+                    # 不再处理社交媒体字段
                 else:
                     comment_dict.commenter_name = users.get(comment.user_id, "未知用户")
-                    # 设置用户的社交媒体字段
-                    if comment_dict.user and comment.user_id in user_social_media:
-                        comment_dict.user.social_media = user_social_media[comment.user_id]
+                    # 不再处理社交媒体字段
             else:
                 comment_dict.commenter_name = comment.anonymous_name or "匿名用户"
+
+            # 如果只获取父评论，添加回复
+            if parent_only and comment.id in replies_by_parent:
+                replies = replies_by_parent[comment.id]
+                replies_with_names = []
+
+                for reply in replies:
+                    # 使用不包含社交媒体字段的模型
+                    reply_dict = CommentBriefNoSocial.model_validate(reply)
+
+                    # 设置回复者名称
+                    if reply.user_id:
+                        # 如果是当前登录用户的回复，直接使用当前用户对象
+                        if current_user and current_user.id == reply.user_id:
+                            reply_dict.commenter_name = current_user.username
+                            # 不再处理社交媒体字段
+                        else:
+                            reply_dict.commenter_name = users.get(reply.user_id, "未知用户")
+                            # 不再处理社交媒体字段
+                    else:
+                        reply_dict.commenter_name = reply.anonymous_name or "匿名用户"
+
+                    replies_with_names.append(reply_dict)
+
+                comment_dict.replies = replies_with_names
 
             result.append(comment_dict)
 

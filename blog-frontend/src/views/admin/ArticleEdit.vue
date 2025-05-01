@@ -161,16 +161,6 @@
                       <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                     </svg>
                     <div class="flex flex-col sm:flex-row justify-center gap-2">
-                      <label for="cover-image" class="relative cursor-pointer bg-white dark:bg-gray-700 rounded-md font-medium text-secondary dark:text-dark-secondary hover:text-secondary-dark focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-secondary px-4 py-2">
-                        <span>上传图片</span>
-                        <input
-                          id="cover-image"
-                          type="file"
-                          class="sr-only"
-                          accept=".jpg,.jpeg,.png,.gif,.webp"
-                          @change="handleCoverImageUpload"
-                        />
-                      </label>
                       <button
                         type="button"
                         @click="openFileSelectorForCover"
@@ -178,14 +168,18 @@
                       >
                         从文件管理选择
                       </button>
+                      <button
+                        type="button"
+                        @click="selectRandomCoverImage"
+                        class="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors duration-200 font-medium"
+                      >
+                        随机封面图
+                      </button>
                     </div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">支持 JPG、PNG、GIF、WEBP 格式</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">请从文件管理中选择图片或使用随机封面图</p>
                   </div>
                 </div>
-                <!-- 上传加载状态 -->
-                <div v-if="isUploading" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg">
-                  <div class="animate-spin rounded-full h-8 w-8 border-4 border-secondary border-t-transparent"></div>
-                </div>
+
               </div>
             </div>
 
@@ -338,8 +332,6 @@ export default {
 
     // AI辅助加载状态
     const isAILoading = ref(false)
-    // 图片上传加载状态
-    const isUploading = ref(false)
     // 文章保存加载状态
     const isSaving = ref(false)
     // 文章内容加载状态
@@ -949,69 +941,43 @@ export default {
           return
         }
 
+        // 检查封面图是否是随机封面图（以/images/blog/开头）
+        if (currentPost.value.cover_image.startsWith('/images/blog/')) {
+          // 如果是随机封面图，直接清空，不需要调用删除API
+          console.log('随机封面图，直接清空:', currentPost.value.cover_image);
+          currentPost.value.cover_image = '';
+          message.success('封面图已移除');
+          return;
+        }
+
         // 从URL中提取文件名
-        const imagePath = currentPost.value.cover_image.split('/').pop()
-        await postApi.deleteImage(imagePath, token)
+        const imagePath = currentPost.value.cover_image.split('/').pop();
+        console.log('删除封面图:', imagePath);
+
+        // 正确处理token格式
+        const lowerToken = token.toLowerCase();
+        let cleanToken = token;
+        if (lowerToken.includes('bearer')) {
+          cleanToken = token.replace(/^\s*bearer\s+/i, '');
+        }
+        const formattedToken = `Bearer ${cleanToken}`;
+
+        // 调用API删除图片
+        await postApi.deleteImage(imagePath);
 
         // 清空封面图
-        currentPost.value.cover_image = ''
-        message.success('封面图删除成功')
+        currentPost.value.cover_image = '';
+        message.success('封面图删除成功');
       } catch (error) {
-        console.error('删除封面图失败:', error)
-        message.error(error.message || '删除封面图失败')
+        console.error('删除封面图失败:', error);
+        message.error(error.message || '删除封面图失败');
+
+        // 即使删除失败，也清空封面图（用户体验考虑）
+        currentPost.value.cover_image = '';
       }
     }
 
-    // 处理封面图上传
-    const handleCoverImageUpload = async (event) => {
-      const file = event.target.files[0]
-      if (!file) return
-
-      // 验证文件类型
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
-      if (!allowedTypes.includes(file.type)) {
-        message.error('请上传正确的图片格式（JPG、PNG、GIF、WEBP）')
-        return
-      }
-
-      // 验证文件大小（限制为2MB）
-      const maxSize = 2 * 1024 * 1024
-      if (file.size > maxSize) {
-        message.error('图片大小不能超过2MB')
-        return
-      }
-
-      isUploading.value = true
-      try {
-        const token = localStorage.getItem('token')
-        if (!token) {
-          throw new Error('未登录或登录已过期')
-        }
-
-        // 创建 FormData 对象
-        const formData = new FormData()
-        formData.append('file', file)
-
-        // 正确处理 token 格式
-        const lowerToken = token.toLowerCase()
-        let cleanToken = token
-        if (lowerToken.includes('bearer')) {
-          cleanToken = token.replace(/^\s*bearer\s+/i, '')
-        }
-        const formattedToken = `Bearer ${cleanToken}`
-
-        const response = await postApi.uploadImage(formData, formattedToken)
-        currentPost.value.cover_image = response.url
-        message.success('封面图上传成功')
-      } catch (error) {
-        console.error('上传封面图失败:', error)
-        message.error(error.message || '上传封面图失败')
-      } finally {
-        isUploading.value = false
-        // 清空input的value，确保可以重复上传同一个文件
-        event.target.value = ''
-      }
-    }
+    // 封面图上传功能已移除，改为使用文件管理模块
 
     // 打开文件选择器用于选择封面图
     const openFileSelectorForCover = () => {
@@ -1145,6 +1111,17 @@ export default {
       }
     };
 
+    // 随机封面图功能
+    const selectRandomCoverImage = () => {
+      // 从1到35随机选择一个数字（对应post-1.jpg到post-35.jpg）
+      const randomNum = Math.floor(Math.random() * 35) + 1;
+      const randomImagePath = `/images/blog/post-${randomNum}.jpg`;
+
+      // 设置为封面图
+      currentPost.value.cover_image = randomImagePath;
+      message.success('已设置随机封面图');
+    };
+
     return {
       currentPost,
       categories,
@@ -1160,10 +1137,8 @@ export default {
       selectTagSuggestion,
       isAILoading,
       handleAIAssist,
-      isUploading,
       isSaving,
       isLoading,
-      handleCoverImageUpload,
       removeCoverImage,
       // 文件选择器相关
       showFileSelector,
@@ -1175,7 +1150,9 @@ export default {
       // MD文件导入相关
       mdFileInput,
       triggerImportMdFile,
-      handleMdFileImport
+      handleMdFileImport,
+      // 随机封面图功能
+      selectRandomCoverImage
     }
   }
 }

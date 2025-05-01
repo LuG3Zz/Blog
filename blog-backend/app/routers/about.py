@@ -7,7 +7,7 @@ from typing import Dict, Any
 
 from app.core.database import get_db
 from app.core import security
-from app.core.permissions import is_admin
+from app.core.permissions import is_admin, is_super_admin
 from app.schemas.about import AboutPageResponse, AboutPageCreate, AboutPageUpdate
 from app.services.about_service import AboutPageService
 from app.models.user import User
@@ -323,11 +323,11 @@ async def update_about_page(
 
     需要管理员权限
     """
-    # 检查权限
-    if not is_admin(current_user):
+    # 检查权限 - 只有超级管理员可以更新关于页面
+    if not is_super_admin(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only administrators can update the about page"
+            detail="Only super administrators can update the about page"
         )
 
     # 获取现有页面

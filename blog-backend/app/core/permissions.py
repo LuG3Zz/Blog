@@ -40,13 +40,16 @@ def check_article_permission(
 
     # 检查权限
     # 1. 管理员可以执行任何操作
-    # 2. 编辑可以更新任何文章，但不能删除
+    # 2. 编辑可以更新任何文章，但只能删除自己的文章
     # 3. 作者只能操作自己的文章
     if user.role == UserRole.admin:
         return article
 
-    if user.role == UserRole.editor and action == "update":
-        return article
+    if user.role == UserRole.editor:
+        if action == "update":
+            return article
+        elif action == "delete" and article.author_id == user.id:
+            return article
 
     if article.author_id != user.id:
         raise HTTPException(
@@ -58,6 +61,10 @@ def check_article_permission(
 
 def is_admin(user: models.User) -> bool:
     """检查用户是否为管理员"""
+    return user.role == UserRole.admin
+
+def is_super_admin(user: models.User) -> bool:
+    """检查用户是否为超级管理员（与is_admin相同，但语义上更明确）"""
     return user.role == UserRole.admin
 
 def is_editor_or_admin(user: models.User) -> bool:

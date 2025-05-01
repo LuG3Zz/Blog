@@ -2,7 +2,7 @@
 通知历史模式模块：定义通知历史相关的数据模型
 """
 from pydantic import BaseModel, Field
-from typing import List, Optional, Any
+from typing import List, Optional
 from datetime import datetime
 
 class NotificationHistoryBase(BaseModel):
@@ -23,8 +23,9 @@ class NotificationHistoryResponse(NotificationHistoryBase):
     created_by: int = Field(..., description="创建者ID")
     created_by_username: str = Field(..., description="创建者用户名")
 
-    class Config:
-        orm_mode = True
+    model_config = {
+        "from_attributes": True
+    }
 
 class NotificationHistoryList(BaseModel):
     """通知历史列表模型"""

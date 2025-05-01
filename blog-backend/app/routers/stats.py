@@ -6,7 +6,8 @@ from datetime import datetime, timedelta, timezone, date
 
 from app.core.database import get_db
 from app.core.cache import cache
-from app.models import Article, User, Comment, Category, Activity
+from app.models import Article, User, Comment, Category, Activity, EmailSubscription, SubscriptionType
+from app.models.subscription import user_category_subscriptions, user_author_subscriptions
 from app.schemas.heatmap import HeatmapResponse, HeatmapItem
 
 router = APIRouter(prefix="/stats", tags=["statistics"])
@@ -284,3 +285,73 @@ async def get_activity_heatmap(
     heatmap_items.sort(key=lambda x: x.date)
 
     return {"values": heatmap_items}
+
+@router.get("/subscriptions")
+@cache(ttl_seconds=300)  # 缓存5分钟
+async def get_subscription_stats(db: Session = Depends(get_db)):
+    """
+    获取订阅统计数据
+
+    返回:
+    - 总订阅数
+    - 按类型（作者、分类、全站）统计的订阅数
+    - 活跃订阅数和非活跃订阅数
+    - 最近30天新增订阅数
+    """
+    # 计算开始日期（最近30天）
+    start_date = datetime.now(timezone.utc) - timedelta(days=30)
+
+    # 总订阅数
+    total_subscriptions = db.query(func.count(EmailSubscription.id)).scalar() or 0
+
+    # 活跃订阅数
+    active_subscriptions = db.query(func.count(EmailSubscription.id))\
+        .filter(EmailSubscription.is_active == True)\
+        .scalar() or 0
+
+    # 非活跃订阅数
+    inactive_subscriptions = total_subscriptions - active_subscriptions
+
+    # 按类型统计订阅数
+    type_stats = db.query(
+        EmailSubscription.subscription_type,
+        func.count(EmailSubscription.id).label("count")
+    )\
+    .filter(EmailSubscription.is_active == True)\
+    .group_by(EmailSubscription.subscription_type)\
+    .all()
+
+    # 转换为字典
+    subscription_by_type = {
+        "author": 0,
+        "category": 0,
+        "all": 0
+    }
+
+    for subscription_type, count in type_stats:
+        subscription_by_type[subscription_type] = count
+
+    # 最近30天新增订阅数
+    recent_subscriptions = db.query(func.count(EmailSubscription.id))\
+        .filter(EmailSubscription.created_at >= start_date)\
+        .scalar() or 0
+
+    # 用户订阅统计（通过关联表）
+    user_category_count = db.query(func.count())\
+        .select_from(user_category_subscriptions)\
+        .scalar() or 0
+
+    user_author_count = db.query(func.count())\
+        .select_from(user_author_subscriptions)\
+        .scalar() or 0
+
+    # 返回统计结果
+    return {
+        "total_subscriptions": total_subscriptions,
+        "active_subscriptions": active_subscriptions,
+        "inactive_subscriptions": inactive_subscriptions,
+        "subscription_by_type": subscription_by_type,
+        "recent_subscriptions": recent_subscriptions,
+        "user_category_subscriptions": user_category_count,
+        "user_author_subscriptions": user_author_count
+    }

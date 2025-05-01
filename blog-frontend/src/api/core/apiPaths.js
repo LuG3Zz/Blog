@@ -11,6 +11,9 @@ export const API_PREFIX_STR = API_PREFIX;
 
 // API 路径
 export const API_PATHS = {
+  // API前缀
+  API_PREFIX_STR,
+
   // 认证相关
   AUTH: {
     LOGIN: `${API_PREFIX}/auth/login`,
@@ -85,6 +88,7 @@ export const API_PATHS = {
     CATEGORY_DISTRIBUTION: `${API_PREFIX}/stats/category-distribution`,
     USER_ACTIVITY: `${API_PREFIX}/stats/user-activity`,
     ACTIVITY_HEATMAP: `${API_PREFIX}/stats/activity-heatmap`,
+    SUBSCRIPTIONS: `${API_PREFIX}/stats/subscriptions`,
   },
 
   // 文件相关
@@ -131,6 +135,32 @@ export const API_PATHS = {
     BASE: `${API_PREFIX}/visitors`,
     STATISTICS: `${API_PREFIX}/visitors/statistics`,
     BATCH_DELETE: `${API_PREFIX}/visitors/batch-delete`,
+  },
+
+  // 系统设置相关
+  SITE_SETTINGS: {
+    BASE: `${API_PREFIX}/site-settings`,
+  },
+
+  // 邮箱验证相关
+  EMAIL: {
+    SEND_VERIFICATION: `${API_PREFIX}/email/send-verification`,
+    VERIFY_CODE: `${API_PREFIX}/email/verify-code`,
+  },
+
+  // 订阅相关
+  SUBSCRIPTIONS: {
+    BASE: `${API_PREFIX}/subscriptions`,
+    CATEGORIES: `${API_PREFIX}/subscriptions/categories`,
+    AUTHORS: `${API_PREFIX}/subscriptions/authors`,
+  },
+
+  // 邮件订阅相关
+  EMAIL_SUBSCRIPTIONS: {
+    BASE: `${API_PREFIX}/email-subscriptions`,
+    BY_ID: (id) => `${API_PREFIX}/email-subscriptions/${id}`,
+    UNSUBSCRIBE: `${API_PREFIX}/email-subscriptions/unsubscribe`,
+    UNSUBSCRIBE_EMAIL: `${API_PREFIX}/email-subscriptions/unsubscribe/email`,
   },
 };
 

@@ -97,17 +97,19 @@
 
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
-                  <!-- 开关按钮 -->
-                  <label class="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      :checked="post.is_featured"
-                      class="sr-only peer"
-                      @change="toggleFeatured(post)"
-                    >
-                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                  </label>
-                  <!-- 状态文本 -->
+                  <!-- 开关按钮 - 只有管理员和编辑可以设置精选 -->
+                  <template v-if="canToggleFeatured(post)">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        :checked="post.is_featured"
+                        class="sr-only peer"
+                        @change="toggleFeatured(post)"
+                      >
+                      <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                    </label>
+                  </template>
+                  <!-- 状态文本 - 所有人都可以看到 -->
                   <span
                     :class="post.is_featured ? 'ml-3 text-xs font-medium text-green-600 dark:text-green-400' : 'ml-3 text-xs font-medium text-gray-500 dark:text-gray-400'"
                   >
@@ -116,12 +118,15 @@
                 </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <!-- 编辑按钮 - 管理员、编辑和作者可以编辑 -->
                 <button
+                  v-if="canEditArticle(post)"
                   @click="navigateToEditArticle(post)"
                   class="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-200 mr-3"
                 >
                   编辑
                 </button>
+                <!-- 评论按钮 - 所有人都可以查看评论 -->
                 <button
                   @click="viewArticleComments(post)"
                   class="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-200 mr-3"
@@ -129,7 +134,9 @@
                 >
                   评论
                 </button>
+                <!-- 删除按钮 - 管理员可以删除任何文章，编辑和作者只能删除自己的文章 -->
                 <button
+                  v-if="canDeleteArticle(post)"
                   @click="confirmDelete(post, index)"
                   class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-200"
                 >
@@ -193,6 +200,8 @@ import { formatDateTimeWithTimeZone } from '@/utils/date-utils'
 import DeleteConfirmDialog from '@/components/common/DeleteConfirmDialog.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import { ErrorDisplay, LoadingSpinner, EmptyState } from '@/components/ui'
+import { useUserStore } from '@/stores'
+import { isSuperAdmin, isEditor } from '@/utils/permission'
 
 export default {
   name: 'ArticleManage',
@@ -205,6 +214,7 @@ export default {
   },
   setup() {
     const router = useRouter()
+    const userStore = useUserStore()
 
     // 状态数据
     const posts = ref([])
@@ -220,6 +230,16 @@ export default {
     // 删除 vditor 相关状态变量
     const isLoading = ref(false)
     const error = ref('')
+
+    // 用户角色相关计算属性
+    const isUserSuperAdmin = computed(() => isSuperAdmin(userStore.userInfo))
+    const isUserEditor = computed(() => isEditor(userStore.userInfo))
+
+    // 检查当前用户是否是文章的作者
+    const isArticleAuthor = (post) => {
+      if (!post || !userStore.userInfo) return false
+      return post.author_id === userStore.userInfo.id
+    }
 
     // 当前操作的文章
     const currentPost = ref({
@@ -576,6 +596,34 @@ export default {
       return ''
     }
 
+    // 权限检查函数
+    const canEditArticle = (post) => {
+      // 管理员可以编辑任何文章
+      if (isUserSuperAdmin.value) return true
+
+      // 编辑可以编辑任何文章
+      if (isUserEditor.value) return true
+
+      // 作者可以编辑自己的文章
+      return isArticleAuthor(post)
+    }
+
+    const canDeleteArticle = (post) => {
+      // 管理员可以删除任何文章
+      if (isUserSuperAdmin.value) return true
+
+      // 编辑只能删除自己的文章
+      if (isUserEditor.value) return isArticleAuthor(post)
+
+      // 作者可以删除自己的文章
+      return isArticleAuthor(post)
+    }
+
+    const canToggleFeatured = (post) => {
+      // 只有管理员和编辑可以设置精选
+      return isUserSuperAdmin.value || isUserEditor.value
+    }
+
     return {
       posts,
       categories,
@@ -601,7 +649,14 @@ export default {
       viewArticle,
       toggleFeatured,
       loadData: fetchPosts,
-      deleteConfirmMessage
+      deleteConfirmMessage,
+      // 权限检查函数
+      canEditArticle,
+      canDeleteArticle,
+      canToggleFeatured,
+      isUserSuperAdmin,
+      isUserEditor,
+      isArticleAuthor
     }
   }
 }

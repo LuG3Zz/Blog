@@ -35,19 +35,32 @@ async def delete_image(
 ):
     # 解析路径并验证
     try:
-        file_path = os.path.abspath(os.path.join(IMAGES_DIR, os.path.basename(request.image_path)))
+        # 打印请求信息以便调试
+        print(f"收到删除图片请求: {request.image_path}")
+
+        # 处理可能的相对路径或完整URL
+        image_filename = os.path.basename(request.image_path)
+        print(f"提取的图片文件名: {image_filename}")
+
+        file_path = os.path.abspath(os.path.join(IMAGES_DIR, image_filename))
+        print(f"完整文件路径: {file_path}")
+
         if not file_path.startswith(IMAGES_DIR):
+            print(f"非法文件路径: {file_path} 不在 {IMAGES_DIR} 目录下")
             raise HTTPException(status_code=403, detail="非法文件路径")
 
         if not os.path.exists(file_path):
+            print(f"文件不存在: {file_path}")
             raise HTTPException(status_code=404, detail="文件不存在")
 
         os.remove(file_path)
+        print(f"文件删除成功: {file_path}")
         return {"message": "文件删除成功"}
 
     except HTTPException as he:
         raise he
     except Exception as e:
+        print(f"删除图片时发生错误: {str(e)}")
         raise HTTPException(status_code=500, detail=f"文件删除失败: {str(e)}")
 
 @router.post("/upload-image", response_model=dict)

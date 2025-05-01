@@ -18,6 +18,7 @@ from app.schemas.article import ArticleBase, ArticleCreate, ArticleUpdate, Artic
 from app.schemas.article_extended import ArticleWithContent, FeaturedArticle, HomeResponse
 from app.schemas.ai_assist import AIAssistRequest, AIAssistResponse
 from app.schemas.user import UserBriefResponse
+from app.services.subscription_service import NotificationService
 
 # Load environment variables
 load_dotenv()
@@ -271,10 +272,77 @@ async def create_article(
         except json.JSONDecodeError:
             author.social_media = None
 
-    # 将作者信息附加到文章对象
-    setattr(db_article, 'author', author)
+    # 创建一个新的 Article 对象，而不是修改 db_article
+    article_dict = {
+        "id": db_article.id,
+        "title": db_article.title,
+        "slug": db_article.slug,
+        "content": db_article.content,
+        "excerpt": db_article.excerpt or "",
+        "category_id": db_article.category_id,
+        "cover_image": db_article.cover_image,
+        "author_id": db_article.author_id,
+        "created_at": db_article.created_at,
+        "updated_at": db_article.updated_at,
+        "view_count": db_article.view_count or 0,
+        "like_count": db_article.like_count or 0,
+        "is_featured": db_article.is_featured
+    }
 
-    return db_article
+    # 获取分类信息
+    category_obj = db.query(models.Category).filter(models.Category.id == db_article.category_id).first()
+
+    # 获取标签列表
+    tags_list = []
+    article_obj = db.query(models.Article).filter(models.Article.id == db_article.id).first()
+    if article_obj and hasattr(article_obj, 'tags_relationship'):
+        for tag in article_obj.tags_relationship:
+            tags_list.append({
+                "id": tag.id,
+                "name": tag.name
+            })
+
+    # 创建响应对象
+    from app.schemas.article import ArticleResponse
+
+    # 使用 ArticleResponse 模型创建响应对象
+    response_data = ArticleResponse(
+        **article_dict,
+        author=author,
+        category=category_obj,
+        tags_list=tags_list
+    )
+
+    # 通知订阅者
+    try:
+        # 构建文章URL
+        article_url = f"{settings.FRONTEND_BASE_URL}/article/{db_article.id}"
+
+        # 获取作者名称
+        author_name = current_user.username
+
+        # 获取分类名称
+        category_name = category.name if category else "未分类"
+
+        # 发送通知
+        await NotificationService.notify_subscribers_new_article(
+            db=db,
+            article_id=db_article.id,
+            title=db_article.title,
+            excerpt=db_article.excerpt or "",
+            author_id=current_user.id,
+            author_name=author_name,
+            category_id=db_article.category_id,
+            category_name=category_name,
+            article_url=article_url
+        )
+    except Exception as e:
+        # 记录错误但不中断流程
+        import logging
+        logger = logging.getLogger("app.routers.articles")
+        logger.error(f"Failed to notify subscribers: {str(e)}", exc_info=True)
+
+    return response_data
 
 @router.get("", response_model=List[ArticleList])
 @cache(ttl_seconds=60)  # 缓存60秒
@@ -722,10 +790,48 @@ async def update_article(
         except json.JSONDecodeError:
             author.social_media = None
 
-    # 将作者信息附加到文章对象
-    setattr(db_article, 'author', author)
+    # 创建一个新的 Article 对象，而不是修改 db_article
+    article_dict = {
+        "id": db_article.id,
+        "title": db_article.title,
+        "slug": db_article.slug,
+        "content": db_article.content,
+        "excerpt": db_article.excerpt or "",
+        "category_id": db_article.category_id,
+        "cover_image": db_article.cover_image,
+        "author_id": db_article.author_id,
+        "created_at": db_article.created_at,
+        "updated_at": db_article.updated_at,
+        "view_count": db_article.view_count or 0,
+        "like_count": db_article.like_count or 0,
+        "is_featured": db_article.is_featured
+    }
 
-    return db_article
+    # 获取分类信息
+    category_obj = db.query(models.Category).filter(models.Category.id == db_article.category_id).first()
+
+    # 获取标签列表
+    tags_list = []
+    article_obj = db.query(models.Article).filter(models.Article.id == db_article.id).first()
+    if article_obj and hasattr(article_obj, 'tags_relationship'):
+        for tag in article_obj.tags_relationship:
+            tags_list.append({
+                "id": tag.id,
+                "name": tag.name
+            })
+
+    # 创建响应对象
+    from app.schemas.article import ArticleResponse
+
+    # 使用 ArticleResponse 模型创建响应对象
+    response_data = ArticleResponse(
+        **article_dict,
+        author=author,
+        category=category_obj,
+        tags_list=tags_list
+    )
+
+    return response_data
 
 @router.delete("/{article_id}")
 async def delete_article(

@@ -17,6 +17,9 @@ from app.routers.websocket import router as websocket_router
 from app.routers.about import router as about_router
 from app.routers.notification_history import router as notification_history_router
 from app.routers.visitors import router as visitors_router
+from app.routers.site_settings import router as site_settings_router
+from app.routers.email_verification import router as email_verification_router
+from app.routers.email_subscriptions import router as email_subscriptions_router
 
 # List of all routers
 routers = [
@@ -38,4 +41,7 @@ routers = [
     about_router,
     notification_history_router,
     visitors_router,
+    site_settings_router,
+    email_verification_router,
+    email_subscriptions_router,
 ]

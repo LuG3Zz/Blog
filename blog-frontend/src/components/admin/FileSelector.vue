@@ -624,7 +624,17 @@ const deleteFile = async () => {
 
   isDeleting.value = true;
   try {
-    await filesApi.deleteFile(fileToDelete.value.id);
+    // 根据文件类型选择不同的删除方法
+    if (fileToDelete.value.file_type === 'image' && fileToDelete.value.file_path) {
+      // 对于图片类型，使用deleteImage方法
+      console.log('使用deleteImage方法删除图片:', fileToDelete.value);
+      await filesApi.deleteImage(fileToDelete.value.file_path);
+    } else {
+      // 对于其他类型，使用deleteFile方法
+      console.log('使用deleteFile方法删除文件:', fileToDelete.value);
+      await filesApi.deleteFile(fileToDelete.value.id);
+    }
+
     message.success('文件删除成功');
 
     // 关闭确认对话框

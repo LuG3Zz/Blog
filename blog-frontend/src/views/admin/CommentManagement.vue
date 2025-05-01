@@ -60,13 +60,28 @@
           </tr>
         </thead>
         <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-          <tr v-for="comment in comments" :key="comment.id" class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-            <td class="px-6 py-4 whitespace-normal">
-              <div class="text-sm text-gray-900 dark:text-gray-100 line-clamp-2">{{ comment.content }}</div>
-              <div v-if="comment.parent_id" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                回复: {{ getParentContent(comment) }}
-              </div>
-            </td>
+          <template v-for="comment in comments" :key="comment.id">
+            <!-- 主评论行 -->
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              <td class="px-6 py-4 whitespace-normal">
+                <div class="flex items-start">
+                  <div class="flex-grow">
+                    <div class="text-sm text-gray-900 dark:text-gray-100 line-clamp-2">{{ comment.content }}</div>
+                    <div v-if="hasReplies(comment)" class="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center">
+                      <button
+                        @click="toggleCommentExpand(comment.id)"
+                        class="mr-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 focus:outline-none"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" v-if="!expandedComments[comment.id]" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" v-else />
+                        </svg>
+                      </button>
+                      <span>{{ comment.replies?.length || 0 }} 条回复</span>
+                    </div>
+                  </div>
+                </div>
+              </td>
             <td class="px-6 py-4 whitespace-nowrap">
               <div class="flex items-center">
                 <div class="flex-shrink-0 h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
@@ -158,6 +173,53 @@
               </div>
             </td>
           </tr>
+
+            <!-- 子评论展开行 -->
+            <tr v-if="hasReplies(comment) && expandedComments[comment.id]" class="bg-gray-50 dark:bg-gray-700">
+              <td colspan="7" class="px-6 py-3">
+                <div class="pl-4 border-l-2 border-gray-300 dark:border-gray-600 space-y-3">
+                  <!-- 遍历子评论 -->
+                  <div v-for="reply in comment.replies" :key="reply.id" class="flex items-start">
+                    <div class="flex-shrink-0 h-6 w-6 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center mr-2">
+                      <span class="text-xs font-medium text-gray-700 dark:text-gray-300">
+                        {{ (reply.user?.username || reply.anonymous_name || reply.commenter_name || 'U').charAt(0).toUpperCase() }}
+                      </span>
+                    </div>
+                    <div class="flex-grow">
+                      <div class="flex items-center">
+                        <div class="text-xs font-medium text-gray-700 dark:text-gray-300">
+                          {{ reply.user?.username || reply.anonymous_name || reply.commenter_name || '未知用户' }}
+                        </div>
+                        <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">{{ formatDate(reply.created_at) }}</span>
+                      </div>
+                      <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">{{ reply.content }}</p>
+                      <div class="mt-1 flex space-x-2">
+                        <button
+                          @click="viewCommentDetail(reply)"
+                          class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                        >
+                          详情
+                        </button>
+                        <button
+                          v-if="!reply.is_approved"
+                          @click="approveComment(reply.id)"
+                          class="text-xs text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300"
+                        >
+                          通过
+                        </button>
+                        <button
+                          @click="confirmDeleteComment(reply.id)"
+                          class="text-xs text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                        >
+                          删除
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </template>
         </tbody>
       </table>
 
@@ -298,7 +360,8 @@
             <div v-if="selectedComment?.parent_id" class="border-t border-gray-200 dark:border-gray-700 pt-4">
               <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">回复的评论：</h4>
               <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <p class="text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{{ selectedComment?.parent?.content || '原评论内容不可用' }}</p>
+                <div v-if="selectedComment?.parent?.content" class="text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{{ selectedComment.parent.content }}</div>
+                <div v-else class="text-gray-500 dark:text-gray-400 italic">原评论不可见</div>
               </div>
             </div>
             <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
@@ -387,12 +450,15 @@ import { useRoute, useRouter } from 'vue-router'
 import { commentApi } from '@/api'
 import message from '@/utils/message.js'
 import { formatDateTimeWithTimeZone } from '@/utils/date-utils'
+import { useUserStore } from '@/stores'
+import { isSuperAdmin, isEditor } from '@/utils/permission'
 
 export default {
   name: 'CommentManagement',
   setup() {
     const route = useRoute()
     const router = useRouter()
+    const userStore = useUserStore()
 
     // 状态变量
     const comments = ref([])
@@ -408,10 +474,15 @@ export default {
     const selectedComment = ref(null)
     const commentToDelete = ref(null)
     const fromDetailModal = ref(false)
+    const expandedComments = ref({}) // 存储展开状态的对象，key为评论ID，value为是否展开
 
     // 文章筛选相关
     const currentArticleId = ref(null)
     const currentArticleTitle = ref('')
+
+    // 用户角色相关
+    const isUserSuperAdmin = computed(() => isSuperAdmin(userStore.userInfo))
+    const isUserEditor = computed(() => isEditor(userStore.userInfo))
 
     // 计算属性
     const paginationRange = computed(() => {
@@ -471,7 +542,8 @@ export default {
       try {
         const params = {
           page: currentPage.value,
-          page_size: pageSize.value
+          page_size: pageSize.value,
+          parent_only: true // 只获取父评论
         }
 
         let response
@@ -501,16 +573,56 @@ export default {
               pages: 1
             }
           }
+        } else if (filterStatus.value === 'pending') {
+          // 待审核评论处理
+          // 如果是编辑且不是超级管理员，只能查看自己文章的待审核评论
+          if (isUserEditor.value && !isUserSuperAdmin.value) {
+            try {
+              // 编辑角色获取自己文章的待审核评论
+              response = await commentApi.fetchPendingComments({
+                page: currentPage.value,
+                pageSize: pageSize.value,
+                parentOnly: true // 只获取父评论
+              })
+            } catch (err) {
+              console.error('获取待审核评论失败:', err)
+              response = {
+                items: [],
+                total: 0,
+                page: currentPage.value,
+                page_size: pageSize.value,
+                pages: 1
+              }
+            }
+          } else {
+            // 管理员获取所有待审核评论
+            try {
+              response = await commentApi.fetchPendingComments({
+                page: currentPage.value,
+                pageSize: pageSize.value,
+                parentOnly: true // 只获取父评论
+              })
+            } catch (err) {
+              console.error('获取待审核评论失败:', err)
+              response = {
+                items: [],
+                total: 0,
+                page: currentPage.value,
+                page_size: pageSize.value,
+                pages: 1
+              }
+            }
+          }
         } else {
           // 使用获取所有评论的API
-          const approvedOnly = filterStatus.value === 'approved' ? true :
-                              filterStatus.value === 'pending' ? false : null;
+          const approvedOnly = filterStatus.value === 'approved' ? true : null;
 
           // 确保使用正确的 API 路径
           response = await commentApi.fetchAllComments({
             page: currentPage.value,
             pageSize: pageSize.value,
-            approvedOnly: approvedOnly
+            approvedOnly: approvedOnly,
+            parentOnly: true // 只获取父评论
           })
         }
 
@@ -518,6 +630,13 @@ export default {
         comments.value = response.items || []
         totalComments.value = response.total || 0
         totalPages.value = response.pages || Math.ceil(totalComments.value / pageSize.value) || 1
+
+        // 初始化展开状态
+        comments.value.forEach(comment => {
+          if (comment.replies && comment.replies.length > 0) {
+            expandedComments.value[comment.id] = false // 默认折叠
+          }
+        })
       } catch (err) {
         console.error('获取评论列表失败:', err)
         error.value = err.message || '获取评论列表失败'
@@ -551,8 +670,15 @@ export default {
 
     // 获取父评论内容
     const getParentContent = (comment) => {
+      // 检查父评论对象是否存在
       if (!comment.parent) return '原评论不可见'
-      return comment.parent.content ? (comment.parent.content.length > 30 ? comment.parent.content.substring(0, 30) + '...' : comment.parent.content) : '原评论不可见'
+
+      // 检查父评论内容是否存在
+      const parentContent = comment.parent.content
+      if (!parentContent) return '原评论不可见'
+
+      // 截断长内容
+      return parentContent.length > 30 ? parentContent.substring(0, 30) + '...' : parentContent
     }
 
     // 格式化日期
@@ -598,6 +724,7 @@ export default {
 
     // 查看评论详情
     const viewCommentDetail = (comment) => {
+      // 直接使用传入的评论对象
       selectedComment.value = comment
       showDetailModal.value = true
     }
@@ -609,10 +736,28 @@ export default {
         await commentApi.approveComment(commentId)
         message.success('评论已通过')
 
-        // 更新评论状态
-        const index = comments.value.findIndex(c => c.id === commentId)
-        if (index !== -1) {
-          comments.value[index].is_approved = true
+        // 检查是否是子评论
+        let isChildComment = false
+
+        // 遍历所有父评论，查找子评论
+        for (const comment of comments.value) {
+          if (comment.replies && comment.replies.length > 0) {
+            const replyIndex = comment.replies.findIndex(reply => reply.id === commentId)
+            if (replyIndex !== -1) {
+              // 找到了子评论，更新其状态
+              isChildComment = true
+              comment.replies[replyIndex].is_approved = true
+              break
+            }
+          }
+        }
+
+        // 如果不是子评论，则更新主列表中的评论状态
+        if (!isChildComment) {
+          const index = comments.value.findIndex(c => c.id === commentId)
+          if (index !== -1) {
+            comments.value[index].is_approved = true
+          }
         }
 
         // 如果是从详情弹窗操作的，更新选中的评论
@@ -643,8 +788,27 @@ export default {
         await commentApi.deleteComment(commentToDelete.value)
         message.success('评论已删除')
 
-        // 从列表中移除评论
-        comments.value = comments.value.filter(c => c.id !== commentToDelete.value)
+        // 检查是否是子评论
+        let isChildComment = false
+
+        // 遍历所有父评论，查找子评论
+        for (const comment of comments.value) {
+          if (comment.replies && comment.replies.length > 0) {
+            const replyIndex = comment.replies.findIndex(reply => reply.id === commentToDelete.value)
+            if (replyIndex !== -1) {
+              // 找到了子评论
+              isChildComment = true
+              // 从父评论的replies数组中移除子评论
+              comment.replies.splice(replyIndex, 1)
+              break
+            }
+          }
+        }
+
+        // 如果不是子评论，则从主列表中移除
+        if (!isChildComment) {
+          comments.value = comments.value.filter(c => c.id !== commentToDelete.value)
+        }
 
         // 关闭弹窗
         showDeleteModal.value = false
@@ -685,6 +849,21 @@ export default {
       fetchComments()
     }
 
+    // 切换评论展开状态
+    const toggleCommentExpand = (commentId) => {
+      expandedComments.value[commentId] = !expandedComments.value[commentId]
+    }
+
+    // 检查评论是否有回复
+    const hasReplies = (comment) => {
+      return comment.replies && comment.replies.length > 0
+    }
+
+    // 检查评论是否是回复评论（不再需要，但保留以防其他地方使用）
+    const isReplyComment = (comment) => {
+      return comment.parent_id !== null
+    }
+
     // 组件挂载时获取评论列表
     onMounted(() => {
       // 检查URL参数中是否有文章ID和标题
@@ -710,6 +889,9 @@ export default {
       showDeleteModal,
       selectedComment,
       currentArticleTitle,
+      isUserSuperAdmin,
+      isUserEditor,
+      expandedComments,
       refreshComments,
       prevPage,
       nextPage,
@@ -722,7 +904,10 @@ export default {
       approveComment,
       confirmDeleteComment,
       deleteComment,
-      clearArticleFilter
+      clearArticleFilter,
+      toggleCommentExpand,
+      hasReplies,
+      isReplyComment
     }
   }
 }

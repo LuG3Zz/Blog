@@ -25,7 +25,7 @@ class UserService:
                 try:
                     user.social_media = json.loads(user.social_media)
                 except json.JSONDecodeError:
-                    user.social_media = None
+                    user.social_media = {}
 
             if include_counts:
                 # 获取用户评论数
@@ -90,7 +90,7 @@ class UserService:
                     try:
                         user.social_media = json.loads(user.social_media)
                     except json.JSONDecodeError:
-                        user.social_media = None
+                        user.social_media = {}
 
                 setattr(user, "comment_count", comment_count_dict.get(user.id, 0))
                 setattr(user, "article_count", article_count_dict.get(user.id, 0))
@@ -158,6 +158,7 @@ class UserService:
 
         # Update user fields if provided
         update_data = user_update.model_dump(exclude_unset=True)
+        logger.info(f"更新用户数据: {update_data}")
 
         # Hash password if provided
         if "password" in update_data and update_data["password"]:
@@ -165,7 +166,12 @@ class UserService:
 
         # Update user attributes
         for key, value in update_data.items():
+            logger.info(f"设置属性 {key} = {value}")
             setattr(db_user, key, value)
+
+        # 特别记录角色更新
+        if "role" in update_data:
+            logger.info(f"用户角色更新: {db_user.username} 的角色从 {db_user.role} 更改为 {update_data['role']}")
 
         db.commit()
         db.refresh(db_user)

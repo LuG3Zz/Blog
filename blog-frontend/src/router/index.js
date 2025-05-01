@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/stores'
-import { isAdmin } from '@/utils/permission'
+import { isAdmin, isSuperAdmin, isEditor } from '@/utils/permission'
 
 // 使用懒加载方式导入视图组件
 const Home = () => import('../views/layout/Home.vue')
@@ -18,6 +18,9 @@ const NotificationManage = () => import('../views/admin/NotificationManage.vue')
 const AboutManage = () => import('../views/admin/AboutManage.vue')
 const FileManager = () => import('../views/admin/FileManager.vue')
 const VisitorManagement = () => import('../views/admin/VisitorManagement.vue')
+const SiteSettingsManage = () => import('../views/admin/SiteSettingsManage.vue')
+// 使用同步导入方式
+import SubscriptionManage from '../views/admin/SubscriptionManage.vue'
 
 // 导入 UI 组件
 import { UnauthorizedAccess } from '../components/ui'
@@ -25,10 +28,12 @@ const UserProfile = () => import('../views/user/UserProfile.vue')
 const ArticleDetail = () => import('../views/blog/ArticleDetail.vue')
 const ArticleList = () => import('../views/blog/ArticleList.vue')
 const CategoryList = () => import('../views/blog/CategoryList.vue')
+const CategoryDetail = () => import('../views/blog/CategoryDetail.vue')
 const TagList = () => import('../views/blog/TagList.vue')
 const Search = () => import('../views/search/Search.vue')
 const NotFound = () => import('../views/error/NotFound.vue')
 const About = () => import('../views/about/About.vue')
+const Unsubscribe = () => import('../views/blog/Unsubscribe.vue')
 
 const routes = [
   {
@@ -47,6 +52,12 @@ const routes = [
     path: '/categories',
     name: 'CategoryList',
     component: CategoryList,
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/categories/:id',
+    name: 'CategoryDetail',
+    component: CategoryDetail,
     meta: { requiresAuth: false }
   },
   {
@@ -74,6 +85,12 @@ const routes = [
     meta: { requiresAuth: false }
   },
   {
+    path: '/unsubscribe',
+    name: 'Unsubscribe',
+    component: Unsubscribe,
+    meta: { requiresAuth: false }
+  },
+  {
     path: '/login',
     name: 'Login',
     component: Login,
@@ -94,52 +111,62 @@ const routes = [
       {
         path: '',
         name: 'Dashboard',
-        component: Dashboard
+        component: Dashboard,
+        meta: { requiresAuth: true, requiresAdmin: true } // 所有后台用户都可访问
       },
       {
         path: 'articles',
         name: 'ArticleManage',
-        component: ArticleManage
+        component: ArticleManage,
+        meta: { requiresAuth: true, requiresAdmin: true, allowEditor: true } // 编辑可访问
       },
       {
         path: 'articles/edit',
         name: 'ArticleEdit',
-        component: ArticleEdit
+        component: ArticleEdit,
+        meta: { requiresAuth: true, requiresAdmin: true, allowEditor: true } // 编辑可访问
       },
       {
         path: 'categories',
         name: 'CategoryManage',
-        component: CategoryManage
+        component: CategoryManage,
+        meta: { requiresAuth: true, requiresAdmin: true, allowEditor: true } // 编辑可访问
       },
       {
         path: 'tags',
         name: 'TagManage',
-        component: TagManage
+        component: TagManage,
+        meta: { requiresAuth: true, requiresAdmin: true, allowEditor: true } // 编辑可访问
       },
       {
         path: 'users',
         name: 'UserManage',
-        component: UserManage
+        component: UserManage,
+        meta: { requiresAuth: true, requiresSuperAdmin: true } // 只有超级管理员可访问
       },
       {
         path: 'comments',
         name: 'CommentManagement',
-        component: CommentManagement
+        component: CommentManagement,
+        meta: { requiresAuth: true, requiresAdmin: true, allowEditor: true } // 编辑可访问
       },
       {
         path: 'activities',
         name: 'ActivityManage',
-        component: ActivityManage
+        component: ActivityManage,
+        meta: { requiresAuth: true, requiresSuperAdmin: true } // 只有超级管理员可访问
       },
       {
         path: 'notifications',
         name: 'NotificationManage',
-        component: NotificationManage
+        component: NotificationManage,
+        meta: { requiresAuth: true, requiresSuperAdmin: true } // 只有超级管理员可访问
       },
       {
         path: 'about',
         name: 'AboutManage',
-        component: AboutManage
+        component: AboutManage,
+        meta: { requiresAuth: true, requiresSuperAdmin: true } // 只有超级管理员可访问
       },
       {
         path: 'files',
@@ -147,6 +174,8 @@ const routes = [
         component: FileManager,
         meta: {
           requiresAuth: true,
+          requiresAdmin: true,
+          allowEditor: true, // 编辑可访问
           title: '文件管理'
         }
       },
@@ -156,7 +185,28 @@ const routes = [
         component: VisitorManagement,
         meta: {
           requiresAuth: true,
+          requiresSuperAdmin: true, // 只有超级管理员可访问
           title: '访客记录'
+        }
+      },
+      {
+        path: 'settings',
+        name: 'SiteSettingsManage',
+        component: SiteSettingsManage,
+        meta: {
+          requiresAuth: true,
+          requiresSuperAdmin: true, // 只有超级管理员可访问
+          title: '系统设置'
+        }
+      },
+      {
+        path: 'subscriptions',
+        name: 'SubscriptionManage',
+        component: SubscriptionManage,
+        meta: {
+          requiresAuth: true,
+          requiresSuperAdmin: true, // 只有超级管理员可访问
+          title: '订阅管理'
         }
       }
     ]
@@ -202,13 +252,11 @@ router.beforeEach(async (to, from, next) => {
         if (localStorage.getItem('token')) {
           const validToken = await userStore.checkLoginStatus()
           if (validToken) {
-            // 检查是否需要管理员权限
-            if (to.matched.some(record => record.meta.requiresAdmin)) {
-              if (!isAdmin(userStore.userInfo)) {
-                // 非管理员访问管理页面，重定向到未授权页面
-                next({ path: '/unauthorized' })
-                return
-              }
+            // 检查权限
+            if (!checkRoutePermission(to, userStore.userInfo)) {
+              // 权限不足，重定向到未授权页面
+              next({ path: '/unauthorized' })
+              return
             }
             next()
             return
@@ -221,13 +269,11 @@ router.beforeEach(async (to, from, next) => {
         })
         return
       } else {
-        // 已登录，检查是否需要管理员权限
-        if (to.matched.some(record => record.meta.requiresAdmin)) {
-          if (!isAdmin(userStore.userInfo)) {
-            // 非管理员访问管理页面，重定向到未授权页面
-            next({ path: '/unauthorized' })
-            return
-          }
+        // 已登录，检查权限
+        if (!checkRoutePermission(to, userStore.userInfo)) {
+          // 权限不足，重定向到未授权页面
+          next({ path: '/unauthorized' })
+          return
         }
       }
     }
@@ -238,5 +284,37 @@ router.beforeEach(async (to, from, next) => {
     next('/login')
   }
 })
+
+/**
+ * 检查用户是否有权限访问路由
+ * @param {Route} route - 路由对象
+ * @param {Object} userInfo - 用户信息
+ * @returns {boolean} 是否有权限
+ */
+function checkRoutePermission(route, userInfo) {
+  // 检查路由是否需要超级管理员权限
+  if (route.matched.some(record => record.meta.requiresSuperAdmin)) {
+    return isSuperAdmin(userInfo)
+  }
+
+  // 检查路由是否需要管理员权限
+  if (route.matched.some(record => record.meta.requiresAdmin)) {
+    // 如果是超级管理员，直接允许访问
+    if (isSuperAdmin(userInfo)) {
+      return true
+    }
+
+    // 检查是否允许编辑访问
+    const allowEditor = route.matched.some(record => record.meta.allowEditor)
+    if (allowEditor && isEditor(userInfo)) {
+      return true
+    }
+
+    // 其他情况，需要管理员权限
+    return isAdmin(userInfo)
+  }
+
+  return true
+}
 
 export default router

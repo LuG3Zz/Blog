@@ -23,11 +23,9 @@ class AboutPageResponse(AboutPageBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = {
+        "from_attributes": True
+    }
 
     def model_dump(self, *args, **kwargs):
         """确保所有字段都被正确序列化"""

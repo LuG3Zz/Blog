@@ -22,6 +22,9 @@ import * as notificationsApi from './modules/notifications';
 import * as notificationHistoryApi from './modules/notificationHistory';
 import * as aboutApi from './modules/about';
 import * as visitorsApi from './modules/visitors';
+import * as siteSettingsApi from './modules/siteSettings';
+import * as emailApi from './modules/email';
+import * as subscriptionsApi from './modules/subscriptions';
 
 // 导出所有 API 模块
 export {
@@ -40,7 +43,10 @@ export {
   notificationsApi,
   notificationHistoryApi,
   aboutApi,
-  visitorsApi
+  visitorsApi,
+  siteSettingsApi,
+  emailApi,
+  subscriptionsApi
 };
 
 // 为了向后兼容，保留原来的导出名称
@@ -58,6 +64,8 @@ export const notificationApi = notificationsApi;
 export const aboutPageApi = aboutApi;
 // statsApi 已经在上面导出，这里不需要重复导出
 export const visitorApi = visitorsApi;
+export const emailVerificationApi = emailApi;
+export const subscriptionApi = subscriptionsApi;
 
 // 默认导出所有 API
 export default {
@@ -76,5 +84,8 @@ export default {
   notifications: notificationsApi,
   notificationHistory: notificationHistoryApi,
   about: aboutApi,
-  visitors: visitorsApi
+  visitors: visitorsApi,
+  siteSettings: siteSettingsApi,
+  email: emailApi,
+  subscriptions: subscriptionsApi
 };

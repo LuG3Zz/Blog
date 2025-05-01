@@ -68,6 +68,24 @@
               />
               <p v-if="signupErrors.email" class="text-red-500 text-xs">{{ signupErrors.email }}</p>
 
+              <div class="flex gap-2" v-if="requireEmailVerification">
+                <input
+                  class="flip-card__input flex-1"
+                  v-model="signupForm.verificationCode"
+                  placeholder="验证码"
+                  :class="{ 'border-red-500': signupErrors.verificationCode }"
+                />
+                <button
+                  type="button"
+                  class="verification-btn"
+                  :disabled="isCodeSending || !isEmailValid || codeCooldown > 0"
+                  @click="sendVerificationCode"
+                >
+                  {{ codeCooldown > 0 ? `${codeCooldown}秒` : isCodeSending ? '发送中...' : '获取验证码' }}
+                </button>
+              </div>
+              <p v-if="signupErrors.verificationCode" class="text-red-500 text-xs">{{ signupErrors.verificationCode }}</p>
+
               <input
                 class="flip-card__input"
                 type="password"
@@ -102,9 +120,9 @@
 </template>
 
 <script>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { userApi } from '@/api'
+import { userApi, emailVerificationApi, siteSettingsApi } from '@/api'
 import message from '@/utils/message'
 import { useUserStore } from '@/stores'
 
@@ -128,13 +146,26 @@ export default {
       username: '',
       email: '',
       password: '',
-      confirmPassword: ''
+      confirmPassword: '',
+      verificationCode: ''
     })
     const signupErrors = reactive({
       username: '',
       email: '',
       password: '',
-      confirmPassword: ''
+      confirmPassword: '',
+      verificationCode: ''
+    })
+
+    // 验证码相关
+    const requireEmailVerification = ref(false)
+    const isCodeSending = ref(false)
+    const codeCooldown = ref(0)
+    const cooldownTimer = ref(null)
+
+    // 检查邮箱是否有效
+    const isEmailValid = computed(() => {
+      return signupForm.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signupForm.email)
     })
 
     // 登录处理
@@ -184,8 +215,8 @@ export default {
         message.success('登录成功')
 
         // 检查是否有重定向参数
-        const redirectPath = router.currentRoute.value.query.redirect || '/admin'
-        // 跳转到重定向路径或后台管理页面
+        const redirectPath = router.currentRoute.value.query.redirect || '/'
+        // 跳转到重定向路径或首页
         router.push(redirectPath)
       } catch (error) {
         console.error('登录失败:', error)
@@ -194,6 +225,49 @@ export default {
         isLoading.value = false
       }
     }
+
+    // 发送验证码
+    const sendVerificationCode = async () => {
+      if (!isEmailValid.value || isCodeSending.value || codeCooldown.value > 0) {
+        return
+      }
+
+      isCodeSending.value = true
+      try {
+        await emailVerificationApi.sendVerificationCode(signupForm.email)
+        message.success('验证码已发送，请查收邮件')
+
+        // 开始倒计时
+        codeCooldown.value = 60
+        cooldownTimer.value = setInterval(() => {
+          codeCooldown.value--
+          if (codeCooldown.value <= 0) {
+            clearInterval(cooldownTimer.value)
+          }
+        }, 1000)
+      } catch (error) {
+        console.error('发送验证码失败:', error)
+        message.error('发送验证码失败: ' + (error.response?.data?.detail || '请稍后再试'))
+      } finally {
+        isCodeSending.value = false
+      }
+    }
+
+    // 获取系统设置
+    const getSiteSettings = async () => {
+      try {
+        const settings = await siteSettingsApi.getSiteSettings()
+        requireEmailVerification.value = settings.require_email_verification || false
+      } catch (error) {
+        console.error('获取系统设置失败:', error)
+        requireEmailVerification.value = false
+      }
+    }
+
+    // 组件挂载时获取系统设置
+    onMounted(() => {
+      getSiteSettings()
+    })
 
     // 注册处理
     const handleSignup = async () => {
@@ -230,15 +304,29 @@ export default {
         isValid = false
       }
 
+      // 如果需要邮箱验证，验证验证码
+      if (requireEmailVerification.value && !signupForm.verificationCode) {
+        signupErrors.verificationCode = '请输入验证码'
+        isValid = false
+      }
+
       if (!isValid) return
 
       isLoading.value = true
       try {
-        await userApi.register({
+        // 构建注册数据
+        const registerData = {
           username: signupForm.username,
           email: signupForm.email,
           password: signupForm.password
-        })
+        }
+
+        // 如果需要邮箱验证，添加验证码
+        if (requireEmailVerification.value) {
+          registerData.verification_code = signupForm.verificationCode
+        }
+
+        await userApi.register(registerData)
 
         message.success('注册成功，请登录')
 
@@ -249,7 +337,7 @@ export default {
         username.value = signupForm.username
       } catch (error) {
         console.error('注册失败:', error)
-        message.error('注册失败: ' + (error.response?.data?.message || '注册失败，请稍后再试'))
+        message.error('注册失败: ' + (error.response?.data?.detail || '注册失败，请稍后再试'))
       } finally {
         isLoading.value = false
       }
@@ -265,8 +353,13 @@ export default {
       passwordError,
       signupForm,
       signupErrors,
+      requireEmailVerification,
+      isCodeSending,
+      codeCooldown,
+      isEmailValid,
       handleLogin,
-      handleSignup
+      handleSignup,
+      sendVerificationCode
     }
   }
 }
@@ -486,6 +579,36 @@ export default {
 .flip-card__btn:active {
   transform: translateY(0);
   box-shadow: 2px 2px var(--main-color);
+}
+
+.verification-btn {
+  height: 40px;
+  min-width: 100px;
+  border-radius: 8px;
+  border: 2px solid var(--main-color);
+  background-color: #4f46e5;
+  box-shadow: 3px 3px var(--main-color);
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0 10px;
+}
+
+.verification-btn:hover {
+  background-color: #4338ca;
+}
+
+.verification-btn:active {
+  transform: translateY(1px);
+  box-shadow: 2px 2px var(--main-color);
+}
+
+.verification-btn:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 /* 暗黑模式适配 */

@@ -5,8 +5,10 @@
 
 import { useUserStore } from './user'
 import { useThemeStore } from './theme'
+import { useSiteSettingsStore } from './siteSettingsStore'
 
 export {
   useUserStore,
-  useThemeStore
+  useThemeStore,
+  useSiteSettingsStore
 }
