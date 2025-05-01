@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="posts-container p-6 w-full dark:bg-gray-900" :class="customClass">
-      <p class="text-xl font-bold mb-4 dark:text-gray-100">{{ title }}</p>
+      <p class="text-xl font-bold mb-[55px] dark:text-gray-100">{{ title }}</p>
       <div class="border-t-10 border-secondary dark:border-gray-600 w-full" ref="postsListRef">
         <TerminalLoader v-if="isLoading" />
         <div v-else-if="isLoading" class="flex justify-center items-center py-8">
@@ -24,61 +24,95 @@
           </div>
         </div>
         <div v-else class="posts-grid">
-          <div v-for="(post, index) in posts" :key="post.id" class="stack" :style="{ 'animation-delay': `${index * 0.1}s` }">
-            <div class="card" :data-cover-image="post.cover_image || ''">
-              <div class="card-content">
-                <div class="post-header">
-                  <div class="title-background" :style="{ backgroundImage: post.cover_image ? `url(${post.cover_image})` : 'none' }">
-                    <h2 @click="() => $router.push(`/article/${post.id}`)" class="post-title cursor-pointer hover:text-blue-500 dark:hover:text-blue-400">
-                      {{ post.title }}
-                    </h2>
-                  </div>
-                  <div class="post-category">{{ post.category?.name || '未分类' }}</div>
-                </div>
-
-                <div class="post-meta">
-                  <div class="author-info">
-                    <div v-if="post.author" class="flex items-center gap-2">
-                      <div class="author-avatar" :data-tooltip="`点击查看 ${post.author.username} 的资料`" @click="navigateToAuthorProfile(post.author.id)" style="cursor: pointer;">
-                        <img v-if="post.author.avatar" :src="post.author.avatar" alt="作者头像" class="avatar-image" />
-                        <div v-else class="avatar-placeholder">{{ post.author.username.charAt(0).toUpperCase() }}</div>
-                      </div>
-                      <div class="flex flex-col sm:flex-row sm:items-center">
-                        <span class="author-name">{{ post.author.username }}</span>
-                        <span class="hidden sm:inline mx-2 text-gray-300 dark:text-gray-600">•</span>
-                        <span class="post-role text-xs text-gray-500 dark:text-gray-400">{{ post.author.role || '作者' }}</span>
-                      </div>
-                    </div>
-                    <span class="post-date">{{ formatDate(post.created_at) }}</span>
-                  </div>
-
-                  <div class="post-stats">
-                    <div class="stat-item">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="stat-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                      </svg>
-                      <span class="stat-value">{{ post.view_count }}</span>
-                      <span class="stat-label">浏览</span>
-                    </div>
-
-                    <div class="stat-item">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="stat-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                      </svg>
-                      <span class="stat-value">{{ post.like_count }}</span>
-                      <span class="stat-label">喜欢</span>
-                    </div>
-
+          <div v-for="(post, index) in posts" :key="post.id" class="post-card-container" :style="{ 'animation-delay': `${index * 0.1}s` }">
+            <FlipCard class="w-full h-full" :data-cover-image="post.cover_image || ''" rotate="y">
+              <!-- 卡片正面 -->
+              <div class="relative h-full w-full bg-white dark:bg-gray-800 p-4 flex flex-col">
+                <!-- 封面图片 -->
+                <div class="relative h-36 w-full overflow-hidden rounded-lg mb-3">
+                  <img
+                    :src="post.cover_image || 'https://via.placeholder.com/400x300?text=暂无封面'"
+                    :alt="post.title"
+                    class="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                    @error="e => e.target.src = 'https://via.placeholder.com/400x300?text=暂无封面'"
+                  >
+                  <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/70 to-transparent p-2">
                     <div v-if="post.is_featured" class="featured-badge">精选</div>
                   </div>
                 </div>
 
-                <div class="post-excerpt">
-                  <p>{{ post.excerpt || '暂无摘要' }}</p>
+                <!-- 标题和分类 -->
+                <h2 @click="() => $router.push(`/article/${post.id}`)" class="text-lg font-bold text-gray-800 dark:text-gray-100 cursor-pointer hover:text-blue-500 dark:hover:text-blue-400 line-clamp-2 mb-1">
+                  {{ post.title }}
+                </h2>
+                <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                  <span class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full text-xs">
+                    {{ post.category?.name || '未分类' }}
+                  </span>
+                </div>
+
+                <!-- 作者信息 -->
+                <div class="flex items-center mt-auto">
+                  <div v-if="post.author" class="flex items-center gap-2">
+                    <div class="author-avatar w-8 h-8" :data-tooltip="`点击查看 ${post.author.username} 的资料`" @click="navigateToAuthorProfile(post.author.id)" style="cursor: pointer;">
+                      <img v-if="post.author.avatar" :src="post.author.avatar" alt="作者头像" class="avatar-image" />
+                      <div v-else class="avatar-placeholder">{{ post.author.username.charAt(0).toUpperCase() }}</div>
+                    </div>
+                    <div class="author-name text-sm">{{ post.author.username }}</div>
+                  </div>
+                  <div class="ml-auto text-xs text-gray-500 dark:text-gray-400">{{ formatDate(post.created_at) }}</div>
                 </div>
               </div>
-            </div>
+
+              <!-- 卡片背面 -->
+              <template #back>
+                <div class="h-full flex flex-col">
+                  <h3 class="text-lg font-bold mb-2 text-gray-800 dark:text-white">{{ post.title }}</h3>
+
+                  <!-- 作者信息 -->
+                  <div class="flex items-center mb-2" v-if="post.author">
+                    <div class="author-avatar w-6 h-6" :data-tooltip="`点击查看 ${post.author.username} 的资料`" @click="navigateToAuthorProfile(post.author.id)" style="cursor: pointer;">
+                      <img v-if="post.author.avatar" :src="post.author.avatar" alt="作者头像" class="avatar-image" />
+                      <div v-else class="avatar-placeholder">{{ post.author.username.charAt(0).toUpperCase() }}</div>
+                    </div>
+                    <div class="author-name text-sm ml-2 text-gray-700 dark:text-gray-300">{{ post.author.username }}</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 ml-auto">{{ formatDate(post.created_at) }}</div>
+                  </div>
+
+                  <!-- 文章摘要 -->
+                  <div class="mb-3 flex-grow overflow-y-auto">
+                    <p class="text-sm leading-relaxed text-gray-600 dark:text-gray-300">{{ post.excerpt || '暂无摘要' }}</p>
+                  </div>
+
+                  <!-- 统计信息 -->
+                  <div class="flex justify-between items-center mt-auto">
+                    <div class="flex items-center gap-4">
+                      <div class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-gray-500 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                        <span class="text-xs text-gray-500 dark:text-gray-300">{{ post.view_count }}</span>
+                      </div>
+                      <div class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-gray-500 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                        <span class="text-xs text-gray-500 dark:text-gray-300">{{ post.like_count }}</span>
+                      </div>
+                    </div>
+
+                    <!-- 阅读按钮 -->
+                    <button
+                      @click="() => $router.push(`/article/${post.id}`)"
+                      class="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded-full transition-colors"
+                    >
+                      阅读全文
+                    </button>
+                  </div>
+                </div>
+              </template>
+            </FlipCard>
           </div>
 
           <div class="pagination">
@@ -111,12 +145,13 @@ import { postApi } from '../../api'
 import { usePostAnimation } from '../../hooks/usePostAnimation.js'
 import { message } from '../../utils'
 import { TerminalLoader } from '../ui'
+import FlipCard from '../ui/FlipCard.vue'
 import { useRouter } from 'vue-router'
 // 导入 GSAP 库用于动画效果
 import gsap from 'gsap'
 
 export default {
-  components: { TerminalLoader },
+  components: { TerminalLoader, FlipCard },
   name: 'PostsList',
   props: {
     selectedCategory: {
@@ -249,13 +284,13 @@ export default {
       setTimeout(() => {
         if (postsListRef.value && postPreviewRef.value) {
           // 获取所有文章卡片元素
-          postsElements = postsListRef.value.querySelectorAll('.stack')
+          postsElements = postsListRef.value.querySelectorAll('.post-card-container')
 
           // 为每个卡片添加鼠标悬浮事件，显示封面图片
           postsElements.forEach((post) => {
             post.addEventListener('mouseenter', () => {
-              const card = post.querySelector('.card')
-              const coverImage = card.dataset.coverImage
+              const flipCard = post.querySelector('.group')
+              const coverImage = flipCard.dataset.coverImage
 
               // 如果有封面图片，则显示
               if (coverImage && coverImage !== '' && coverImage !== 'null' && coverImage !== 'undefined' && !coverImage.includes('undefined')) {
@@ -396,9 +431,7 @@ export default {
 </script>
 
 <style scoped>
-.posts-container {
-  margin: 0 auto;
-}
+
 
 .posts-grid {
   display: grid;
@@ -413,12 +446,13 @@ export default {
   }
 }
 
-.stack {
+.post-card-container {
   width: 100%;
-  transition: 0.25s ease;
+  height: 300px;
   margin: 0 auto;
   animation: fadeIn 0.5s ease forwards;
   opacity: 0;
+  perspective: 1000px;
 }
 
 @keyframes fadeIn {
@@ -426,61 +460,39 @@ export default {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.stack:hover {
-  transform: rotate(3deg);
+/* 确保 FlipCard 组件在容器中正确显示 */
+.post-card-container :deep(.group) {
+  width: 100% !important;
+  height: 100% !important;
 }
 
-.stack:hover .card:before {
-  transform: translatey(-2%) rotate(-3deg);
+/* 自定义卡片样式 */
+.post-card-container :deep(.rounded-2xl) {
+  border-radius: 1rem;
 }
 
-.stack:hover .card:after {
-  transform: translatey(2%) rotate(3deg);
+.post-card-container :deep(.border) {
+  border-width: 1px;
+  border-color: #e5e7eb;
 }
 
-.card {
-  border: 4px solid;
-  background-color: #fff;
-  position: relative;
-  transition: 0.15s ease;
-  cursor: pointer;
-  padding: 1rem;
-  height: 100%;
-}
-
-.dark .card {
-  background-color: #1f2937;
+.dark .post-card-container :deep(.border) {
   border-color: #374151;
 }
 
-.card:before,
-.card:after {
-  content: "";
-  display: block;
-  position: absolute;
-  height: 100%;
-  width: 100%;
-  border: 4px solid;
-  background-color: #fff;
-  transform-origin: center center;
-  z-index: -1;
-  transition: 0.15s ease;
-  top: 0;
-  left: 0;
+/* 卡片背面边框颜色 */
+.post-card-container :deep(.bg-white) {
+  border-color: #e5e7eb;
 }
 
-.dark .card:before,
-.dark .card:after {
-  background-color: #1f2937;
+.dark .post-card-container :deep(.bg-gradient-to-br) {
   border-color: #374151;
 }
 
-.card:before {
-  transform: translatey(-2%) rotate(-4deg);
-}
-
-.card:after {
-  transform: translatey(2%) rotate(4deg);
+/* 卡片悬停效果 */
+.post-card-container:hover {
+  transform: translateY(-5px);
+  transition: transform 0.3s ease;
 }
 
 .card-content {
@@ -574,8 +586,6 @@ export default {
 }
 
 .author-avatar {
-  width: 2.5rem;
-  height: 2.5rem;
   border-radius: 50%;
   overflow: hidden;
   border: 2px solid #e5e7eb;
@@ -589,12 +599,14 @@ export default {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
-.dark .author-avatar {
+.dark .author-avatar,
+.post-card-container :deep(.bg-gradient-to-br) .author-avatar {
   border-color: #4b5563;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-.dark .author-avatar:hover {
+.dark .author-avatar:hover,
+.post-card-container :deep(.bg-gradient-to-br) .author-avatar:hover {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
 }
 
@@ -656,15 +668,18 @@ export default {
   color: #6366f1;
 }
 
-.dark .author-name {
+.dark .author-name,
+.post-card-container :deep(.bg-gradient-to-br) .author-name {
   color: #d1d5db;
 }
 
-.dark .author-name:after {
+.dark .author-name:after,
+.post-card-container :deep(.bg-gradient-to-br) .author-name:after {
   background-color: #8b5cf6;
 }
 
-.dark .author-name:hover {
+.dark .author-name:hover,
+.post-card-container :deep(.bg-gradient-to-br) .author-name:hover {
   color: #8b5cf6;
 }
 
@@ -799,6 +814,7 @@ export default {
   padding: 0.25rem 0.5rem;
   border-radius: 9999px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  display: inline-block;
 }
 
 .post-excerpt {
@@ -906,6 +922,20 @@ export default {
 .dark .page-indicator {
   color: #d1d5db;
 }
+
+.post-excerpt {
+  margin-top: auto;
+  padding-top: 0.5rem;
+  border-top: 1px dashed #e5e7eb;
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.dark .post-excerpt {
+  border-top-color: #374151;
+  color: #9ca3af;
+}
 /* 作者角色样式 */
 .post-role {
   font-size: 0.7rem;
@@ -942,6 +972,7 @@ export default {
   visibility: visible;
   transform: translateX(-50%) scale(1);
   bottom: -25px;
+  z-index: 50;
 }
 
 /* 响应式调整 */

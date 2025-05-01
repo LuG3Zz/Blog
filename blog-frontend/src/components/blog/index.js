@@ -16,6 +16,7 @@ import CategoryDistribution from './CategoryDistribution.vue';
 import Hitokoto from './Hitokoto.vue';
 import SiteSubscription from './SiteSubscription.vue';
 import SubscriptionForm from './SubscriptionForm.vue';
+import SubscriptionModal from './SubscriptionModal.vue';
 // 避免循环引用
 const TagCloud = () => import('./TagCloud.vue');
 
@@ -37,5 +38,6 @@ export {
   Hitokoto,
   SiteSubscription,
   SubscriptionForm,
+  SubscriptionModal,
   TagCloud
 };

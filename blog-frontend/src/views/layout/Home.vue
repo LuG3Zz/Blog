@@ -35,7 +35,6 @@
             <PopularArticles class="mt-5 animate__animated animate__fadeInRight animate__delay-1s"/>
             <FlipClock class="animate__animated animate__fadeInRight animate__delay-2s animate-hover-scale" />
             <RecentActivities class="animate__animated animate__fadeInRight animate__delay-3s" />
-            <SiteSubscription class="animate__animated animate__fadeInRight animate__delay-4s" />
           </div>
         </div>
       </section>
@@ -66,7 +65,7 @@
 <script>
 import { ref, onMounted, watch, computed } from 'vue'
 import { Navbar, Footer } from '../../components/layout'
-import { UserProfile, ActivityHeatmap, RecentActivities, SocialMedia, Categories, PostsList, Carousel, StatsOverview, PopularArticles, CategoryDistribution, Hitokoto, SiteSubscription } from '../../components/blog'
+import { UserProfile, ActivityHeatmap, RecentActivities, SocialMedia, Categories, PostsList, Carousel, StatsOverview, PopularArticles, CategoryDistribution, Hitokoto } from '../../components/blog'
 import { HandLoader, Stick ,FlipClock} from '../../components/ui'
 import { homeApi } from '../../api'
 import message from '../../utils/message.js'
@@ -90,8 +89,7 @@ export default {
     RecentActivities,
     Stick,
     FlipClock,
-    Hitokoto,
-    SiteSubscription
+    Hitokoto
   },
   setup() {
     const selectedCategory = ref('')

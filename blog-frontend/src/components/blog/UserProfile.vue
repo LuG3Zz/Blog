@@ -1,7 +1,7 @@
 <template>
-  <div class="relative flex w-full flex-col rounded-xl bg-white bg-clip-border text-gray-700 shadow-md dark:bg-gray-800 dark:text-gray-300">
+    <div class="relative flex w-full flex-col rounded-xl bg-white bg-clip-border text-gray-700 shadow-md dark:bg-gray-800 dark:text-gray-300">
     <!-- 顶部渐变背景区域 -->
-    <div class="relative mx-3 -mt-6 h-32 overflow-hidden rounded-xl bg-blue-gray-500 bg-clip-border text-white shadow-lg shadow-blue-gray-500/40 bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center">
+    <div class="relative   h-32 overflow-hidden rounded-xl bg-blue-gray-500 bg-clip-border text-white shadow-lg shadow-blue-gray-500/40 bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center">
       <img
         :src="adminData.avatar || '/images/avatar.jpg'"
         :alt="adminData.username || '管理员'"
@@ -73,21 +73,44 @@
 
     <!-- 按钮区域 -->
     <div class="p-6 pt-2">
-      <GradientButton
-        @click="triggerConfetti"
-        class="w-full font-sans text-xs font-bold uppercase text-white animate__animated"
-        :class="{ 'animate__rubberBand': buttonClicked }"
-        :bgColor="isDarkMode ? '#1e293b' : '#3b82f6'"
-        :borderRadius="8"
-        :borderWidth="3"
-        :blur="5"
-        :colors="['#FF0000', '#FFA500', '#FFFF00', '#008000', '#0000FF', '#4B0082', '#EE82EE', '#FF0000']"
-        :duration="2500"
-      >
-        🎉查看详情
-      </GradientButton>
+      <div class="flex gap-2">
+        <GradientButton
+          @click="triggerConfetti"
+          class="w-full font-sans text-xs font-bold uppercase text-white animate__animated"
+          :class="{ 'animate__rubberBand': buttonClicked }"
+          :bgColor="isDarkMode ? '#1e293b' : '#3b82f6'"
+          :borderRadius="8"
+          :borderWidth="3"
+          :blur="5"
+          :colors="['#FF0000', '#FFA500', '#FFFF00', '#008000', '#0000FF', '#4B0082', '#EE82EE', '#FF0000']"
+          :duration="2500"
+        >
+          🎉查看详情
+        </GradientButton>
+
+        <GradientButton
+          @click="openSubscriptionModal"
+          class="w-full font-sans text-xs font-bold uppercase text-white animate__animated"
+          :bgColor="isDarkMode ? '#0f766e' : '#10b981'"
+          :borderRadius="8"
+          :borderWidth="3"
+          :blur="5"
+          :colors="['#10b981', '#059669', '#047857', '#065f46', '#064e3b', '#10b981']"
+          :duration="2500"
+        >
+          📧订阅博客
+        </GradientButton>
+      </div>
     </div>
+
   </div>
+
+  <!-- 订阅弹窗 -->
+  <SubscriptionModal
+    :show="showSubscriptionModal"
+    @close="showSubscriptionModal = false"
+    @subscribed="handleSubscribed"
+  />
 </template>
 
 <script>
@@ -96,11 +119,14 @@ import confetti from 'canvas-confetti'
 
 import { adminApi, userApi } from '../../api'
 import GradientButton from '@/components/ui/GradientButton.vue'
+import SubscriptionModal from './SubscriptionModal.vue'
+import message from '@/utils/message'
 
 export default {
   name: 'UserProfile',
   components: {
-    GradientButton
+    GradientButton,
+    SubscriptionModal
   },
   props: {
     userData: {
@@ -246,6 +272,35 @@ export default {
     // 按钮点击状态
     const buttonClicked = ref(false)
 
+    // 订阅弹窗状态
+    const showSubscriptionModal = ref(false)
+
+    // 打开订阅弹窗
+    const openSubscriptionModal = (event) => {
+      // 阻止事件冒泡，防止触发路由导航
+      if (event && event.stopPropagation) {
+        event.stopPropagation()
+      }
+      console.log('打开订阅模态框')
+      showSubscriptionModal.value = true
+
+      // 确保模态框显示
+      setTimeout(() => {
+        console.log('订阅模态框状态:', showSubscriptionModal.value)
+      }, 100)
+    }
+
+    // 处理订阅成功
+    const handleSubscribed = () => {
+      console.log('订阅成功')
+      message.success('订阅成功！我们会在有新文章发布时通知您。')
+      // 3秒后关闭弹窗
+      setTimeout(() => {
+        console.log('关闭订阅模态框')
+        showSubscriptionModal.value = false
+      }, 3000)
+    }
+
     // 触发烟花效果
     const triggerConfetti = (event) => {
       // 阻止事件冒泡，防止触发路由导航
@@ -321,7 +376,10 @@ export default {
       formatDate,
       triggerConfetti,
       buttonClicked,
-      isDarkMode
+      isDarkMode,
+      showSubscriptionModal,
+      openSubscriptionModal,
+      handleSubscribed
     }
   }
 }

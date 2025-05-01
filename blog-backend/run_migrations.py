@@ -15,7 +15,9 @@ MIGRATION_MODULES = [
     "migrations.add_comment_review_fields",
     "migrations.create_article_tags_table",
     "migrations.migrate_tags_to_relationships",
-    "migrations.remove_tags_column"
+    "migrations.remove_tags_column",
+    "migrations.add_email_verification",
+    "migrations.fix_email_verified_column"
 ]
 
 def run_all_migrations():

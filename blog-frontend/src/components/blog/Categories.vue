@@ -1,10 +1,10 @@
 <template>
-  <div class="categories-container p-6">
-    <div class="categories-header stack mb-5">
+  <div class="categories-container p-4">
+    <div class="categories-header stack mb-3">
       <div class="card">
         <div class="card-content flex flex-col items-center">
-          <h2 class="text-xl font-bold uppercase mb-2 category-title">文章分类</h2>
-          <p class="text-sm text-center mb-2 category-subtitle">选择一个分类浏览相关文章</p>
+          <h2 class="text-lg font-bold uppercase mb-1 category-title">文章分类</h2>
+          <p class="text-xs text-center mb-1 category-subtitle">选择一个分类浏览相关文章</p>
         </div>
       </div>
     </div>
@@ -23,15 +23,14 @@
         >
           <div class="category-card">
             <div class="category-content">
-              <h3 class="category-name">{{ category.name }}</h3>
-              <p class="category-description">{{ category.description || '暂无描述' }}</p>
-
-              <div class="category-stats">
+              <div class="flex justify-between items-center w-full mb-1">
+                <h3 class="category-name">{{ category.name }}</h3>
                 <div class="stat-item">
                   <span class="stat-value">{{ category.articleCount || 0 }}</span>
                   <span class="stat-label">文章</span>
                 </div>
               </div>
+              <p class="category-description">{{ category.description || '暂无描述' }}</p>
             </div>
           </div>
         </div>
@@ -44,15 +43,14 @@
         >
           <div class="category-card">
             <div class="category-content">
-              <h3 class="category-name">全部分类</h3>
-              <p class="category-description">查看所有文章</p>
-
-              <div class="category-stats">
+              <div class="flex justify-between items-center w-full mb-1">
+                <h3 class="category-name">全部分类</h3>
                 <div class="stat-item">
                   <span class="stat-value">{{ getTotalArticleCount() }}</span>
                   <span class="stat-label">文章</span>
                 </div>
               </div>
+              <p class="category-description">查看所有文章</p>
             </div>
           </div>
         </div>
@@ -151,9 +149,9 @@ export default {
   --animation-duration: 0.5s;
 
   /* 布局变量 */
-  --border-width: 4px;
-  --card-padding: 1rem;
-  --card-gap: 1.5rem;
+  --border-width: 3px;
+  --card-padding: 0.75rem;
+  --card-gap: 1rem;
 }
 
 /* 容器样式 - 已在上面定义了CSS变量 */
@@ -173,11 +171,11 @@ export default {
 }
 
 .card {
-  margin-bottom: 10px;
+  margin-bottom: 1px;
 }
 
 .category-card {
-  margin-bottom: var(--card-gap);
+  margin-bottom: 0.75rem;
 }
 
 
@@ -239,14 +237,14 @@ export default {
 }
 
 .category-content {
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 /* 分类列表样式 */
 .categories-list {
   display: flex;
   flex-direction: column;
-  gap: var(--card-gap);
+  gap: 0.5rem;
   margin-bottom: 10px;
 }
 
@@ -290,10 +288,11 @@ export default {
 
 /* 分类名称样式 */
 .category-name {
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 600;
   text-transform: uppercase;
   color: var(--color-text-primary-light);
+  margin: 0;
 }
 
 .dark .category-name {
@@ -302,8 +301,11 @@ export default {
 
 /* 分类描述样式 */
 .category-description {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
+  line-height: 1.2;
   color: var(--color-text-secondary-light);
+  margin: 0;
+  text-align: justify;
 }
 
 .dark .category-description {
@@ -311,17 +313,14 @@ export default {
 }
 
 /* 分类统计样式 */
-.category-stats {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 0.5rem;
-}
+/* 移除 category-stats，因为我们不再需要它 */
 
 .stat-item {
   display: flex;
   flex-direction: column;
   align-items: center;
   transition: transform 0.2s ease;
+  margin-left: 0.5rem;
 }
 
 .stat-item:hover {
@@ -329,7 +328,7 @@ export default {
 }
 
 .stat-value {
-  font-size: 1rem;
+  font-size: 0.875rem;
   font-weight: bold;
   color: var(--color-text-primary-light);
 }
@@ -349,7 +348,7 @@ export default {
 
 /* 全部分类样式 */
 .all-categories {
-  margin-top: 1rem;
+  margin-top: 0.5rem;
   position: relative;
   z-index: 1;
 }
@@ -361,5 +360,10 @@ export default {
 /* 确保所有内容可见 */
 .categories-container * {
   position: relative;
+}
+
+/* 确保分类内容布局正确 */
+.category-content > div {
+  width: 100%;
 }
 </style>
