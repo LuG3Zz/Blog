@@ -19,6 +19,8 @@ const AboutManage = () => import('../views/admin/AboutManage.vue')
 const FileManager = () => import('../views/admin/FileManager.vue')
 const VisitorManagement = () => import('../views/admin/VisitorManagement.vue')
 const SiteSettingsManage = () => import('../views/admin/SiteSettingsManage.vue')
+// 静态导入备忘录管理组件，避免动态导入问题
+import MemoManage from '../views/admin/MemoManage.vue'
 // 使用同步导入方式
 import SubscriptionManage from '../views/admin/SubscriptionManage.vue'
 
@@ -34,6 +36,11 @@ const Search = () => import('../views/search/Search.vue')
 const NotFound = () => import('../views/error/NotFound.vue')
 const About = () => import('../views/about/About.vue')
 const Unsubscribe = () => import('../views/blog/Unsubscribe.vue')
+// 静态导入备忘录组件，避免动态导入问题
+import MemoList from '../views/memo/MemoList.vue'
+import MemoDetail from '../views/memo/MemoDetail.vue'
+import MemoExplore from '../views/memo/MemoExplore.vue'
+import MemoArchive from '../views/memo/MemoArchive.vue'
 
 const routes = [
   {
@@ -88,6 +95,30 @@ const routes = [
     path: '/unsubscribe',
     name: 'Unsubscribe',
     component: Unsubscribe,
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/memos',
+    name: 'MemoList',
+    component: MemoList,
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/memos/explore',
+    name: 'MemoExplore',
+    component: MemoExplore,
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/memos/archive',
+    name: 'MemoArchive',
+    component: MemoArchive,
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/memos/:id',
+    name: 'MemoDetail',
+    component: MemoDetail,
     meta: { requiresAuth: false }
   },
   {
@@ -207,6 +238,17 @@ const routes = [
           requiresAuth: true,
           requiresSuperAdmin: true, // 只有超级管理员可访问
           title: '订阅管理'
+        }
+      },
+      {
+        path: 'memos',
+        name: 'MemoManage',
+        component: MemoManage,
+        meta: {
+          requiresAuth: true,
+          requiresAdmin: true,
+          allowEditor: true, // 编辑可访问
+          title: '备忘录管理'
         }
       }
     ]

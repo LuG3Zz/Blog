@@ -162,6 +162,14 @@ export const API_PATHS = {
     UNSUBSCRIBE: `${API_PREFIX}/email-subscriptions/unsubscribe`,
     UNSUBSCRIBE_EMAIL: `${API_PREFIX}/email-subscriptions/unsubscribe/email`,
   },
+
+  // 备忘录相关
+  MEMOS: {
+    BASE: `${API_PREFIX}/memos/`,
+    BY_ID: (id) => `${API_PREFIX}/memos/${id}/`,
+    VERIFY: (id) => `${API_PREFIX}/memos/${id}/verify`,
+    SEARCH: `${API_PREFIX}/memos/search`,
+  },
 };
 
 export default API_PATHS;

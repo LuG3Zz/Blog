@@ -45,6 +45,10 @@ from app.schemas.websocket import (
 from app.schemas.site_settings import (
     SiteSettingsBase, SiteSettingsCreate, SiteSettingsUpdate, SiteSettingsResponse
 )
+from app.schemas.memo import (
+    MemoBase, MemoCreate, MemoUpdate, MemoResponse, MemoWithoutContent,
+    MemoPasswordVerify, MemoPasswordVerifyResponse, MemoWithUser
+)
 
 # Export all schemas
 __all__ = [
@@ -87,4 +91,8 @@ __all__ = [
 
     # Site settings schemas
     "SiteSettingsBase", "SiteSettingsCreate", "SiteSettingsUpdate", "SiteSettingsResponse",
+
+    # Memo schemas
+    "MemoBase", "MemoCreate", "MemoUpdate", "MemoResponse", "MemoWithoutContent",
+    "MemoPasswordVerify", "MemoPasswordVerifyResponse",
 ]

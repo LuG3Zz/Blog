@@ -1,6 +1,5 @@
 <template>
   <div class="min-h-screen bg-primary dark:bg-dark-primary animate__animated animate__fadeIn">
-    <Navbar />
     <div class="container mx-auto px-4 py-8 animate__animated animate__fadeInUp animate__delay-1s">
       <div class="max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden animate__animated animate__zoomIn animate__delay-500ms">
         <!-- 用户资料头部 -->

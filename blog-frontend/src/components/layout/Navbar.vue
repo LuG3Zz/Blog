@@ -1,5 +1,5 @@
 <template>
-  <nav class="flex justify-between items-center px-8 py-4 bg-secondary/80 dark:bg-dark-primary/80 backdrop-blur-md text-primary dark:text-dark-secondary sticky top-0 z-50 shadow-lg border-b border-white/10 dark:border-black/10">
+  <nav class="flex justify-between items-center px-8 py-4 bg-secondary/80 dark:bg-dark-primary/80 backdrop-blur-md text-primary dark:text-dark-secondary sticky top-0 z-100 shadow-lg border-b border-white/10 dark:border-black/10">
     <div class="navbar-brand">
       <router-link to="/" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors">
         <h2 class="text-2xl font-bold uppercase m-0">{{ siteTitle }}</h2>
@@ -9,6 +9,7 @@
       <router-link to="/" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors uppercase font-medium" :class="{ 'active': $route.path === '/' }">{{ navItems.Home || '首页' }}</router-link>
       <router-link to="/articles" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors uppercase font-medium" :class="{ 'active': $route.path.includes('/article') }">{{ navItems.ArticleList || '文章' }}</router-link>
       <router-link to="/categories" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors uppercase font-medium" :class="{ 'active': $route.path.includes('/categories') }">{{ navItems.CategoryList || '分类' }}</router-link>
+      <router-link to="/memos" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors uppercase font-medium" :class="{ 'active': $route.path.includes('/memos') }">{{ navItems.MemoList || '动态' }}</router-link>
       <router-link to="/about" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors uppercase font-medium" :class="{ 'active': $route.path === '/about' }">{{ navItems.About || '关于' }}</router-link>
     </div>
     <div class="flex items-center gap-4">
@@ -137,6 +138,18 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
             <span>个人资料</span>
+          </router-link>
+
+          <!-- 备忘录链接 -->
+          <router-link
+            to="/memos"
+            class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            @click="showUserMenu = false"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>我的备忘录</span>
           </router-link>
 
           <!-- 后台管理链接（管理员和编辑可见） -->

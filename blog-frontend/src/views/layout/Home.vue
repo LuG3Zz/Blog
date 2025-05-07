@@ -1,6 +1,5 @@
 <template>
   <div class="min-h-screen flex flex-col overflow-hidden bg-primary text-secondary dark:bg-dark-primary dark:text-dark-secondary">
-    <Navbar class="animate__animated animate__fadeInDown" />
 
     <div v-if="error" class="w-full p-4 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-100 text-center animate__animated animate__shakeX">
       {{ error }}
@@ -64,7 +63,7 @@
 
 <script>
 import { ref, onMounted, watch, computed } from 'vue'
-import { Navbar, Footer } from '../../components/layout'
+import { Footer } from '../../components/layout'
 import { UserProfile, ActivityHeatmap, RecentActivities, SocialMedia, Categories, PostsList, Carousel, StatsOverview, PopularArticles, CategoryDistribution, Hitokoto } from '../../components/blog'
 import { HandLoader, Stick ,FlipClock} from '../../components/ui'
 import { homeApi } from '../../api'
@@ -74,7 +73,6 @@ import { useSiteSettingsStore } from '../../stores'
 export default {
   name: 'Home',
   components: {
-    Navbar,
     Footer,
     UserProfile,
     ActivityHeatmap,

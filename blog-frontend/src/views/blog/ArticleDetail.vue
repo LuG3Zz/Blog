@@ -1,6 +1,5 @@
 <template>
   <div class="min-h-screen flex flex-col overflow-hidden bg-primary dark:bg-dark-primary text-secondary dark:text-dark-secondary">
-    <Navbar class="animate__animated animate__fadeInDown" />
     <ScrollIsland v-if="post" title="Reading Progress" :headings="articleHeadings" class="animate__animated animate__fadeInRight animate__delay-1s">
       <!-- 添加调试信息 -->
       <div v-if="articleHeadings.length === 0" class="text-xs text-red-500">没有标题列表</div>
@@ -315,7 +314,6 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { postApi, usersApi } from '@/api'
-import { Navbar } from '@/components/layout'
 import { CommentSection, ArticleToc, ArticleSidebar, AiSummary } from '@/components/blog'
 import { Breadcrumb, ScrollIsland, CodeBlock } from '@/components/ui'
 import SubscriptionForm from '@/components/blog/SubscriptionForm.vue'
@@ -339,7 +337,6 @@ import {
 export default {
   name: 'ArticleDetail',
   components: {
-    Navbar,
     CommentSection,
     ArticleToc,
     ArticleSidebar,

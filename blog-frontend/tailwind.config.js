@@ -16,6 +16,9 @@ module.exports = {
       fontFamily: {
         'sans': ['Saans TRIAL', 'sans-serif'],
       },
+      zIndex: {
+        '100': '100',
+      },
       typography: {
         DEFAULT: {
           css: {

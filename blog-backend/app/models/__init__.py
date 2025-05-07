@@ -12,6 +12,7 @@ from app.models.file import File
 from app.models.notification_history import NotificationHistory
 from app.models.visitor import Visitor
 from app.models.site_settings import SiteSettings
+from app.models.memo import Memo
 
 # Export all models
 __all__ = [
@@ -30,4 +31,5 @@ __all__ = [
     "NotificationHistory",
     "Visitor",
     "SiteSettings",
+    "Memo",
 ]

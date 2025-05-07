@@ -157,6 +157,7 @@ class SiteSettingsService:
                 "Home": "首页",
                 "ArticleList": "文章",
                 "CategoryList": "分类",
+                "MemoList": "备忘录",
                 "About": "关于",
                 "Login": "登录"
             },

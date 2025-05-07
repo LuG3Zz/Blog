@@ -1,6 +1,5 @@
 <template>
   <div class="min-h-screen flex flex-col overflow-hidden bg-primary dark:bg-dark-primary text-secondary dark:text-dark-secondary">
-    <Navbar />
     <div class="container mx-auto px-4 py-8">
       <div class="max-w-4xl mx-auto">
         <!-- 搜索框 -->
@@ -132,7 +131,6 @@
 <script>
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Navbar } from '../../components/layout'
 import { searchApi } from '../../api'
 import message from '../../utils/message'
 import ArticleSearchResult from '../../components/search/ArticleSearchResult.vue'
@@ -143,7 +141,6 @@ import Pagination from '../../components/ui/Pagination.vue'
 export default {
   name: 'Search',
   components: {
-    Navbar,
     ArticleSearchResult,
     UserSearchResult,
     TagSearchResult,

@@ -21,16 +21,16 @@ export const useUserStore = defineStore('user', {
   getters: {
     // 获取用户角色
     userRole: (state) => state.userInfo?.role || 'guest',
-    
+
     // 判断是否为管理员
     isAdmin: (state) => state.userInfo?.role === 'admin',
-    
+
     // 判断是否为编辑
     isEditor: (state) => state.userInfo?.role === 'editor',
-    
+
     // 获取用户名
     username: (state) => state.userInfo?.username || '',
-    
+
     // 获取用户头像
     avatar: (state) => state.userInfo?.avatar || ''
   },
@@ -119,18 +119,18 @@ export const useUserStore = defineStore('user', {
               }
             } catch (error) {
               console.error('从服务器获取用户信息失败:', error)
-              // 创建一个模拟用户
-              const mockUser = {
+              // 创建一个基本用户信息
+              const basicUser = {
                 id: '1',
-                username: credentials.username || 'admin',
-                email: credentials.username ? `${credentials.username}@example.com` : 'admin@example.com',
-                role: 'admin'
+                username: credentials.username || 'user',
+                email: credentials.username ? `${credentials.username}@example.com` : 'user@example.com',
+                role: 'user'  // 使用普通用户角色，而不是管理员
               }
-              this.userInfo = mockUser
-              this.userId = mockUser.id
-              localStorage.setItem('userInfo', JSON.stringify(mockUser))
-              localStorage.setItem('userId', mockUser.id)
-              console.log('使用模拟用户信息:', mockUser)
+              this.userInfo = basicUser
+              this.userId = basicUser.id
+              localStorage.setItem('userInfo', JSON.stringify(basicUser))
+              localStorage.setItem('userId', basicUser.id)
+              console.log('使用基本用户信息:', basicUser)
             }
           }
         } else {
@@ -218,35 +218,35 @@ export const useUserStore = defineStore('user', {
           return true
         } else {
           console.warn('服务器返回的用户信息无效')
-          // 创建一个模拟用户
-          const mockUser = {
+          // 创建一个基本用户信息
+          const basicUser = {
             id: '1',
-            username: 'admin',
-            email: 'admin@example.com',
-            role: 'admin'
+            username: 'user',
+            email: 'user@example.com',
+            role: 'user'  // 使用普通用户角色，而不是管理员
           }
-          this.userInfo = mockUser
-          this.userId = mockUser.id
-          localStorage.setItem('userInfo', JSON.stringify(mockUser))
-          localStorage.setItem('userId', mockUser.id)
-          console.log('使用模拟用户信息:', mockUser)
+          this.userInfo = basicUser
+          this.userId = basicUser.id
+          localStorage.setItem('userInfo', JSON.stringify(basicUser))
+          localStorage.setItem('userId', basicUser.id)
+          console.log('使用基本用户信息:', basicUser)
           return true
         }
       } catch (error) {
         console.error('从服务器验证登录状态失败:', error)
 
-        // 创建一个模拟用户，而不是清除登录状态
-        const mockUser = {
+        // 创建一个基本用户信息，而不是清除登录状态
+        const basicUser = {
           id: '1',
-          username: 'admin',
-          email: 'admin@example.com',
-          role: 'admin'
+          username: 'user',
+          email: 'user@example.com',
+          role: 'user'  // 使用普通用户角色，而不是管理员
         }
-        this.userInfo = mockUser
-        this.userId = mockUser.id
-        localStorage.setItem('userInfo', JSON.stringify(mockUser))
-        localStorage.setItem('userId', mockUser.id)
-        console.log('使用模拟用户信息:', mockUser)
+        this.userInfo = basicUser
+        this.userId = basicUser.id
+        localStorage.setItem('userInfo', JSON.stringify(basicUser))
+        localStorage.setItem('userId', basicUser.id)
+        console.log('使用基本用户信息:', basicUser)
         return true
       }
     }

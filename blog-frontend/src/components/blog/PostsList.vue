@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="posts-container p-6 w-full dark:bg-gray-900" :class="customClass">
-      <p class="text-xl font-bold mb-[55px] dark:text-gray-100">{{ title }}</p>
+      <p class="text-xl font-bold mb-10 dark:text-gray-100">{{ title }}</p>
       <div class="border-t-10 border-secondary dark:border-gray-600 w-full" ref="postsListRef">
         <TerminalLoader v-if="isLoading" />
         <div v-else-if="isLoading" class="flex justify-center items-center py-8">
@@ -37,7 +37,7 @@
                     @error="e => e.target.src = 'https://via.placeholder.com/400x300?text=暂无封面'"
                   >
                   <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/70 to-transparent p-2">
-                    <div v-if="post.is_featured" class="featured-badge">精选</div>
+                    <div v-if="post.is_featured" class="featured-badge">✨精选</div>
                   </div>
                 </div>
 
@@ -60,7 +60,7 @@
                     </div>
                     <div class="author-name text-sm">{{ post.author.username }}</div>
                   </div>
-                  <div class="ml-auto text-xs text-gray-500 dark:text-gray-400">{{ formatDate(post.created_at) }}</div>
+                  <div class="ml-auto text-xs text-gray-500 dark:text-gray-400">{{ `🗓️ ` +formatDate(post.created_at) }}</div>
                 </div>
               </div>
 
@@ -88,17 +88,10 @@
                   <div class="flex justify-between items-center mt-auto">
                     <div class="flex items-center gap-4">
                       <div class="flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-gray-500 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                        </svg>
-                        <span class="text-xs text-gray-500 dark:text-gray-300">{{ post.view_count }}</span>
+                        <span class="text-xs text-gray-500 dark:text-gray-300">{{ '👁️  ' + post.view_count }}</span>
                       </div>
                       <div class="flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-gray-500 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                        </svg>
-                        <span class="text-xs text-gray-500 dark:text-gray-300">{{ post.like_count }}</span>
+                        <span class="text-xs text-gray-500 dark:text-gray-300">{{ `❤️  ` +post.like_count }}</span>
                       </div>
                     </div>
 

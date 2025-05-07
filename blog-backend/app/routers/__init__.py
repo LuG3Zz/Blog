@@ -20,6 +20,7 @@ from app.routers.visitors import router as visitors_router
 from app.routers.site_settings import router as site_settings_router
 from app.routers.email_verification import router as email_verification_router
 from app.routers.email_subscriptions import router as email_subscriptions_router
+from app.routers.memos import router as memos_router
 
 # List of all routers
 routers = [
@@ -44,4 +45,5 @@ routers = [
     site_settings_router,
     email_verification_router,
     email_subscriptions_router,
+    memos_router,
 ]

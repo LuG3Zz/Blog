@@ -189,6 +189,19 @@
               <span :class="{ 'hidden': isCollapsed }">访客记录</span>
             </router-link>
 
+            <!-- 备忘录管理 -->
+            <router-link
+              to="/admin/memos"
+              active-class="bg-gray-200 dark:bg-gray-700"
+              class="flex items-center py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+              :class="{ 'justify-center px-2': isCollapsed, 'px-4': !isCollapsed }"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" :class="{ 'mr-3': !isCollapsed }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span :class="{ 'hidden': isCollapsed }">备忘录管理</span>
+            </router-link>
+
             <!-- 订阅管理（仅超级管理员可见） -->
             <router-link
               v-if="isUserSuperAdmin"

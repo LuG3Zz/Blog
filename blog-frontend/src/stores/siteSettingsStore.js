@@ -14,6 +14,7 @@ export const useSiteSettingsStore = defineStore('siteSettings', () => {
       Home: '首页',
       ArticleList: '文章',
       CategoryList: '分类',
+      MemoList: '备忘录',
       About: '关于',
       Login: '登录'
     },
@@ -26,10 +27,10 @@ export const useSiteSettingsStore = defineStore('siteSettings', () => {
     custom_css: '',
     custom_js: ''
   })
-  
+
   const loading = ref(false)
   const error = ref(null)
-  
+
   // 计算属性
   const siteTitle = computed(() => settings.value.site_title)
   const siteSubtitle = computed(() => settings.value.site_subtitle)
@@ -42,7 +43,7 @@ export const useSiteSettingsStore = defineStore('siteSettings', () => {
   const metaKeywords = computed(() => settings.value.meta_keywords)
   const customCss = computed(() => settings.value.custom_css)
   const customJs = computed(() => settings.value.custom_js)
-  
+
   // 方法
   /**
    * 获取系统设置
@@ -50,20 +51,20 @@ export const useSiteSettingsStore = defineStore('siteSettings', () => {
   const fetchSettings = async () => {
     loading.value = true
     error.value = null
-    
+
     try {
       const response = await siteSettingsApi.getSiteSettings()
       settings.value = { ...settings.value, ...response }
-      
+
       // 更新网站标题
       updateDocumentTitle()
-      
+
       // 更新网站图标
       updateFavicon()
-      
+
       // 更新自定义样式和脚本
       updateCustomCode()
-      
+
       return response
     } catch (err) {
       console.error('获取系统设置失败:', err)
@@ -73,7 +74,7 @@ export const useSiteSettingsStore = defineStore('siteSettings', () => {
       loading.value = false
     }
   }
-  
+
   /**
    * 更新系统设置
    * @param {Object} data 设置数据
@@ -81,20 +82,20 @@ export const useSiteSettingsStore = defineStore('siteSettings', () => {
   const updateSettings = async (data) => {
     loading.value = true
     error.value = null
-    
+
     try {
       const response = await siteSettingsApi.updateSiteSettings(data)
       settings.value = { ...settings.value, ...response }
-      
+
       // 更新网站标题
       updateDocumentTitle()
-      
+
       // 更新网站图标
       updateFavicon()
-      
+
       // 更新自定义样式和脚本
       updateCustomCode()
-      
+
       return response
     } catch (err) {
       console.error('更新系统设置失败:', err)
@@ -104,18 +105,18 @@ export const useSiteSettingsStore = defineStore('siteSettings', () => {
       loading.value = false
     }
   }
-  
+
   /**
    * 更新文档标题
    */
   const updateDocumentTitle = () => {
     if (settings.value.site_title) {
-      document.title = settings.value.site_subtitle 
-        ? `${settings.value.site_title} - ${settings.value.site_subtitle}` 
+      document.title = settings.value.site_subtitle
+        ? `${settings.value.site_title} - ${settings.value.site_subtitle}`
         : settings.value.site_title
     }
   }
-  
+
   /**
    * 更新网站图标
    */
@@ -125,13 +126,13 @@ export const useSiteSettingsStore = defineStore('siteSettings', () => {
       link.type = 'image/x-icon'
       link.rel = 'icon'
       link.href = settings.value.favicon
-      
+
       if (!document.querySelector('link[rel="icon"]')) {
         document.head.appendChild(link)
       }
     }
   }
-  
+
   /**
    * 更新自定义代码
    */
@@ -143,17 +144,17 @@ export const useSiteSettingsStore = defineStore('siteSettings', () => {
       styleElement.id = 'custom-css'
       document.head.appendChild(styleElement)
     }
-    
+
     if (styleElement) {
       styleElement.textContent = settings.value.custom_css || ''
     }
-    
+
     // 更新自定义JavaScript
     let scriptElement = document.getElementById('custom-js')
     if (scriptElement) {
       document.head.removeChild(scriptElement)
     }
-    
+
     if (settings.value.custom_js) {
       scriptElement = document.createElement('script')
       scriptElement.id = 'custom-js'
@@ -161,7 +162,7 @@ export const useSiteSettingsStore = defineStore('siteSettings', () => {
       document.head.appendChild(scriptElement)
     }
   }
-  
+
   /**
    * 初始化系统设置
    */
@@ -172,13 +173,13 @@ export const useSiteSettingsStore = defineStore('siteSettings', () => {
       console.error('初始化系统设置失败:', err)
     }
   }
-  
+
   return {
     // 状态
     settings,
     loading,
     error,
-    
+
     // 计算属性
     siteTitle,
     siteSubtitle,
@@ -191,7 +192,7 @@ export const useSiteSettingsStore = defineStore('siteSettings', () => {
     metaKeywords,
     customCss,
     customJs,
-    
+
     // 方法
     fetchSettings,
     updateSettings,

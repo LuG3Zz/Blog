@@ -34,6 +34,7 @@ class User(Base):
     articles = relationship("Article", back_populates="author")
     notifications = relationship("Notification", back_populates="user")
     files = relationship("File", back_populates="user")
+    memos = relationship("Memo", back_populates="user")
 
     # Subscriptions
     subscribed_categories = relationship(

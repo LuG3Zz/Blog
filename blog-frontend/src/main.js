@@ -1,20 +1,37 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
+// 基础样式
 import './assets/css/tailwind.css'
 import './assets/css/app.css'
 import './assets/css/style.css'
-import './assets/css/vditor-custom.css' // 导入 Vditor 自定义样式
-import './assets/css/markdown.css' // 导入 Markdown 样式
-import './assets/css/highlight-custom.css' // 导入 highlight.js 代码高亮样式
-import './assets/css/article-detail.css' // 导入文章详情页面样式
-import 'animate.css' // 导入 Animate.css 动画库
 
-import Lenis from 'lenis'
-import { gsap } from 'gsap'
-import VTooltip from 'v-tooltip'
+// 按需导入其他样式
+const loadStyles = async () => {
+  // 基础样式已经在上面同步导入
+
+  // 动态导入其他样式
+  await Promise.all([
+    import('./assets/css/vditor-custom.css'),
+    import('./assets/css/markdown.css'),
+    import('./assets/css/highlight-custom.css'),
+    import('./assets/css/article-detail.css'),
+    import('animate.css')
+  ])
+}
+
+// 启动样式加载，但不等待它完成
+loadStyles()
+
+// 路由和状态管理
 import router from './router'
 import { useThemeStore } from './stores'
+
+// 按需导入第三方库
+import VTooltip from 'v-tooltip'
+// 延迟导入非关键库
+const Lenis = () => import('lenis').then(module => module.default)
+const gsap = () => import('gsap').then(module => module.gsap)
 
 // 全局可用的GSAP和Lenis
 window.gsap = gsap

@@ -14,6 +14,7 @@
               <li><router-link to="/" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors">{{ navItems.Home || '首页' }}</router-link></li>
               <li><router-link to="/articles" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors">{{ navItems.ArticleList || '文章' }}</router-link></li>
               <li><router-link to="/categories" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors">{{ navItems.CategoryList || '分类' }}</router-link></li>
+              <li><router-link to="/memos" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors">{{ navItems.MemoList || '备忘录' }}</router-link></li>
               <li><router-link to="/about" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors">{{ navItems.About || '关于' }}</router-link></li>
             </ul>
           </div>
@@ -53,6 +54,7 @@ export default {
       Home: '首页',
       ArticleList: '文章',
       CategoryList: '分类',
+      MemoList: '备忘录',
       About: '关于'
     })
 

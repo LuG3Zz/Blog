@@ -89,8 +89,9 @@
         </GradientButton>
 
         <GradientButton
-          @click="openSubscriptionModal"
+          @click="openSubscriptionModalWithConfetti"
           class="w-full font-sans text-xs font-bold uppercase text-white animate__animated"
+          :class="{ 'animate__rubberBand': subscribeButtonClicked }"
           :bgColor="isDarkMode ? '#0f766e' : '#10b981'"
           :borderRadius="8"
           :borderWidth="3"
@@ -115,12 +116,10 @@
 
 <script>
 import { ref, onMounted, computed } from 'vue'
-import confetti from 'canvas-confetti'
-
 import { adminApi, userApi } from '../../api'
 import GradientButton from '@/components/ui/GradientButton.vue'
 import SubscriptionModal from './SubscriptionModal.vue'
-import message from '@/utils/message'
+import { message, confetti } from '@/utils'
 
 export default {
   name: 'UserProfile',
@@ -271,6 +270,7 @@ export default {
 
     // 按钮点击状态
     const buttonClicked = ref(false)
+    const subscribeButtonClicked = ref(false)
 
     // 订阅弹窗状态
     const showSubscriptionModal = ref(false)
@@ -288,6 +288,33 @@ export default {
       setTimeout(() => {
         console.log('订阅模态框状态:', showSubscriptionModal.value)
       }, 100)
+    }
+
+    // 打开订阅弹窗并触发彩带效果
+    const openSubscriptionModalWithConfetti = (event) => {
+      // 阻止事件冒泡，防止触发路由导航
+      if (event && event.stopPropagation) {
+        event.stopPropagation()
+      }
+
+      // 设置按钮点击状态
+      subscribeButtonClicked.value = true
+      setTimeout(() => {
+        subscribeButtonClicked.value = false
+      }, 1000)
+
+      // 使用工具函数触发绿色彩带效果
+      confetti.triggerGreenConfetti(2000)
+
+      // 打开订阅弹窗
+      setTimeout(() => {
+        showSubscriptionModal.value = true
+
+        // 确保模态框显示
+        setTimeout(() => {
+          console.log('订阅模态框状态:', showSubscriptionModal.value)
+        }, 100)
+      }, 500) // 延迟500毫秒打开弹窗，让用户先看到彩带效果
     }
 
     // 处理订阅成功
@@ -312,48 +339,8 @@ export default {
         buttonClicked.value = false
       }, 1000)
 
-      // 设置烟花持续时间
-      const end = Date.now() + 3 * 1000 // 3秒
-
-      // 设置烟花颜色，使用彩虹颜色
-      const colors = [
-        '#FF0000', // 红
-        '#FFA500', // 橙
-        '#FFFF00', // 黄
-        '#008000', // 绿
-        '#0000FF', // 蓝
-        '#4B0082', // 青
-        '#EE82EE'  // 紫
-      ]
-
-      // 帧函数，触发烟花炮
-      function frame() {
-        if (Date.now() > end) return
-
-        // 左侧烟花炮
-        confetti({
-          particleCount: 3,
-          angle: 60,
-          spread: 55,
-          startVelocity: 60,
-          origin: { x: 0, y: 0.5 },
-          colors: colors,
-        })
-
-        // 右侧烟花炮
-        confetti({
-          particleCount: 3,
-          angle: 120,
-          spread: 55,
-          startVelocity: 60,
-          origin: { x: 1, y: 0.5 },
-          colors: colors,
-        })
-
-        requestAnimationFrame(frame)
-      }
-
-      frame()
+      // 使用工具函数触发彩虹彩带效果
+      confetti.triggerRainbowConfetti(3000)
 
       // 延迟导航，等烟花效果显示一会儿
       setTimeout(() => {
@@ -376,9 +363,11 @@ export default {
       formatDate,
       triggerConfetti,
       buttonClicked,
+      subscribeButtonClicked,
       isDarkMode,
       showSubscriptionModal,
       openSubscriptionModal,
+      openSubscriptionModalWithConfetti,
       handleSubscribed
     }
   }

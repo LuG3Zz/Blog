@@ -280,12 +280,16 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, defineAsyncComponent } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { postApi, categoryApi, tagApi, filesApi } from '@/api'
 import message from '@/utils/message.js'  // 添加 message 导入
-import Vditor from 'vditor'
-import "vditor/dist/index.css"
+// 动态导入Vditor
+const Vditor = defineAsyncComponent(() => import('vditor').then(module => {
+  // 动态导入CSS
+  import("vditor/dist/index.css")
+  return module.default || module
+}))
 import { API_BASE_URL } from '@/config'
 import Modal from '@/components/common/Modal.vue'
 import FileSelector from '@/components/admin/FileSelector.vue'

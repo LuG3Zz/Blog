@@ -1,10 +1,10 @@
 <template>
   <div class="categories-container p-4">
-    <div class="categories-header stack mb-3">
+    <div class="categories-header stack mb-5">
       <div class="card">
         <div class="card-content flex flex-col items-center">
-          <h2 class="text-lg font-bold uppercase mb-1 category-title">文章分类</h2>
-          <p class="text-xs text-center mb-1 category-subtitle">选择一个分类浏览相关文章</p>
+          <h2 class="text-base font-bold uppercase mb-2 category-title">文章分类</h2>
+          <p class="text-xs text-center mb-1 category-subtitle">选择分类浏览文章</p>
         </div>
       </div>
     </div>
@@ -23,11 +23,11 @@
         >
           <div class="category-card">
             <div class="category-content">
-              <div class="flex justify-between items-center w-full mb-1">
+              <div class="flex justify-between items-center w-full mb-0.5">
                 <h3 class="category-name">{{ category.name }}</h3>
                 <div class="stat-item">
                   <span class="stat-value">{{ category.articleCount || 0 }}</span>
-                  <span class="stat-label">文章</span>
+                  <span class="stat-label">🗒️文章</span>
                 </div>
               </div>
               <p class="category-description">{{ category.description || '暂无描述' }}</p>
@@ -43,11 +43,11 @@
         >
           <div class="category-card">
             <div class="category-content">
-              <div class="flex justify-between items-center w-full mb-1">
+              <div class="flex justify-between items-center w-full mb-0.5">
                 <h3 class="category-name">全部分类</h3>
                 <div class="stat-item">
                   <span class="stat-value">{{ getTotalArticleCount() }}</span>
-                  <span class="stat-label">文章</span>
+                  <span class="stat-label">🗒️文章</span>
                 </div>
               </div>
               <p class="category-description">查看所有文章</p>
@@ -149,14 +149,16 @@ export default {
   --animation-duration: 0.5s;
 
   /* 布局变量 */
-  --border-width: 3px;
-  --card-padding: 0.75rem;
-  --card-gap: 1rem;
+  --border-width: 2px;
+  --card-padding: 0.625rem;
+  --card-gap: 0.75rem;
 }
 
 /* 容器样式 - 已在上面定义了CSS变量 */
 .categories-container {
   margin: 0 auto;
+  max-width: 280px;
+  width: 100%;
 }
 
 /* 卡片基础样式 - 用于标题卡片和分类卡片 */
@@ -168,6 +170,7 @@ export default {
   cursor: pointer;
   padding: var(--card-padding);
   z-index: 2;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .card {
@@ -175,7 +178,7 @@ export default {
 }
 
 .category-card {
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 
@@ -197,6 +200,7 @@ export default {
 .dark .card, .dark .category-card {
   background-color: var(--color-bg-dark);
   border-color: var(--color-border-dark);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 .dark .card:before, .dark .card:after,
@@ -217,6 +221,7 @@ export default {
 /* 标题卡片悬停效果 */
 .categories-header:hover {
   transform: rotate(3deg);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .categories-header:hover .card:before {
@@ -237,15 +242,15 @@ export default {
 }
 
 .category-content {
-  gap: 0.5rem;
+  gap: 0.375rem;
 }
 
 /* 分类列表样式 */
 .categories-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 10px;
+  gap: 1rem;
+  margin-bottom: 20px;
 }
 
 
@@ -288,7 +293,7 @@ export default {
 
 /* 分类名称样式 */
 .category-name {
-  font-size: 1rem;
+  font-size: 0.875rem;
   font-weight: 600;
   text-transform: uppercase;
   color: var(--color-text-primary-light);
@@ -328,7 +333,7 @@ export default {
 }
 
 .stat-value {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: bold;
   color: var(--color-text-primary-light);
 }
@@ -338,7 +343,7 @@ export default {
 }
 
 .stat-label {
-  font-size: 0.625rem;
+  font-size: 0.5rem;
   color: var(--color-text-secondary-light);
 }
 
@@ -348,7 +353,7 @@ export default {
 
 /* 全部分类样式 */
 .all-categories {
-  margin-top: 0.5rem;
+  margin-top: 1.5rem;
   position: relative;
   z-index: 1;
 }
@@ -365,5 +370,15 @@ export default {
 /* 确保分类内容布局正确 */
 .category-content > div {
   width: 100%;
+}
+
+/* 分类卡片悬停效果 */
+.category-stack:hover .category-card {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.dark .category-stack:hover .category-card {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
 }
 </style>

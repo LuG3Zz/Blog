@@ -2,22 +2,22 @@
   <form @submit.prevent="handleSubmit" class="space-y-4">
     <div>
       <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300">标题</label>
-      <input 
-        type="text" 
-        id="title" 
-        v-model="formData.title" 
-        class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-secondary focus:border-secondary dark:bg-gray-700 dark:text-white" 
+      <input
+        type="text"
+        id="title"
+        v-model="formData.title"
+        class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-secondary focus:border-secondary dark:bg-gray-700 dark:text-white"
         required
         @input="validateForm"
       />
       <p v-if="errors.title" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ errors.title }}</p>
     </div>
-    
+
     <div>
       <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300">分类</label>
-      <select 
-        id="category" 
-        v-model="formData.category" 
+      <select
+        id="category"
+        v-model="formData.category"
         class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-secondary focus:border-secondary dark:bg-gray-700 dark:text-white"
         required
         @change="validateForm"
@@ -32,10 +32,10 @@
 
     <div>
       <label for="summary" class="block text-sm font-medium text-gray-700 dark:text-gray-300">摘要</label>
-      <input 
-        type="text" 
-        id="summary" 
-        v-model="formData.summary" 
+      <input
+        type="text"
+        id="summary"
+        v-model="formData.summary"
         class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-secondary focus:border-secondary dark:bg-gray-700 dark:text-white"
         required
         @input="validateForm"
@@ -50,8 +50,8 @@
     </div>
 
     <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
-      <button 
-        type="submit" 
+      <button
+        type="submit"
         :disabled="isSubmitting || !isValid"
         class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-secondary dark:bg-dark-secondary text-primary dark:text-dark-primary text-base font-medium sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
       >
@@ -63,9 +63,9 @@
         </span>
         {{ submitButtonText }}
       </button>
-      <button 
-        type="button" 
-        @click="$emit('cancel')" 
+      <button
+        type="button"
+        @click="$emit('cancel')"
         class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-base font-medium hover:bg-gray-50 dark:hover:bg-gray-600 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
       >
         取消
@@ -75,9 +75,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
-import Vditor from 'vditor'
-import 'vditor/dist/index.css'
+import { ref, onMounted, watch, computed, defineAsyncComponent } from 'vue'
+// 动态导入Vditor
+let Vditor = null
 
 const props = defineProps({
   initialData: {
@@ -133,9 +133,9 @@ const validateForm = () => {
 
 // 表单是否有效
 const isValid = computed(() => {
-  return formData.value.title && 
-         formData.value.category && 
-         formData.value.summary && 
+  return formData.value.title &&
+         formData.value.category &&
+         formData.value.summary &&
          formData.value.content
 })
 
@@ -151,52 +151,64 @@ const submitButtonText = computed(() => {
 let vditor = null
 
 // 初始化富文本编辑器
-onMounted(() => {
-  vditor = new Vditor('vditor', {
-    height: 400,
-    mode: 'ir',
-    theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light',
-    toolbar: [
-      'emoji',
-      'headings',
-      'bold',
-      'italic',
-      'strike',
-      'link',
-      '|',
-      'list',
-      'ordered-list',
-      'check',
-      'outdent',
-      'indent',
-      '|',
-      'quote',
-      'line',
-      'code',
-      'inline-code',
-      'insert-before',
-      'insert-after',
-      '|',
-      'upload',
-      'table',
-      '|',
-      'undo',
-      'redo',
-      '|',
-      'fullscreen',
-      'preview',
-      'outline',
-      'export',
-      'help'
-    ],
-    after: () => {
-      vditor.setValue(formData.value.content)
-      vditor.vditor.element.addEventListener('input', () => {
-        formData.value.content = vditor.getValue()
-        validateForm()
-      })
-    }
-  })
+onMounted(async () => {
+  try {
+    // 动态导入Vditor
+    const VditorModule = await import('vditor')
+    Vditor = VditorModule.default || VditorModule
+
+    // 动态导入CSS
+    await import('vditor/dist/index.css')
+
+    // 初始化编辑器
+    vditor = new Vditor('vditor', {
+      height: 400,
+      mode: 'ir',
+      theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light',
+      toolbar: [
+        'emoji',
+        'headings',
+        'bold',
+        'italic',
+        'strike',
+        'link',
+        '|',
+        'list',
+        'ordered-list',
+        'check',
+        'outdent',
+        'indent',
+        '|',
+        'quote',
+        'line',
+        'code',
+        'inline-code',
+        'insert-before',
+        'insert-after',
+        '|',
+        'upload',
+        'table',
+        '|',
+        'undo',
+        'redo',
+        '|',
+        'fullscreen',
+        'preview',
+        'outline',
+        'export',
+        'help'
+      ],
+      after: () => {
+        vditor.setValue(formData.value.content)
+        vditor.vditor.element.addEventListener('input', () => {
+          formData.value.content = vditor.getValue()
+          validateForm()
+        })
+      }
+    })
+  } catch (error) {
+    console.error('加载Vditor编辑器失败:', error)
+  }
 })
 
 // 监听暗色模式变化
@@ -212,7 +224,7 @@ watch(
 // 表单提交处理
 const handleSubmit = async () => {
   if (!validateForm()) return
-  
+
   try {
     isSubmitting.value = true
     await emit('submit', formData.value)

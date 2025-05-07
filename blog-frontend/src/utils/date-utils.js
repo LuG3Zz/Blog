@@ -7,14 +7,31 @@ import { formatDistanceToNow, format, parseISO } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 
 /**
- * 将UTC时间字符串转换为本地时间的Date对象
- * @param {string} utcTimeString - UTC时间字符串
+ * 将UTC时间字符串或Date对象转换为本地时间的Date对象
+ * @param {string|Date} utcTimeString - UTC时间字符串或Date对象
  * @returns {Date} 本地时间的Date对象
  */
 export const utcToLocalDate = (utcTimeString) => {
   if (!utcTimeString) return null;
 
   try {
+    // 如果已经是Date对象，直接返回
+    if (utcTimeString instanceof Date) {
+      // 检查日期是否有效
+      if (isNaN(utcTimeString.getTime())) {
+        console.error('无效的Date对象');
+        return null;
+      }
+      return utcTimeString;
+    }
+
+    // 确保是字符串类型
+    if (typeof utcTimeString !== 'string') {
+      console.error('无效的时间参数类型:', typeof utcTimeString, utcTimeString);
+      // 尝试转换为字符串
+      utcTimeString = String(utcTimeString);
+    }
+
     // 创建Date对象 - JavaScript会自动将UTC时间转换为本地时间
     // 确保时间字符串被解析为UTC时间
     let date;
@@ -49,7 +66,7 @@ export const utcToLocalDate = (utcTimeString) => {
 
 /**
  * 格式化为相对时间（如"3小时前"）
- * @param {string} utcTimeString - UTC时间字符串
+ * @param {string|Date} utcTimeString - UTC时间字符串或Date对象
  * @returns {string} 格式化后的相对时间字符串
  */
 export const formatRelativeTime = (utcTimeString) => {
@@ -68,7 +85,7 @@ export const formatRelativeTime = (utcTimeString) => {
 
 /**
  * 格式化为标准日期时间格式
- * @param {string} utcTimeString - UTC时间字符串
+ * @param {string|Date} utcTimeString - UTC时间字符串或Date对象
  * @param {string} formatString - 格式化模板，默认为'yyyy-MM-dd HH:mm:ss'
  * @returns {string} 格式化后的日期时间字符串
  */
@@ -88,7 +105,7 @@ export const formatDateTime = (utcTimeString, formatString = 'yyyy-MM-dd HH:mm:s
 
 /**
  * 格式化为本地时区的日期时间格式
- * @param {string} utcTimeString - UTC时间字符串
+ * @param {string|Date} utcTimeString - UTC时间字符串或Date对象
  * @param {boolean} showSeconds - 是否显示秒，默认为true
  * @returns {string} 格式化后的日期时间字符串
  */
@@ -111,7 +128,7 @@ export const formatDateTimeWithTimeZone = (utcTimeString, showSeconds = true) =>
 
 /**
  * 格式化为中国时区(UTC+8)的日期时间格式
- * @param {string} utcTimeString - UTC时间字符串
+ * @param {string|Date} utcTimeString - UTC时间字符串或Date对象
  * @param {boolean} showSeconds - 是否显示秒，默认为true
  * @param {boolean} showTimeZone - 是否显示时区信息，默认为false
  * @returns {string} 格式化后的日期时间字符串
@@ -121,11 +138,16 @@ export const formatDateTimeChinaTimeZone = (utcTimeString, showSeconds = true, s
     if (!utcTimeString) return '未知时间';
 
     // 创建日期对象
-    const utcDate = new Date(utcTimeString);
+    let utcDate;
+    if (utcTimeString instanceof Date) {
+      utcDate = utcTimeString;
+    } else {
+      utcDate = new Date(utcTimeString);
+    }
 
     // 检查日期是否有效
     if (isNaN(utcDate.getTime())) {
-      console.error('无效的UTC时间字符串:', utcTimeString);
+      console.error('无效的UTC时间参数:', utcTimeString);
       return '无效时间';
     }
 
@@ -173,7 +195,7 @@ export const formatDateTimeChinaTimeZone = (utcTimeString, showSeconds = true, s
 
 /**
  * 格式化为时间（如"12:30:45"）
- * @param {string} utcTimeString - UTC时间字符串
+ * @param {string|Date} utcTimeString - UTC时间字符串或Date对象
  * @returns {string} 格式化后的时间字符串
  */
 export const formatTime = (utcTimeString) => {
@@ -182,7 +204,7 @@ export const formatTime = (utcTimeString) => {
 
 /**
  * 获取本地化的完整日期时间字符串
- * @param {string} utcTimeString - UTC时间字符串
+ * @param {string|Date} utcTimeString - UTC时间字符串或Date对象
  * @returns {string} 本地化的日期时间字符串
  */
 export const getLocalizedDateTime = (utcTimeString) => {

@@ -115,14 +115,79 @@ export default defineConfig(({ command, mode }) => {
     assetsInlineLimit: 4096,
     // 启用源码映射，便于调试
     sourcemap: true,
+    // 增加块大小警告限制，避免过多警告
+    chunkSizeWarningLimit: 800, // 从默认的500KB增加到800KB
     // 优化构建过程
     rollupOptions: {
       output: {
-        // 按类型分块
-        manualChunks: {
-          'vue-vendor': ['vue', 'vue-router', 'pinia'],
-          'ui-vendor': ['ant-design-vue', '@ant-design/icons-vue'],
-          'utils': ['axios', 'date-fns']
+        // 更细致地按类型分块
+        manualChunks: (id) => {
+          // Vue相关库
+          if (id.includes('node_modules/vue/') ||
+              id.includes('node_modules/@vue/') ||
+              id.includes('node_modules/vue-router/')) {
+            return 'vue-core';
+          }
+
+          // Pinia状态管理
+          if (id.includes('node_modules/pinia/')) {
+            return 'vue-store';
+          }
+
+          // Ant Design Vue UI库
+          if (id.includes('node_modules/ant-design-vue/') ||
+              id.includes('node_modules/@ant-design/')) {
+            return 'ui-vendor';
+          }
+
+          // Markdown相关
+          if (id.includes('node_modules/markdown-it/') ||
+              id.includes('node_modules/markdown-it-')) {
+            return 'markdown';
+          }
+
+          // Vditor编辑器
+          if (id.includes('node_modules/vditor/')) {
+            return 'editor';
+          }
+
+          // 语法高亮
+          if (id.includes('node_modules/highlight.js/') ||
+              id.includes('node_modules/prismjs/')) {
+            return 'syntax-highlight';
+          }
+
+          // 数学公式
+          if (id.includes('node_modules/katex/')) {
+            return 'math';
+          }
+
+          // 图表库
+          if (id.includes('node_modules/chart.js/')) {
+            return 'charts';
+          }
+
+          // 动画库
+          if (id.includes('node_modules/gsap/') ||
+              id.includes('node_modules/lenis/') ||
+              id.includes('node_modules/animate.css/') ||
+              id.includes('node_modules/motion-v/')) {
+            return 'animations';
+          }
+
+          // 工具库
+          if (id.includes('node_modules/axios/') ||
+              id.includes('node_modules/date-fns/') ||
+              id.includes('node_modules/lodash/') ||
+              id.includes('node_modules/clsx/') ||
+              id.includes('node_modules/tailwind-merge/')) {
+            return 'utils';
+          }
+
+          // 其他第三方库
+          if (id.includes('node_modules/')) {
+            return 'vendor';
+          }
         },
         // 添加文件名哈希，便于缓存控制
         entryFileNames: 'js/[name].[hash].js',

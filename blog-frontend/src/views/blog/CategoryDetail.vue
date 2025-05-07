@@ -1,6 +1,5 @@
 <template>
   <div class="min-h-screen flex flex-col">
-    <Navbar />
 
     <main class="flex-grow container mx-auto px-4 py-8">
       <Breadcrumb :items="[
@@ -60,7 +59,6 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { categoryApi, postApi } from '@/api';
-import Navbar from '@/components/layout/Navbar.vue';
 import Footer from '@/components/layout/Footer.vue';
 import PostsList from '@/components/blog/PostsList.vue';
 import SubscriptionForm from '@/components/blog/SubscriptionForm.vue';
@@ -69,7 +67,6 @@ import { Breadcrumb } from '@/components/ui';
 export default {
   name: 'CategoryDetail',
   components: {
-    Navbar,
     Footer,
     PostsList,
     Breadcrumb,
