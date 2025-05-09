@@ -64,30 +64,72 @@ export const uploadImage = (formData, token) => {
 /**
  * 获取所有文章
  * @param {Object} params - 查询参数
- * @param {number} [params.skip=0] - 跳过的文章数量
- * @param {number} [params.limit=10] - 返回的文章数量
+ * @param {number} [params.page=1] - 页码
+ * @param {number} [params.page_size=10] - 每页数量
  * @param {string} [params.category] - 分类名称
+ * @param {string} [params.category_id] - 分类ID
  * @param {string} [params.tag] - 标签
- * @returns {Promise} 返回包含文章列表的Promise对象
+ * @param {boolean} [params.is_featured] - 是否精选
+ * @returns {Promise} 返回包含文章列表和分页信息的Promise对象
  */
 export const getPosts = (params = {}) => {
-  // 根据提供的数据格式，正确的参数格式
+  // 计算skip和limit
+  const page = params.page || 1;
+  const pageSize = params.page_size || 10;
+  const skip = (page - 1) * pageSize;
+
+  // 构建查询参数
+  const queryParams = {
+    skip: skip,
+    limit: pageSize,
+    tag: params.tag,
+    is_featured: params.is_featured
+  };
+
+  // 处理分类参数
+  if (params.category) {
+    queryParams.category = params.category;
+  } else if (params.category_id) {
+    // 如果提供了分类ID，需要先获取分类名称
+    // 后端API只接受分类名称，不接受分类ID
+    // 这里我们需要先获取分类名称，然后再使用分类名称查询文章
+    // 但为了避免额外的API调用，我们在CategoryDetail.vue中修改逻辑
+    console.log('使用分类ID查询文章:', params.category_id);
+    queryParams.category_id = params.category_id;
+  }
+
+  // 发送请求
   return apiClient.get(API_PATHS.ARTICLES.BASE, {
-    params: {
-      skip: params.skip || 0,
-      limit: params.limit || 10,
-      category: params.category,
-      tag: params.tag
-    }
+    params: queryParams
   }).then(response => {
-    // 确保返回的数据是数组
+    // 处理响应数据
     if (response && Array.isArray(response)) {
-      return response;
+      // 后端返回的是数组，没有分页信息，需要模拟分页信息
+      return {
+        items: response,
+        total: response.length,
+        page: page,
+        page_size: pageSize,
+        pages: Math.ceil(response.length / pageSize)
+      };
     } else if (response && response.data && Array.isArray(response.data)) {
-      return response.data;
+      // 后端返回的是包含data字段的对象，没有分页信息，需要模拟分页信息
+      return {
+        items: response.data,
+        total: response.data.length,
+        page: page,
+        page_size: pageSize,
+        pages: Math.ceil(response.data.length / pageSize)
+      };
     } else {
       console.warn('返回的文章列表数据格式不符合预期:', response);
-      return [];
+      return {
+        items: [],
+        total: 0,
+        page: page,
+        page_size: pageSize,
+        pages: 0
+      };
     }
   });
 };
@@ -96,21 +138,22 @@ export const getPosts = (params = {}) => {
  * 根据分类获取文章
  * @param {Object} params - 查询参数
  * @param {string} [params.category] - 分类名称（可选），如果不提供则获取所有文章
- * @param {number} [params.skip=0] - 跳过的文章数量
- * @param {number} [params.limit=10] - 返回的文章数量
+ * @param {number} [params.page=1] - 页码
+ * @param {number} [params.page_size=10] - 每页数量
  * @param {boolean} [params.is_featured] - 是否只返回精选文章
  * @param {string} [params.tag] - 标签名称，按标签筛选
- * @returns {Promise} 返回包含文章列表的Promise对象
+ * @returns {Promise} 返回包含文章列表和分页信息的Promise对象
  */
 export const getPostsByCategory = (params = {}) => {
-  // 使用文章列表接口，并添加category参数
-  // 根据 API 文档，我们可以直接使用 /articles/ 端点并传递 category 参数
-  // 如果分类为空，则获取所有文章
+  // 计算skip和limit
+  const page = params.page || 1;
+  const pageSize = params.page_size || 10;
+  const skip = (page - 1) * pageSize;
 
   // 构建查询参数
   const queryParams = {
-    skip: params.skip || 0,
-    limit: params.limit || 10
+    skip: skip,
+    limit: pageSize
   };
 
   // 只有当分类不为空时，才添加分类参数
@@ -128,18 +171,38 @@ export const getPostsByCategory = (params = {}) => {
     queryParams.tag = params.tag;
   }
 
-  // 根据提供的数据格式，正确的参数格式
+  // 发送请求
   return apiClient.get(API_PATHS.ARTICLES.BASE, {
     params: queryParams
   }).then(response => {
-    // 确保返回的数据是数组
+    // 处理响应数据
     if (response && Array.isArray(response)) {
-      return response;
+      // 后端返回的是数组，没有分页信息，需要模拟分页信息
+      return {
+        items: response,
+        total: response.length,
+        page: page,
+        page_size: pageSize,
+        pages: Math.ceil(response.length / pageSize)
+      };
     } else if (response && response.data && Array.isArray(response.data)) {
-      return response.data;
+      // 后端返回的是包含data字段的对象，没有分页信息，需要模拟分页信息
+      return {
+        items: response.data,
+        total: response.data.length,
+        page: page,
+        page_size: pageSize,
+        pages: Math.ceil(response.data.length / pageSize)
+      };
     } else {
       console.warn('返回的文章列表数据格式不符合预期:', response);
-      return [];
+      return {
+        items: [],
+        total: 0,
+        page: page,
+        page_size: pageSize,
+        pages: 0
+      };
     }
   });
 };

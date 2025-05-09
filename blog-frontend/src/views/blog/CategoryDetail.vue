@@ -28,7 +28,7 @@
 
             <div class="mt-4 md:mt-0 flex items-center">
               <span class="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-sm font-medium">
-                {{ articlesCount }} 篇文章
+                <strong>{{ articlesCount }}</strong> 篇文章
               </span>
             </div>
           </div>
@@ -88,7 +88,11 @@ export default {
     // 分页
     const currentPage = ref(1);
     const pageSize = 9; // 每页显示的文章数
-    const totalPages = computed(() => Math.ceil(articlesCount.value / pageSize));
+    const totalPages = computed(() => {
+      const pages = Math.ceil(articlesCount.value / pageSize);
+      console.log('总页数:', pages, '文章数量:', articlesCount.value, '每页大小:', pageSize);
+      return pages > 0 ? pages : 1; // 确保至少有一页
+    });
 
     // 加载分类信息
     const loadCategory = async () => {
@@ -105,14 +109,25 @@ export default {
     // 加载分类下的文章
     const loadArticles = async (page = 1) => {
       try {
+        // 确保已经加载了分类信息
+        if (!categoryName.value && categoryId.value) {
+          await loadCategory();
+        }
+
+        // 使用分类名称而不是分类ID查询文章
         const response = await postApi.getPosts({
-          category_id: categoryId.value,
+          category: categoryName.value, // 使用分类名称
           page,
           page_size: pageSize
         });
 
         articles.value = response.items || [];
         articlesCount.value = response.total || 0;
+
+        // 调试信息
+        console.log('分类名称:', categoryName.value);
+        console.log('文章数量:', articlesCount.value);
+        console.log('文章列表:', articles.value);
       } catch (err) {
         console.error('加载文章失败:', err);
         error.value = '加载文章失败，请稍后重试';
@@ -137,10 +152,9 @@ export default {
       error.value = null;
 
       try {
-        await Promise.all([
-          loadCategory(),
-          loadArticles(currentPage.value)
-        ]);
+        // 先加载分类信息，然后再加载文章
+        await loadCategory();
+        await loadArticles(currentPage.value);
       } catch (err) {
         console.error('初始化失败:', err);
         error.value = '加载数据失败，请稍后重试';

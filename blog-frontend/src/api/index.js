@@ -48,7 +48,7 @@ export {
   siteSettingsApi,
   emailApi,
   subscriptionsApi,
-  memosApi
+  memosApi,
 };
 
 // 为了向后兼容，保留原来的导出名称

@@ -72,6 +72,10 @@ __all__ = [
     # Token schemas
     "Token", "TokenData",
 
+    # File schemas
+    "FileBase", "FileCreate", "FileUpdate", "FileInDB", "FileResponse", "FileListResponse",
+    "FileUploadResponse", "FileDeleteRequest", "FileRenameRequest",
+
     # AI Assist schemas
     "AIAssistRequest", "AIAssistResponse",
 
@@ -94,5 +98,5 @@ __all__ = [
 
     # Memo schemas
     "MemoBase", "MemoCreate", "MemoUpdate", "MemoResponse", "MemoWithoutContent",
-    "MemoPasswordVerify", "MemoPasswordVerifyResponse",
+    "MemoPasswordVerify", "MemoPasswordVerifyResponse", "MemoWithUser",
 ]

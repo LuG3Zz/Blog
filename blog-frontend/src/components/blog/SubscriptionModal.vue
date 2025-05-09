@@ -1,93 +1,46 @@
 <template>
   <div v-if="show" class="fixed inset-0 z-[9999] overflow-y-auto subscription-modal" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-      <!-- 背景遮罩 -->
-      <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="closeModal"></div>
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="closeModal"></div>
 
-      <!-- 居中对齐 -->
-      <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-      <!-- 模态框内容 -->
-      <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-        <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-          <div class="sm:flex sm:items-start">
-            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900 sm:mx-0 sm:h-10 sm:w-10">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600 dark:text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-              <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100" id="modal-title">
-                订阅博客更新
-              </h3>
-              <div class="mt-2">
-                <p class="text-sm text-gray-500 dark:text-gray-400">
-                  订阅博客，当有新文章发布时，我们会通过邮件通知您。
-                </p>
-              </div>
-
-              <!-- 订阅表单 -->
-              <div class="mt-4">
-                <form @submit.prevent="handleSubmit" class="space-y-4">
-                  <div>
-                    <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      邮箱地址
-                    </label>
-                    <input
-                      id="email"
-                      v-model="email"
-                      type="email"
-                      required
-                      placeholder="your@email.com"
-                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                    />
-                  </div>
-
-                  <div v-if="isLoggedIn" class="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                    <span v-if="isSubscribed" class="text-green-600 dark:text-green-400 flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                      </svg>
-                      您已订阅博客更新
-                    </span>
-                    <button
-                      v-else
-                      type="button"
-                      @click="handleUserSubscribe"
-                      class="text-blue-600 dark:text-blue-400 hover:underline"
-                    >
-                      使用当前账号订阅
-                    </button>
-                  </div>
-
-                  <div v-if="message" :class="[
-                    'p-2 text-sm rounded',
-                    message.type === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100' : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
-                  ]">
-                    {{ message.text }}
-                  </div>
-
-                  <div class="flex justify-end gap-3 mt-5">
-                    <button
-                      type="button"
-                      @click="$emit('close')"
-                      class="px-4 py-2 bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                    >
-                      取消
-                    </button>
-                    <button
-                      type="submit"
-                      :disabled="isSubmitting"
-                      class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {{ isSubmitting ? '订阅中...' : '订阅' }}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
+    <div class="flex items-center justify-center min-h-screen">
+      <div class="subscribe">
+        <p>订阅博客</p>
+        <form @submit.prevent="handleSubmit">
+          <input
+            v-model="email"
+            placeholder="请输入您的邮箱"
+            class="subscribe-input"
+            name="email"
+            type="email"
+            required
+          >
+          <br>
+          <div
+            class="submit-btn"
+            @click="handleSubmit"
+            :class="{ 'disabled': isSubmitting }"
+          >
+            {{ isSubmitting ? '提交中...' : '提交' }}
           </div>
-        </div>
+
+          <!-- 登录用户订阅选项 -->
+          <div v-if="isLoggedIn && !isSubscribed" class="use-account">
+            <a href="#" @click.prevent="handleUserSubscribe">使用当前账号订阅</a>
+          </div>
+
+          <!-- 订阅状态消息 -->
+          <div v-if="message" class="message" :class="message.type">
+            {{ message.text }}
+          </div>
+
+          <!-- 已订阅提示 -->
+          <div v-if="isSubscribed" class="subscribed">
+            <svg xmlns="http://www.w3.org/2000/svg" class="check-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+            <span>您已订阅博客更新</span>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -241,6 +194,175 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.subscribe {
+  position: relative;
+  height: 140px;
+  width: 240px;
+  padding: 20px;
+  background-color: #FFF;
+  border-radius: 4px;
+  color: #333;
+  box-shadow: 0px 0px 60px 5px rgba(0, 0, 0, 0.4);
+}
+
+.subscribe:after {
+  position: absolute;
+  content: "";
+  right: -10px;
+  bottom: 18px;
+  width: 0;
+  height: 0;
+  border-left: 0px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 10px solid #1a044e;
+}
+
+.subscribe p {
+  text-align: center;
+  font-size: 20px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  line-height: 28px;
+}
+
+.subscribe input {
+  position: absolute;
+  bottom: 30px;
+  border: none;
+  border-bottom: 1px solid #d4d4d4;
+  padding: 10px;
+  width: 82%;
+  background: transparent;
+  transition: all .25s ease;
+}
+
+.subscribe input:focus {
+  outline: none;
+  border-bottom: 1px solid #0d095e;
+  font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', 'sans-serif';
+}
+
+.subscribe .submit-btn {
+  position: absolute;
+  border-radius: 30px;
+  border-bottom-right-radius: 0;
+  border-top-right-radius: 0;
+  background-color: #0f0092;
+  color: #FFF;
+  padding: 12px 25px;
+  display: inline-block;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  right: -10px;
+  bottom: -20px;
+  cursor: pointer;
+  transition: all .25s ease;
+  box-shadow: -5px 6px 20px 0px rgba(26, 26, 26, 0.4);
+}
+
+.subscribe .submit-btn:hover {
+  background-color: #07013d;
+  box-shadow: -5px 6px 20px 0px rgba(88, 88, 88, 0.569);
+}
+
+.subscribe .submit-btn.disabled {
+  background-color: #6b6b6b;
+  cursor: not-allowed;
+}
+
+/* 暗黑模式适配 */
+.dark .subscribe {
+  background-color: #1f2937;
+  color: #e5e7eb;
+  box-shadow: 0px 0px 60px 5px rgba(0, 0, 0, 0.6);
+}
+
+.dark .subscribe input {
+  color: #e5e7eb;
+  border-bottom-color: #4b5563;
+}
+
+.dark .subscribe input:focus {
+  border-bottom-color: #60a5fa;
+}
+
+/* 登录用户订阅选项 */
+.use-account {
+  position: absolute;
+  bottom: -45px;
+  left: 10px;
+  font-size: 12px;
+}
+
+.use-account a {
+  color: #0f0092;
+  text-decoration: none;
+}
+
+.dark .use-account a {
+  color: #60a5fa;
+}
+
+/* 订阅状态消息 */
+.message {
+  position: absolute;
+  bottom: -70px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.message.success {
+  color: #047857;
+  background-color: #d1fae5;
+}
+
+.message.error {
+  color: #b91c1c;
+  background-color: #fee2e2;
+}
+
+.dark .message.success {
+  color: #10b981;
+  background-color: #064e3b;
+}
+
+.dark .message.error {
+  color: #f87171;
+  background-color: #7f1d1d;
+}
+
+/* 已订阅提示 */
+.subscribed {
+  position: absolute;
+  bottom: -45px;
+  left: 10px;
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  color: #047857;
+}
+
+.check-icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 4px;
+  color: #047857;
+}
+
+.dark .subscribed {
+  color: #10b981;
+}
+
+.dark .check-icon {
+  color: #10b981;
 }
 
 .modal-enter-active,

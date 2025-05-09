@@ -2,11 +2,12 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from sqlalchemy import or_, and_, func
+import json
 
 from app.core.database import get_db
 from app.utils.pagination import PaginationParams, PagedResponse
 from app.schemas.article import ArticleList
-from app.schemas.user import UserResponse
+from app.schemas.user import UserResponse, UserBriefResponse
 from app import models
 from app.models import Article, User, Category, Tag
 
@@ -55,6 +56,14 @@ async def search_articles(
         .offset(pagination.skip)\
         .limit(pagination.page_size)\
         .all()
+
+    # 处理文章列表中的作者社交媒体字段
+    for article in articles:
+        if hasattr(article, 'author') and article.author and hasattr(article.author, 'social_media') and isinstance(article.author.social_media, str) and article.author.social_media:
+            try:
+                article.author.social_media = json.loads(article.author.social_media)
+            except json.JSONDecodeError:
+                article.author.social_media = None
 
     return PagedResponse.create(articles, total, pagination)
 

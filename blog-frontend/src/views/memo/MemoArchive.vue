@@ -370,7 +370,8 @@ export default {
 
       try {
         // 根据登录状态选择不同的API
-        const apiMethod = isLoggedIn.value ? memoApi.getMemos : memoApi.getPublicMemos;
+        // 使用 getAllMemos 来获取所有备忘录，包括加密的
+        const apiMethod = memoApi.getAllMemos;
 
         const response = await apiMethod({
           skip: (page.value - 1) * limit,

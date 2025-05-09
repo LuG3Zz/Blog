@@ -222,7 +222,14 @@ export default {
 
     // 处理编辑
     const handleEdit = () => {
-      showEditForm.value = true;
+      // 如果是加密备忘录，需要先验证密码
+      if (memo.value.is_encrypted && !decryptedContent.value) {
+        // 显示密码验证对话框
+        showPasswordDialog.value = true;
+      } else {
+        // 非加密备忘录或已解密，直接打开编辑表单
+        showEditForm.value = true;
+      }
     };
 
     // 处理表单提交
@@ -265,6 +272,14 @@ export default {
     const handlePasswordVerified = (content) => {
       decryptedContent.value = content;
       showPasswordDialog.value = false;
+
+      // 如果是为了编辑而验证密码，打开编辑表单
+      if (memo.value.is_encrypted && !showEditForm.value) {
+        // 将解密后的内容添加到备忘录对象
+        memo.value.content = content;
+        // 打开编辑表单
+        showEditForm.value = true;
+      }
     };
 
     // 初始化Markdown渲染器

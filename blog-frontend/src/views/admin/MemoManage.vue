@@ -209,9 +209,19 @@ const handleSubmit = async (formData) => {
 // 处理编辑
 const handleEdit = (memo) => {
   currentMemo.value = { ...memo };
-  showEditForm.value = true;
-  showCreateForm.value = false;
-  showViewDialog.value = false;
+
+  // 如果是加密备忘录，需要先验证密码
+  if (memo.is_encrypted && !decryptedContent.value) {
+    // 设置一个标志，表示验证密码是为了编辑
+    currentMemo.value.editAfterVerify = true;
+    // 打开密码验证对话框
+    showPasswordDialog.value = true;
+  } else {
+    // 非加密备忘录或已解密，直接打开编辑表单
+    showEditForm.value = true;
+    showCreateForm.value = false;
+    showViewDialog.value = false;
+  }
 };
 
 // 处理查看
@@ -253,6 +263,18 @@ const openPasswordDialog = () => {
 const handlePasswordVerified = (content) => {
   decryptedContent.value = content;
   showPasswordDialog.value = false;
+
+  // 如果是为了编辑而验证密码
+  if (currentMemo.value && currentMemo.value.editAfterVerify) {
+    // 将解密后的内容添加到当前备忘录对象
+    currentMemo.value.content = content;
+    // 清除编辑标志
+    delete currentMemo.value.editAfterVerify;
+    // 打开编辑表单
+    showEditForm.value = true;
+    showCreateForm.value = false;
+    showViewDialog.value = false;
+  }
 };
 
 return {
