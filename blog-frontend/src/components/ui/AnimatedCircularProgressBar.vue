@@ -129,4 +129,17 @@ onMounted(() => {
 circle {
   transition: stroke-dashoffset 0.3s ease;
 }
+
+/* 进度条圆环的发光效果 */
+:deep(.dark) circle[stroke-linecap="round"] {
+  filter: drop-shadow(0 0 3px rgba(96, 165, 250, 0.7));
+  transition: all 0.3s ease;
+  stroke: #60a5fa !important; /* 确保使用蓝色而不是灰色 */
+}
+
+/* 悬停时增强发光效果 */
+:deep(.dark) svg:hover circle[stroke-linecap="round"] {
+  filter: drop-shadow(0 0 5px rgba(96, 165, 250, 0.9));
+  stroke: #93c5fd !important; /* 悬停时使用更亮的蓝色 */
+}
 </style>

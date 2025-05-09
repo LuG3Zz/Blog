@@ -649,6 +649,8 @@ export default {
 :root {
   --color-secondary-rgb: 59, 130, 246; /* 蓝色的RGB值 */
   --color-secondary: #3b82f6;
+  --color-dark-secondary-rgb: 96, 165, 250; /* 浅蓝色的RGB值，用于暗黑模式 */
+  --color-dark-secondary: #60a5fa;
 }
 
 /* 强制覆盖KaTeX样式 */

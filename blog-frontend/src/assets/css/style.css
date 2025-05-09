@@ -10,6 +10,11 @@ body {
   font-family: 'Saans TRIAL', sans-serif;
 }
 
+/* 黑暗模式下的背景颜色 */
+.dark body {
+  background-color: #111827 !important; /* 深蓝黑色而不是灰色 */
+}
+
 img {
   position: absolute;
   width: 100%;

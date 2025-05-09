@@ -26,7 +26,7 @@
           height: open && isSlotAvailable ? 'auto' : props.height,
           width: open && isSlotAvailable ? 320 : 180,
         }"
-        class="bg-natural-900 relative cursor-pointer overflow-hidden text-secondary dark:text-dark-secondary"
+        class="bg-natural-900 relative cursor-pointer overflow-hidden text-secondary dark:text-dark-secondary dark:bg-opacity-70"
       >
         <header class="flex cursor-pointer items-center" :class="{ 'h-9 gap-1 px-2': !open, 'h-11 gap-2 px-4': open }">
           <AnimatedCircularProgressBar
@@ -34,11 +34,15 @@
             :min="0"
             :max="100"
             :circle-stroke-width="10"
-            :class="{ 'w-5': !open, 'w-6': open }"
+            :class="{
+              'w-5': !open,
+              'w-6': open,
+              'dark-progress-bar': isDark
+            }"
             :show-percentage="false"
             :duration="0.3"
-            :gauge-secondary-color="isDark ? '#6b728055' : '#6b728099'"
-            :gauge-primary-color="isDark ? '#3b82f6' : '#3b82f6'"
+            :gauge-secondary-color="isDark ? 'rgba(30, 58, 138, 0.3)' : '#6b728099'"
+            :gauge-primary-color="isDark ? '#60a5fa' : '#3b82f6'"
           />
           <h1 class="grow text-center font-bold" :class="{ 'text-xs': !open, 'text-base': open }">{{ title }}</h1>
           <NumberFlow
@@ -89,7 +93,6 @@
 <script setup>
 import { cn } from "@/lib/utils";
 import NumberFlow from "@number-flow/vue";
-import { useColorMode } from "@vueuse/core";
 import { motion, MotionConfig } from "motion-v";
 import { computed, onMounted, onUnmounted, ref, useSlots, watch } from "vue";
 import AnimatedCircularProgressBar from "./AnimatedCircularProgressBar.vue";
@@ -212,10 +215,22 @@ onUnmounted(() => {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* 暗色模式下的样式调整 */
+/* 暗色模式下的样式调整 - 毛玻璃效果 */
 :global(.dark) .bg-primary\/90 {
-  background-color: rgba(26, 26, 26, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background-color: rgba(17, 24, 39, 0.65) !important; /* 深蓝黑色调 */
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(96, 165, 250, 0.1) !important; /* 蓝色边框 */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 10px rgba(96, 165, 250, 0.1) !important;
+}
+
+/* 确保黑暗模式下的背景是深蓝黑色 */
+:global(html.dark) body {
+  background-color: #111827 !important;
+}
+
+:global(html.dark) .bg-dark-primary {
+  background-color: #111827 !important;
 }
 
 /* 标题列表样式 */
@@ -251,6 +266,37 @@ ul::-webkit-scrollbar-thumb {
   }
   100% {
     background-color: rgba(59, 130, 246, 0);
+  }
+}
+
+/* 暗黑模式下的滚动条样式 */
+:global(.dark) ul::-webkit-scrollbar-thumb {
+  background-color: rgba(96, 165, 250, 0.4);
+}
+
+:global(.dark) ul::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(96, 165, 250, 0.6);
+}
+
+/* 暗黑模式下的标题悬停效果 */
+:global(.dark) li:hover {
+  background-color: rgba(30, 58, 138, 0.4) !important; /* 深蓝色 */
+  box-shadow: 0 0 8px rgba(96, 165, 250, 0.3);
+  border-left: 2px solid rgba(96, 165, 250, 0.5);
+}
+
+/* 暗黑模式下的进度条样式 */
+.dark-progress-bar {
+  filter: drop-shadow(0 0 6px rgba(96, 165, 250, 0.7));
+  animation: glow-pulse 2s infinite alternate;
+}
+
+@keyframes glow-pulse {
+  0% {
+    filter: drop-shadow(0 0 4px rgba(96, 165, 250, 0.5));
+  }
+  100% {
+    filter: drop-shadow(0 0 8px rgba(96, 165, 250, 0.8));
   }
 }
 </style>

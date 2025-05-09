@@ -117,3 +117,29 @@ export default {
   }
 }
 </script>
+
+<style>
+/* 全局样式 */
+:root {
+  --color-dark-primary: #111827; /* 深蓝黑色 */
+  --color-dark-secondary: #e3e3db;
+}
+
+/* 确保黑暗模式下的背景是深蓝黑色而不是灰色 */
+.dark {
+  background-color: var(--color-dark-primary) !important;
+}
+
+.dark .bg-dark-primary {
+  background-color: var(--color-dark-primary) !important;
+}
+
+/* 毛玻璃效果组件 */
+.dark .bg-primary\/90 {
+  background-color: rgba(17, 24, 39, 0.65) !important; /* 深蓝黑色调 */
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(96, 165, 250, 0.1) !important; /* 蓝色边框 */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 10px rgba(96, 165, 250, 0.1) !important;
+}
+</style>
