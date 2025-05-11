@@ -20,9 +20,9 @@ async def send_verification_code(
 ):
     """
     发送邮箱验证码
-    
+
     - **email**: 邮箱地址
-    
+
     返回发送结果
     """
     # 检查系统设置是否启用了邮箱验证
@@ -32,7 +32,7 @@ async def send_verification_code(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="系统未启用邮箱验证功能"
         )
-    
+
     # 检查邮箱是否已被注册
     existing_user = db.query(User).filter(User.email == email_data.email).first()
     if existing_user:
@@ -40,11 +40,18 @@ async def send_verification_code(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="该邮箱已被注册"
         )
-    
+
     try:
-        # 发送验证码
-        await EmailService.send_verification_email(email_data.email)
-        return {"message": "验证码已发送，请查收邮件"}
+        # 检查邮件功能是否启用
+        if settings and settings.email_enabled:
+            # 发送验证码
+            await EmailService.send_verification_email(email_data.email, db)
+            return {"message": "验证码已发送，请查收邮件"}
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="系统未启用邮件功能"
+            )
     except Exception as e:
         logger.exception(f"发送验证码失败: {str(e)}")
         raise HTTPException(
@@ -59,10 +66,10 @@ def verify_email_code(
 ):
     """
     验证邮箱验证码
-    
+
     - **email**: 邮箱地址
     - **code**: 验证码
-    
+
     返回验证结果
     """
     # 检查系统设置是否启用了邮箱验证
@@ -72,17 +79,17 @@ def verify_email_code(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="系统未启用邮箱验证功能"
         )
-    
+
     # 验证验证码
     is_valid = EmailService.verify_code(
         verification_data.email,
         verification_data.code
     )
-    
+
     if not is_valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="验证码无效或已过期"
         )
-    
+
     return {"message": "验证码验证成功"}

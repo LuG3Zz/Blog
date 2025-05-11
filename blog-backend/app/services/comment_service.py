@@ -12,6 +12,7 @@ from app.utils.pagination import PaginationParams, PagedResponse
 from app.services.content_filter_service import ContentFilterService
 from app.services.ip_location_service import IPLocationService
 from app.services.unified_cache_service import cached
+from app.services.site_settings_service import SiteSettingsService
 
 logger = get_logger(__name__)
 
@@ -230,15 +231,28 @@ class CommentService:
         # Get IP location
         ip_region = IPLocationService.get_location(ip_address)
 
-        # 确定评论是否应该自动批准
-        # 已登录用户的评论自动批准
-        is_auto_approved = user_id is not None
+        # 获取系统设置
+        site_settings = SiteSettingsService.get_settings(db)
 
-        # 匿名评论需要审核
+        # 确定是否需要审核所有评论（包括已登录用户）
+        review_all = site_settings and site_settings.comment_review_all
+
+        # 确定是否使用AI审核
+        use_ai_review = site_settings and site_settings.comment_ai_review
+
+        # 获取API密钥（优先使用传入的API密钥，其次使用系统设置中的API密钥）
+        review_api_key = api_key or (site_settings and site_settings.comment_review_api_key)
+
+        # 确定评论是否应该自动批准
+        # 如果设置了审核所有评论，则已登录用户的评论也需要审核
+        # 否则，已登录用户的评论自动批准
+        is_auto_approved = user_id is not None and not review_all
+
+        # 需要审核的评论（匿名评论或已登录用户的评论但设置了审核所有评论）
         ai_approved = True
-        if not is_auto_approved and api_key:
+        if not is_auto_approved and use_ai_review and review_api_key:
             # 使用AI审核内容
-            ai_approved, reason = await ContentFilterService.moderate_content(comment.content, api_key)
+            ai_approved, reason = await ContentFilterService.moderate_content(comment.content, review_api_key)
             if not ai_approved:
                 logger.warning(f"Comment rejected by AI: {reason}")
                 raise HTTPException(

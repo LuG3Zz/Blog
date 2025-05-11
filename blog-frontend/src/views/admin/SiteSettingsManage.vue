@@ -212,6 +212,110 @@
             启用后，用户注册时需要验证邮箱。这有助于减少垃圾注册和提高账户安全性。
           </p>
         </div>
+
+        <div class="mb-4">
+          <label class="flex items-center space-x-2 cursor-pointer">
+            <input
+              type="checkbox"
+              v-model="formData.show_runtime"
+              class="form-checkbox h-5 w-5 text-blue-600"
+            >
+            <span class="text-sm font-medium">显示网站运行时长</span>
+          </label>
+          <p class="text-xs text-gray-500 mt-1 ml-7">
+            启用后，网站底部将显示网站已运行的时间。
+          </p>
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-1">网站创建日期</label>
+          <input
+            type="date"
+            v-model="siteStartDateInput"
+            class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+          >
+          <p class="text-xs text-gray-500 mt-1">
+            设置网站创建日期，用于计算网站运行时长。
+          </p>
+        </div>
+      </div>
+
+      <!-- 评论审核设置 -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold mb-4 border-b pb-2">评论审核设置</h2>
+
+        <div class="mb-4">
+          <label class="flex items-center space-x-2 cursor-pointer">
+            <input
+              type="checkbox"
+              v-model="formData.comment_ai_review"
+              class="form-checkbox h-5 w-5 text-blue-600"
+            >
+            <span class="text-sm font-medium">使用AI审核评论</span>
+          </label>
+          <p class="text-xs text-gray-500 mt-1 ml-7">
+            启用后，系统将使用AI自动审核评论内容。禁用则使用人工审核。
+          </p>
+        </div>
+
+        <div class="mb-4">
+          <label class="flex items-center space-x-2 cursor-pointer">
+            <input
+              type="checkbox"
+              v-model="formData.comment_review_all"
+              class="form-checkbox h-5 w-5 text-blue-600"
+            >
+            <span class="text-sm font-medium">审核所有评论</span>
+          </label>
+          <p class="text-xs text-gray-500 mt-1 ml-7">
+            启用后，所有评论（包括已登录用户的评论）都需要审核。禁用则只审核匿名评论。
+          </p>
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-1">评论审核API密钥</label>
+          <input
+            type="password"
+            v-model="formData.comment_review_api_key"
+            class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+            placeholder="请输入AI评论审核API密钥"
+          >
+          <p class="text-xs text-gray-500 mt-1">
+            设置用于AI评论审核的API密钥。支持OpenAI、OpenRouter等服务的API密钥。
+          </p>
+        </div>
+      </div>
+
+      <!-- 邮件设置 -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold mb-4 border-b pb-2">邮件设置</h2>
+
+        <div class="mb-4">
+          <label class="flex items-center space-x-2 cursor-pointer">
+            <input
+              type="checkbox"
+              v-model="formData.email_enabled"
+              class="form-checkbox h-5 w-5 text-blue-600"
+            >
+            <span class="text-sm font-medium">启用邮件功能</span>
+          </label>
+          <p class="text-xs text-gray-500 mt-1 ml-7">
+            启用后，系统将使用Resend API发送邮件，包括验证码和订阅通知等。
+          </p>
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-1">Resend API密钥</label>
+          <input
+            type="password"
+            v-model="formData.email_api_key"
+            class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+            placeholder="请输入Resend API密钥"
+          >
+          <p class="text-xs text-gray-500 mt-1">
+            设置用于发送邮件的Resend API密钥。可以在<a href="https://resend.com" target="_blank" class="text-blue-500 hover:underline">Resend官网</a>获取。
+          </p>
+        </div>
       </div>
 
       <!-- 保存按钮 -->
@@ -237,10 +341,11 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { siteSettingsApi, fileApi } from '@/api'
 import message from '@/utils/message'
 import FileSelector from '@/components/admin/FileSelector.vue'
+import { format } from 'date-fns'
 
 export default {
   name: 'SiteSettingsManage',
@@ -265,7 +370,14 @@ export default {
       meta_keywords: '',
       custom_css: '',
       custom_js: '',
-      require_email_verification: false
+      require_email_verification: false,
+      show_runtime: true,
+      site_start_date: new Date().toISOString(),
+      comment_ai_review: true,
+      comment_review_all: false,
+      comment_review_api_key: '',
+      email_enabled: false,
+      email_api_key: ''
     })
 
     // 导航栏项目
@@ -292,6 +404,21 @@ export default {
     const currentFileField = ref('')
     const showFileSelector = ref(false)
 
+    // 网站创建日期处理
+    const siteStartDateInput = ref('')
+
+    // 格式化日期为YYYY-MM-DD格式，用于日期输入框
+    const formatDateForInput = (dateString) => {
+      if (!dateString) return ''
+      try {
+        const date = new Date(dateString)
+        return format(date, 'yyyy-MM-dd')
+      } catch (error) {
+        console.error('日期格式化错误:', error)
+        return ''
+      }
+    }
+
     // 获取设置
     const fetchSettings = async () => {
       loading.value = true
@@ -306,6 +433,11 @@ export default {
             formData[key] = response[key]
           }
         })
+
+        // 设置网站创建日期输入框
+        if (formData.site_start_date) {
+          siteStartDateInput.value = formatDateForInput(formData.site_start_date)
+        }
 
         // 填充导航栏项目
         if (response.nav_text) {
@@ -374,6 +506,19 @@ export default {
       showFileSelector.value = false
     }
 
+    // 监听日期输入变化
+    watch(siteStartDateInput, (newValue) => {
+      if (newValue) {
+        try {
+          // 将YYYY-MM-DD格式转换为ISO字符串
+          const date = new Date(newValue)
+          formData.site_start_date = date.toISOString()
+        } catch (error) {
+          console.error('日期转换错误:', error)
+        }
+      }
+    })
+
     // 初始化
     onMounted(() => {
       fetchSettings()
@@ -390,7 +535,8 @@ export default {
       saveSettings,
       openFileManager,
       showFileSelector,
-      handleFileSelected
+      handleFileSelected,
+      siteStartDateInput
     }
   }
 }

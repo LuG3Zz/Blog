@@ -4,6 +4,7 @@ from fastapi import HTTPException, status
 import uuid
 import secrets
 from datetime import datetime, timezone
+from app.core.config import settings
 
 from app import models
 from app.schemas.subscription import NotificationCreate, EmailSubscriptionCreate
@@ -262,7 +263,7 @@ class EmailSubscriptionService:
                     </a>
                 </div>
                 <p style="margin-top: 30px; font-size: 12px; color: #999;">
-                    如果您不想再收到此类邮件，<a href="{article_url}/unsubscribe?token={subscription.token}">点击这里取消订阅</a>。
+                    如果您不想再收到此类邮件，<a href="{settings.FRONTEND_BASE_URL}/unsubscribe?token={subscription.token}">点击这里取消订阅</a>。
                 </p>
                 <p style="font-size: 12px; color: #999; text-align: center;">
                     此邮件由系统自动发送，请勿回复。
@@ -275,7 +276,8 @@ class EmailSubscriptionService:
                 await EmailService.send_email(
                     to_email=email,
                     subject=subject,
-                    html_content=html_content
+                    html_content=html_content,
+                    db=db
                 )
                 email_count += 1
                 logger.info(f"Sent article notification email to {email}")

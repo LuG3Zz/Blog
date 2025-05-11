@@ -33,7 +33,14 @@ export const useSiteSettingsStore = defineStore('siteSettings', () => {
     meta_description: 'BrownLu的个人博客，分享技术、生活和思考',
     meta_keywords: '博客,技术,编程,生活',
     custom_css: '',
-    custom_js: ''
+    custom_js: '',
+    show_runtime: true,
+    site_start_date: new Date().toISOString(),
+    comment_ai_review: true,
+    comment_review_all: false,
+    comment_review_api_key: '',
+    email_enabled: false,
+    email_api_key: ''
   })
 
   const loading = ref(false)
@@ -52,6 +59,13 @@ export const useSiteSettingsStore = defineStore('siteSettings', () => {
   const metaKeywords = computed(() => settings.value.meta_keywords)
   const customCss = computed(() => settings.value.custom_css)
   const customJs = computed(() => settings.value.custom_js)
+  const showRuntime = computed(() => settings.value.show_runtime)
+  const siteStartDate = computed(() => settings.value.site_start_date ? new Date(settings.value.site_start_date) : new Date())
+  const commentAiReview = computed(() => settings.value.comment_ai_review)
+  const commentReviewAll = computed(() => settings.value.comment_review_all)
+  const commentReviewApiKey = computed(() => settings.value.comment_review_api_key)
+  const emailEnabled = computed(() => settings.value.email_enabled)
+  const emailApiKey = computed(() => settings.value.email_api_key)
 
   // 方法
   /**
@@ -216,6 +230,13 @@ export const useSiteSettingsStore = defineStore('siteSettings', () => {
     metaKeywords,
     customCss,
     customJs,
+    showRuntime,
+    siteStartDate,
+    commentAiReview,
+    commentReviewAll,
+    commentReviewApiKey,
+    emailEnabled,
+    emailApiKey,
 
     // 方法
     fetchSettings,

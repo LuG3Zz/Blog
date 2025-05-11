@@ -2,6 +2,7 @@
  * 文章列表动画效果的可复用逻辑
  * 封装了鼠标悬停、图片预览等动画效果
  */
+import gsap from 'gsap'
 
 export function usePostAnimation() {
   // 动画相关常量
@@ -17,7 +18,7 @@ export function usePostAnimation() {
   let ticking = false
   let mouseTimeout = null
   let isMouseMoving = false
-  
+
   /**
    * 为文章元素添加鼠标事件监听
    * @param {Array} postsElements - 文章DOM元素列表
@@ -27,12 +28,12 @@ export function usePostAnimation() {
     postsElements.forEach((post, index) => {
       const wrapper = post.querySelector('.post-wrapper')
       let currentPosition = POSITIONS.TOP
-      
+
       post.addEventListener('mouseenter', (e) => {
         activePost = post
         const rect = post.getBoundingClientRect()
         const enterFromTop = lastMousePosition.y < rect.top + rect.height / 2
-        
+
         if (enterFromTop || currentPosition === POSITIONS.BOTTOM) {
           currentPosition = POSITIONS.MIDDLE
           gsap.to(wrapper, {
@@ -41,7 +42,7 @@ export function usePostAnimation() {
             ease: 'power2.out'
           })
         }
-        
+
         const img = document.createElement('img')
         const imagePath = post.dataset.coverImage || `./images/img${(index % 35) + 1}.jpg`;
         img.src = imagePath; // 优先使用封面图，若无则使用默认图片
@@ -50,21 +51,21 @@ export function usePostAnimation() {
         img.style.left = '0'
         img.style.scale = 0
         img.style.zIndex = Date.now()
-        
+
         postPreviewElement.appendChild(img)
-        
+
         gsap.to(img, {
           scale: 1,
           duration: 0.4,
           ease: 'power2.out'
         })
       })
-      
+
       post.addEventListener('mouseleave', (e) => {
         activePost = null
         const rect = post.getBoundingClientRect()
         const leavingFromTop = e.clientY < rect.top + rect.height / 2
-        
+
         currentPosition = leavingFromTop ? POSITIONS.TOP : POSITIONS.BOTTOM
         gsap.to(wrapper, {
           y: currentPosition,
@@ -74,7 +75,7 @@ export function usePostAnimation() {
       })
     })
   }
-  
+
   /**
    * 动画预览函数 - 处理鼠标移出文章列表区域时的图片预览效果
    * @param {HTMLElement} postsListElement - 文章列表容器元素
@@ -82,7 +83,7 @@ export function usePostAnimation() {
    */
   const animatePreview = (postsListElement, postPreviewElement) => {
     if (!postsListElement) return
-    
+
     const postsListRect = postsListElement.getBoundingClientRect()
     if (
       lastMousePosition.x < postsListRect.left ||
@@ -113,7 +114,7 @@ export function usePostAnimation() {
 
     if (activePost) {
       const rect = activePost.getBoundingClientRect()
-      const isStillOver = 
+      const isStillOver =
         lastMousePosition.x >= rect.left &&
         lastMousePosition.x <= rect.right &&
         lastMousePosition.y >= rect.top &&
@@ -157,7 +158,7 @@ export function usePostAnimation() {
 
     ticking = false
   }
-  
+
   /**
    * 设置鼠标移动事件监听
    * @param {HTMLElement} postsListElement - 文章列表容器元素
@@ -174,9 +175,9 @@ export function usePostAnimation() {
       }
 
       if (!postsListElement) return
-      
+
       const postsListRect = postsListElement.getBoundingClientRect()
-      const isInsidePostsList = 
+      const isInsidePostsList =
         lastMousePosition.x >= postsListRect.left &&
         lastMousePosition.x <= postsListRect.right &&
         lastMousePosition.y >= postsListRect.top &&
@@ -205,7 +206,7 @@ export function usePostAnimation() {
         animatePreview(postsListElement, postPreviewElement)
     })
   }
-  
+
   /**
    * 设置滚动事件监听
    * @param {HTMLElement} postsListElement - 文章列表容器元素
@@ -222,7 +223,7 @@ export function usePostAnimation() {
           })
           ticking = true
         }
-      }, 
+      },
       {passive: true}
     )
   }

@@ -32,14 +32,18 @@
 
       <div class="border-t border-gray-700 mt-8 pt-6 text-center text-sm">
         <p>{{ footerText }}</p>
+        <p v-if="showRuntime" class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+          网站已运行 {{ runtimeText }}
+        </p>
       </div>
     </div>
   </footer>
 </template>
 
 <script>
-import { computed } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useSiteSettingsStore } from '@/stores'
+import { differenceInDays, differenceInYears, differenceInMonths } from 'date-fns'
 
 export default {
   name: 'Footer',
@@ -58,11 +62,58 @@ export default {
       About: '关于'
     })
 
+    // 网站运行时长相关
+    const showRuntime = computed(() => siteSettingsStore.showRuntime)
+    const siteStartDate = computed(() => siteSettingsStore.siteStartDate)
+    const runtimeText = ref('')
+    let timer = null
+
+    // 计算网站运行时长
+    const calculateRuntime = () => {
+      if (!siteStartDate.value) return
+
+      const now = new Date()
+      const startDate = new Date(siteStartDate.value)
+
+      const years = differenceInYears(now, startDate)
+      const months = differenceInMonths(now, startDate) % 12
+      const days = differenceInDays(now, startDate) % 30
+
+      let text = ''
+      if (years > 0) {
+        text += `${years}年`
+      }
+      if (months > 0 || years > 0) {
+        text += `${months}个月`
+      }
+      text += `${days}天`
+
+      runtimeText.value = text
+    }
+
+    // 生命周期钩子
+    onMounted(() => {
+      // 初始计算
+      calculateRuntime()
+
+      // 设置定时器，每天更新一次
+      timer = setInterval(calculateRuntime, 86400000) // 24小时 = 86400000毫秒
+    })
+
+    onUnmounted(() => {
+      // 清除定时器
+      if (timer) {
+        clearInterval(timer)
+      }
+    })
+
     return {
       siteTitle,
       siteSubtitle,
       footerText,
-      navItems
+      navItems,
+      showRuntime,
+      runtimeText
     }
   }
 }

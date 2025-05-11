@@ -315,7 +315,7 @@ async def create_article(
 
     # 通知订阅者
     try:
-        # 构建文章URL
+        # 构建文章URL - 使用正确的路径格式（单数形式）
         article_url = f"{settings.FRONTEND_BASE_URL}/article/{db_article.id}"
 
         # 获取作者名称

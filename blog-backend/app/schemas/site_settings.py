@@ -17,6 +17,13 @@ class SiteSettingsBase(BaseModel):
     custom_css: Optional[str] = Field(None, description="自定义CSS")
     custom_js: Optional[str] = Field(None, description="自定义JavaScript")
     require_email_verification: Optional[bool] = Field(False, description="是否要求邮箱验证")
+    show_runtime: Optional[bool] = Field(True, description="是否显示网站运行时长")
+    site_start_date: Optional[datetime] = Field(None, description="网站创建日期")
+    comment_ai_review: Optional[bool] = Field(True, description="是否使用AI审核评论")
+    comment_review_all: Optional[bool] = Field(False, description="是否审核所有评论（包括已登录用户）")
+    comment_review_api_key: Optional[str] = Field(None, description="评论审核API密钥")
+    email_enabled: Optional[bool] = Field(False, description="是否启用邮件功能")
+    email_api_key: Optional[str] = Field(None, description="Resend API密钥")
 
 class SiteSettingsCreate(SiteSettingsBase):
     """创建系统设置模式"""

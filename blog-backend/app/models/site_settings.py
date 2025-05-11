@@ -24,6 +24,13 @@ class SiteSettings(Base):
     custom_css = Column(Text, nullable=True)  # 自定义CSS
     custom_js = Column(Text, nullable=True)  # 自定义JavaScript
     require_email_verification = Column(Boolean, default=False)  # 是否要求邮箱验证
+    show_runtime = Column(Boolean, default=True)  # 是否显示网站运行时长
+    site_start_date = Column(DateTime, default=lambda: datetime.now(timezone.utc))  # 网站创建日期
+    comment_ai_review = Column(Boolean, default=True)  # 是否使用AI审核评论
+    comment_review_all = Column(Boolean, default=False)  # 是否审核所有评论（包括已登录用户）
+    comment_review_api_key = Column(String(255), nullable=True)  # 评论审核API密钥
+    email_enabled = Column(Boolean, default=False)  # 是否启用邮件功能
+    email_api_key = Column(String(255), nullable=True)  # Resend API密钥
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
@@ -42,6 +49,13 @@ class SiteSettings(Base):
             "custom_css": self.custom_css,
             "custom_js": self.custom_js,
             "require_email_verification": self.require_email_verification,
+            "show_runtime": self.show_runtime,
+            "site_start_date": self.site_start_date.isoformat() if self.site_start_date else None,
+            "comment_ai_review": self.comment_ai_review,
+            "comment_review_all": self.comment_review_all,
+            "comment_review_api_key": self.comment_review_api_key,
+            "email_enabled": self.email_enabled,
+            "email_api_key": self.email_api_key,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None
         }

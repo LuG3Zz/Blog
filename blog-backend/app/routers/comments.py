@@ -21,6 +21,7 @@ from app.schemas.comment import (
 )
 from app.services.comment_service import CommentService
 from app.services.ip_location_service import IPLocationService
+from app.services.site_settings_service import SiteSettingsService
 from app.utils.pagination import PaginationParams, PagedResponse
 
 # Load environment variables
@@ -58,9 +59,13 @@ async def create_comment(
     如果没有提供 token 或 token 无效，则作为匿名用户处理。
 
     评论审核规则:
-    1. 已登录用户的评论自动通过审核
-    2. 匿名评论先经过AI审核，通过则自动批准，不通过则拒绝
-    3. 如果未配置AI审核密钥，匿名评论需要管理员手动审核
+    1. 根据系统设置，可以选择是否审核所有评论（包括已登录用户）
+    2. 如果设置了审核所有评论，则已登录用户的评论也需要审核
+    3. 如果没有设置审核所有评论，则已登录用户的评论自动通过审核
+    4. 匿名评论始终需要审核
+    5. 根据系统设置，可以选择使用AI审核或人工审核
+    6. 如果选择AI审核且配置了API密钥，则评论先经过AI审核，通过则自动批准，不通过则拒绝
+    7. 如果选择人工审核或未配置AI审核密钥，则评论需要管理员手动审核
 
     返回创建的评论信息。
     """
@@ -110,11 +115,15 @@ async def create_comment(
 
         print(f"创建评论: user_id={user_id}, anonymous_name={anonymous_name}")
 
+        # 获取系统设置中的API密钥
+        site_settings = SiteSettingsService.get_settings(db)
+        api_key = site_settings.comment_review_api_key if site_settings else os.getenv('OPENROUTER_API_KEY')
+
         db_comment = await CommentService.create_comment(
             db=db,
             comment=comment,
             ip_address=client_ip,
-            api_key=os.getenv('OPENROUTER_API_KEY'),
+            api_key=api_key,
             user_id=user_id,
             anonymous_name=anonymous_name
         )

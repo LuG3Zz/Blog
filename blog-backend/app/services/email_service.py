@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 
 from app.core.config import settings
 from app.services.unified_cache_service import UnifiedCacheService
+from app.services.site_settings_service import SiteSettingsService
 
 # 配置日志
 logger = logging.getLogger(__name__)
@@ -27,7 +28,8 @@ class EmailService:
         subject: str,
         html_content: str,
         from_name: str = None,
-        from_email: str = None
+        from_email: str = None,
+        db = None
     ) -> Dict:
         """
         使用Resend API发送邮件
@@ -38,12 +40,26 @@ class EmailService:
             html_content: 邮件HTML内容
             from_name: 发件人名称，默认使用网站名称
             from_email: 发件人邮箱，默认使用配置的邮箱
+            db: 数据库会话，用于获取系统设置
 
         Returns:
             Dict: 包含发送结果的字典
         """
         # 获取API密钥
-        api_key = os.getenv("RESEND_API_KEY", settings.RESEND_API_KEY)
+        api_key = None
+
+        # 如果提供了数据库会话，尝试从系统设置中获取API密钥
+        if db:
+            site_settings = SiteSettingsService.get_settings(db)
+            if site_settings and site_settings.email_enabled and site_settings.email_api_key:
+                api_key = site_settings.email_api_key
+                logger.info("使用系统设置中的Resend API密钥")
+
+        # 如果系统设置中没有API密钥，尝试从环境变量中获取
+        if not api_key:
+            api_key = os.getenv("RESEND_API_KEY", settings.RESEND_API_KEY)
+            logger.info("使用环境变量中的Resend API密钥")
+
         if not api_key:
             logger.error("未配置Resend API密钥")
             raise HTTPException(
@@ -113,12 +129,13 @@ class EmailService:
         return ''.join(random.choices(string.digits, k=length))
 
     @staticmethod
-    async def send_verification_email(email: str) -> str:
+    async def send_verification_email(email: str, db = None) -> str:
         """
         发送验证码邮件
 
         Args:
             email: 收件人邮箱
+            db: 数据库会话，用于获取系统设置
 
         Returns:
             str: 生成的验证码
@@ -148,7 +165,8 @@ class EmailService:
         await EmailService.send_email(
             to_email=email,
             subject=subject,
-            html_content=html_content
+            html_content=html_content,
+            db=db
         )
 
         # 将验证码存入缓存

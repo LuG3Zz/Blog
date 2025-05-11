@@ -57,7 +57,7 @@
       <!-- 热力图容器 -->
       <div class="heatmap-wrapper px-4 py-2 bg-white dark:bg-gray-800 rounded-lg transition-all duration-300">
         <calendar-heatmap
-          :key="selectedActionType || 'all'"
+          :key="`${selectedActionType || 'all'}-${selectedDays}`"
           :values="heatmapData"
           :end-date="endDate"
           :start-date="startDate"
@@ -274,9 +274,12 @@ export default {
     const fetchActivityHeatmap = async (params = {}) => {
       console.log('ActivityHeatmap: 开始获取活动热力图数据，参数:', params);
 
-      // 只有在初始加载且没有指定活动类型时，才使用传入的数据
-      if (props.activityData && props.activityData.length > 0 && !params.action_type) {
-        // 如果有传入的数据，且没有指定活动类型，就使用传入的数据
+      // 只有在初始加载且没有指定活动类型和日期范围为默认值时，才使用传入的数据
+      if (props.activityData &&
+          props.activityData.length > 0 &&
+          !params.action_type &&
+          params.days === 365) {
+        // 如果有传入的数据，且没有指定活动类型和日期范围为默认值，就使用传入的数据
         console.log('ActivityHeatmap: 使用传入的数据，跳过API请求');
         heatmapData.value = processActivityData();
         return;
@@ -431,11 +434,8 @@ export default {
 
     // 获取过滤器状态文本
     const getFilterStatusText = () => {
-      if (!selectedActionType.value) {
-        return '当前显示: 所有活动'
-      }
-
-      let typeText = selectedActionType.value
+      // 活动类型文本
+      let typeText = '所有活动'
 
       if (selectedActionType.value === 'article') {
         typeText = '文章'
@@ -447,7 +447,21 @@ export default {
         typeText = '备忘录'
       }
 
-      return `当前显示: ${typeText} 类型`
+      // 日期范围文本
+      let daysText = ''
+      if (selectedDays.value === '30') {
+        daysText = '最近30天'
+      } else if (selectedDays.value === '90') {
+        daysText = '最近90天'
+      } else if (selectedDays.value === '180') {
+        daysText = '最近180天'
+      } else if (selectedDays.value === '365') {
+        daysText = '最近一年'
+      } else if (selectedDays.value === '730') {
+        daysText = '最近两年'
+      }
+
+      return `当前显示: ${typeText} · ${daysText}`
     }
 
 

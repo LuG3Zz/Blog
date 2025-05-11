@@ -342,8 +342,12 @@ export default {
                   const mouseY = e.clientY
                   const viewportWidth = window.innerWidth
                   const viewportHeight = window.innerHeight
-                  const imgWidth = postPreviewRef.value.offsetWidth
-                  const imgHeight = postPreviewRef.value.offsetHeight
+
+                  // 确保postPreviewRef.value存在
+                  if (!postPreviewRef.value) return
+
+                  const imgWidth = postPreviewRef.value.offsetWidth || 300 // 提供默认值
+                  const imgHeight = postPreviewRef.value.offsetHeight || 200 // 提供默认值
 
                   // 确保图片不会超出视口边界
                   let left = mouseX + 20 // 鼠标右侧20px
@@ -358,6 +362,9 @@ export default {
                   } else if (top + imgHeight > viewportHeight) {
                     top = viewportHeight - imgHeight - 10 // 底部边界
                   }
+
+                  // 再次确保postPreviewRef.value存在
+                  if (!postPreviewRef.value) return
 
                   postPreviewRef.value.style.left = `${left}px`
                   postPreviewRef.value.style.top = `${top}px`
@@ -381,6 +388,9 @@ export default {
             })
 
             post.addEventListener('mouseleave', () => {
+              // 确保postPreviewRef.value存在
+              if (!postPreviewRef.value) return
+
               // 使用 GSAP 隐藏图片
               const previewImages = postPreviewRef.value.querySelectorAll('img')
               previewImages.forEach(img => {
@@ -390,7 +400,8 @@ export default {
                   duration: 0.3,
                   ease: 'power2.out',
                   onComplete: () => {
-                    if (img.parentNode === postPreviewRef.value) {
+                    // 再次检查引用是否存在
+                    if (img.parentNode && postPreviewRef.value && img.parentNode === postPreviewRef.value) {
                       postPreviewRef.value.removeChild(img)
                     }
                   }

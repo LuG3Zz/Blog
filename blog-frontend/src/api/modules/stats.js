@@ -95,6 +95,9 @@ export const getActivityHeatmap = (params = {}) => {
     requestParams.user_id = params.user_id;
   }
 
+  // 添加时间戳参数，避免浏览器缓存
+  requestParams._t = new Date().getTime();
+
   console.log('获取活动热力图数据，参数:', JSON.stringify(requestParams));
 
   return apiClient.get(API_PATHS.STATS.ACTIVITY_HEATMAP, {
