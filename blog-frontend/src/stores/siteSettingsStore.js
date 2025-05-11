@@ -18,6 +18,14 @@ export const useSiteSettingsStore = defineStore('siteSettings', () => {
       About: '关于',
       Login: '登录'
     },
+    nav_visible: {
+      Home: true,
+      ArticleList: true,
+      CategoryList: true,
+      MemoList: true,
+      About: true,
+      Login: true
+    },
     footer_text: '© 2024 BrownLu的博客 - 保留所有权利',
     banner_image: '',
     logo_image: '',
@@ -35,6 +43,7 @@ export const useSiteSettingsStore = defineStore('siteSettings', () => {
   const siteTitle = computed(() => settings.value.site_title)
   const siteSubtitle = computed(() => settings.value.site_subtitle)
   const navText = computed(() => settings.value.nav_text || {})
+  const navVisible = computed(() => settings.value.nav_visible || {})
   const footerText = computed(() => settings.value.footer_text)
   const bannerImage = computed(() => settings.value.banner_image)
   const logoImage = computed(() => settings.value.logo_image)
@@ -54,6 +63,13 @@ export const useSiteSettingsStore = defineStore('siteSettings', () => {
 
     try {
       const response = await siteSettingsApi.getSiteSettings()
+
+      // 确保 nav_visible 字段存在
+      if (!response.nav_visible) {
+        response.nav_visible = settings.value.nav_visible
+        console.log('后端未返回导航显示控制设置，使用默认值')
+      }
+
       settings.value = { ...settings.value, ...response }
 
       // 更新网站标题
@@ -85,6 +101,13 @@ export const useSiteSettingsStore = defineStore('siteSettings', () => {
 
     try {
       const response = await siteSettingsApi.updateSiteSettings(data)
+
+      // 确保 nav_visible 字段存在
+      if (!response.nav_visible && data.nav_visible) {
+        response.nav_visible = data.nav_visible
+        console.log('后端未返回导航显示控制设置，使用提交的值')
+      }
+
       settings.value = { ...settings.value, ...response }
 
       // 更新网站标题
@@ -184,6 +207,7 @@ export const useSiteSettingsStore = defineStore('siteSettings', () => {
     siteTitle,
     siteSubtitle,
     navText,
+    navVisible,
     footerText,
     bannerImage,
     logoImage,

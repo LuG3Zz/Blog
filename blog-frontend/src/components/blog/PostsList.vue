@@ -210,13 +210,25 @@ export default {
           throw err;
         })
 
-        // 根据提供的数据格式，文章列表返回的是一个数组，每个元素包含：
-        // id, title, slug, excerpt, cover_image, author, category, created_at, view_count, like_count, is_featured
+        // 根据提供的数据格式，文章列表返回的是一个对象，包含items字段
+        // 每个文章元素包含：id, title, slug, excerpt, cover_image, author, category, created_at, view_count, like_count, is_featured
         // author 是一个对象，包含 id, username, avatar
         // category 是一个对象，包含 id, name, description
         console.log('获取到的文章列表数据:', response);
-        posts.value = response
-        hasMorePosts.value = response.length === pageSize
+
+        // 正确处理响应数据格式
+        if (response && response.items && Array.isArray(response.items)) {
+          posts.value = response.items
+          hasMorePosts.value = response.items.length === pageSize
+        } else if (Array.isArray(response)) {
+          // 兼容直接返回数组的情况
+          posts.value = response
+          hasMorePosts.value = response.length === pageSize
+        } else {
+          console.warn('文章列表数据格式不符合预期:', response)
+          posts.value = []
+          hasMorePosts.value = false
+        }
 
         // 更新文章元素引用
         setTimeout(() => {
@@ -224,6 +236,7 @@ export default {
           addPostsEvents(postsElements, postPreviewRef.value)
         }, 100)
       } catch (err) {
+        console.error('加载文章失败:', err)
         error.value = '加载文章失败'
         message.error(error.value)
       } finally {
@@ -254,6 +267,7 @@ export default {
       // 切换分类时重置到第一页
       currentPage.value = 1
       // 重新加载文章
+      console.log('分类已变更为:', newCategory)
       loadPosts()
     }, { immediate: true }) // 添加 immediate: true 确保组件初始化时就执行一次
 
@@ -272,6 +286,9 @@ export default {
         // 否则初始化文章列表
         loadPosts()
       }
+
+      // 添加调试日志
+      console.log('PostsList组件已挂载，当前分类:', props.selectedCategory)
 
       // 设置延时，确保DOM已经渲染
       setTimeout(() => {

@@ -91,16 +91,38 @@ const apiClient = {
    */
   get: createApiMethod(
     async (url, params = {}, options = {}) => {
-      // 确保参数直接传递，而不是嵌套在params对象中
-      const response = await axios.get(url, {
-        params: params.params || params, // 如果传入的是{params}格式就取params，否则直接使用params
-        ...options,
-        headers: {
-          ...getAuthHeaders(),
-          ...options.headers
-        }
+      // 添加更详细的日志记录
+      console.log('发送 GET 请求:', {
+        url,
+        params: params.params || params,
+        options
       });
-      return response;
+
+      // 确保参数直接传递，而不是嵌套在params对象中
+      const requestParams = params.params || params;
+
+      // 记录完整的请求信息
+      console.log('完整请求URL:', url);
+      console.log('请求参数:', requestParams);
+
+      try {
+        const response = await axios.get(url, {
+          params: requestParams,
+          ...options,
+          headers: {
+            ...getAuthHeaders(),
+            ...options.headers
+          }
+        });
+
+        console.log('收到 GET 响应:', response);
+        return response;
+      } catch (error) {
+        console.error('GET 请求失败:', error);
+        console.error('请求URL:', url);
+        console.error('请求参数:', requestParams);
+        throw error;
+      }
     },
     '获取数据失败'
   ),

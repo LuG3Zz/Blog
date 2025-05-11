@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone, date
 
 from app.core.database import get_db
 from app.core.cache import cache
-from app.models import Article, User, Comment, Category, Activity, EmailSubscription, SubscriptionType
+from app.models import Article, User, Comment, Category, Activity, EmailSubscription, SubscriptionType, Memo
 from app.models.subscription import user_category_subscriptions, user_author_subscriptions
 from app.schemas.heatmap import HeatmapResponse, HeatmapItem
 
@@ -246,23 +246,40 @@ async def get_activity_heatmap(
     # 计算开始日期
     start_date = datetime.now(timezone.utc) - timedelta(days=days)
 
-    # 构建查询
-    query = db.query(
-        func.date(Activity.created_at).label("date"),
-        func.count(Activity.id).label("count")
-    ).filter(Activity.created_at >= start_date)
+    # 如果是备忘录类型，使用备忘录表查询
+    if action_type == "memo":
+        # 构建备忘录查询
+        query = db.query(
+            func.date(Memo.created_at).label("date"),
+            func.count(Memo.id).label("count")
+        ).filter(Memo.created_at >= start_date)
 
-    # 添加可选的过滤条件
-    if action_type:
-        query = query.filter(Activity.action_type == action_type)
+        # 添加用户ID过滤
+        if user_id:
+            query = query.filter(Memo.user_id == user_id)
+    else:
+        # 构建活动查询
+        query = db.query(
+            func.date(Activity.created_at).label("date"),
+            func.count(Activity.id).label("count")
+        ).filter(Activity.created_at >= start_date)
 
-    if user_id:
-        query = query.filter(Activity.user_id == user_id)
+        # 添加可选的过滤条件
+        if action_type:
+            query = query.filter(Activity.action_type == action_type)
+
+        if user_id:
+            query = query.filter(Activity.user_id == user_id)
 
     # 执行查询
-    activity_counts = query.group_by(func.date(Activity.created_at))\
-    .order_by("date")\
-    .all()
+    if action_type == "memo":
+        activity_counts = query.group_by(func.date(Memo.created_at))\
+        .order_by("date")\
+        .all()
+    else:
+        activity_counts = query.group_by(func.date(Activity.created_at))\
+        .order_by("date")\
+        .all()
 
     # 将查询结果转换为所需格式
     heatmap_items = []

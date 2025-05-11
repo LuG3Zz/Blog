@@ -292,8 +292,16 @@ export default {
         // 获取文章数据
         const response = await postApi.getPosts(params)
 
+        // 添加调试日志
+        console.log('API返回的文章数据格式:', response)
+
         // 处理文章数据，确保数据结构一致
-        posts.value = response.map(post => ({
+        // 检查response是否是对象且包含items字段
+        const articlesArray = Array.isArray(response) ? response :
+                             (response && response.items ? response.items : [])
+
+        // 处理文章数据，确保数据结构一致
+        posts.value = articlesArray.map(post => ({
           ...post,
           category_name: post.category ?
             (typeof post.category === 'object' ? post.category.name : post.category) :
@@ -306,12 +314,14 @@ export default {
 
         // 获取总数据量，用于分页
         // 如果 API 返回总数量，使用 API 返回的值
-        if (response.total !== undefined && !isNaN(response.total)) {
+        if (response && response.total !== undefined && !isNaN(response.total)) {
           // API 返回了有效的总数量
           totalItems.value = response.total
-        } else if (response.count !== undefined && !isNaN(response.count)) {
+          console.log('使用API返回的总数量:', totalItems.value)
+        } else if (response && response.count !== undefined && !isNaN(response.count)) {
           // 有些 API 可能使用 count 字段
           totalItems.value = response.count
+          console.log('使用API返回的count字段:', totalItems.value)
         } else {
           // API 没有返回总数量，使用估算值
           // 如果当前页数据少于每页数量，说明这是最后一页
@@ -324,6 +334,7 @@ export default {
 
           // 确保总数量至少等于当前显示的数量
           totalItems.value = Math.max(totalItems.value, posts.value.length)
+          console.log('使用估算的总数量:', totalItems.value)
         }
 
         // 计算最大页数

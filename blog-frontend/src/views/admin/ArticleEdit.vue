@@ -125,8 +125,8 @@
                 <!-- 标签建议列表 -->
                 <div v-if="tagSuggestions.length > 0" class="mt-2 bg-white dark:bg-gray-700 shadow-lg rounded-md p-1 absolute z-10 w-full max-h-40 overflow-y-auto">
                   <div
-                    v-for="tag in tagSuggestions"
-                    :key="tag.id"
+                    v-for="(tag, index) in tagSuggestions"
+                    :key="tag.id || 'tag-' + index"
                     @click="selectTagSuggestion(tag.name)"
                     class="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer rounded-md"
                   >
@@ -280,20 +280,17 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, onBeforeUnmount, watch, defineAsyncComponent } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { postApi, categoryApi, tagApi, filesApi } from '@/api'
 import message from '@/utils/message.js'  // 添加 message 导入
-// 动态导入Vditor
-const Vditor = defineAsyncComponent(() => import('vditor').then(module => {
-  // 动态导入CSS
-  import("vditor/dist/index.css")
-  return module.default || module
-}))
 import { API_BASE_URL } from '@/config'
 import Modal from '@/components/common/Modal.vue'
 import FileSelector from '@/components/admin/FileSelector.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
+
+// Vditor变量声明
+let Vditor = null
 
 export default {
   name: 'ArticleEdit',
@@ -429,10 +426,13 @@ export default {
         }
         // 清空标签
         tags.value = []
+
+        console.log('新建文章模式，已初始化默认值');
       }
 
-      // 延迟一点时间再关闭加载状态，确保编辑器有时间初始化
-      // 实际加载状态会在initVditor完成后关闭
+      // 注意：加载状态会在initVditor的after回调中关闭
+      // 这里不关闭isLoading，确保编辑器完全初始化后再关闭
+      console.log('loadPostData完成，等待编辑器初始化...');
     }
 
     // 获取所有标签
@@ -464,13 +464,47 @@ export default {
 
     // 初始化数据
     onMounted(async () => {
-      await fetchPosts()
-      await fetchCategories()
-      await fetchTags()
-      await loadPostData()
+      try {
+        // 设置加载状态
+        isLoading.value = true;
 
-      // 初始化编辑器
-      initVditor()
+        // 并行加载基础数据
+        await Promise.all([
+          fetchPosts(),
+          fetchCategories(),
+          fetchTags()
+        ]);
+
+        // 加载文章数据
+        await loadPostData();
+
+        // 动态导入Vditor
+        console.log('开始动态导入Vditor...');
+        const vditorModule = await import('vditor');
+        Vditor = vditorModule.default || vditorModule;
+
+        // 导入Vditor CSS
+        await import('vditor/dist/index.css');
+        console.log('Vditor模块加载完成');
+
+        // 确保DOM已更新
+        await nextTick();
+
+        // 初始化编辑器
+        await initVditor();
+      } catch (error) {
+        console.error('组件初始化失败:', error);
+        message.error('编辑器加载失败: ' + (error.message || '未知错误'));
+        isLoading.value = false;
+      }
+
+      // 安全机制：确保在任何情况下，加载状态最多持续10秒
+      setTimeout(() => {
+        if (isLoading.value) {
+          console.warn('安全机制触发：加载状态持续时间过长，强制关闭');
+          isLoading.value = false;
+        }
+      }, 10000);
     })
 
     // 组件销毁前清理资源
@@ -482,32 +516,65 @@ export default {
     })
 
     // 初始化Vditor编辑器
-    const initVditor = () => {
-      console.log('初始化Vditor编辑器...');
+    const initVditor = async () => {
+      try {
+        console.log('初始化Vditor编辑器...');
+        console.log('当前文章模式:', isEdit.value ? '编辑模式' : '新建模式');
 
-      // 确保加载状态为true
-      isLoading.value = true;
+        // 确保加载状态为true
+        isLoading.value = true;
 
-      // 如果已经存在实例，先销毁
-      if (vditor.value) {
-        console.log('销毁现有Vditor实例');
-        vditor.value.destroy();
-        vditor.value = null;
-      }
+        // 检查Vditor是否已加载
+        if (!Vditor) {
+          console.error('Vditor模块未加载，尝试重新加载');
+          const vditorModule = await import('vditor');
+          Vditor = vditorModule.default || vditorModule;
 
-      console.log('设置初始编辑模式:', currentMode.value);
+          if (!Vditor) {
+            throw new Error('无法加载Vditor模块');
+          }
+        }
 
-      console.log('创建新实例，当前模式:', currentMode.value);
+        console.log('Vditor构造函数类型:', typeof Vditor);
 
-      // 创建新实例
-      vditor.value = new Vditor('vditor', {
-        height: 600, // 与容器高度一致
-        mode: currentMode.value,
-        theme: document.documentElement.classList.contains('dark') ? 'dark' : 'classic',
-        placeholder: '请输入文章内容...',
-        toolbarConfig: {
-          pin: true
-        },
+        // 如果已经存在实例，先销毁
+        if (vditor.value) {
+          console.log('销毁现有Vditor实例');
+          vditor.value.destroy();
+          vditor.value = null;
+        }
+
+        // 检查DOM元素是否存在
+        const vditorElement = document.getElementById('vditor');
+        if (!vditorElement) {
+          console.error('找不到vditor DOM元素，初始化失败');
+          message.error('编辑器初始化失败，请刷新页面重试');
+          isLoading.value = false;
+          return;
+        }
+
+        // 确保DOM已更新
+        await nextTick();
+
+        console.log('设置初始编辑模式:', currentMode.value);
+        console.log('创建新实例，当前模式:', currentMode.value);
+
+        // 创建新实例
+        console.log('开始创建Vditor实例...');
+
+        if (typeof Vditor !== 'function') {
+          console.error('Vditor不是一个构造函数，类型:', typeof Vditor);
+          throw new Error('Vditor不是一个构造函数');
+        }
+
+        const options = {
+          height: 600, // 与容器高度一致
+          mode: currentMode.value,
+          theme: document.documentElement.classList.contains('dark') ? 'dark' : 'classic',
+          placeholder: '请输入文章内容...',
+          toolbarConfig: {
+            pin: true
+          },
         toolbar: [
           'emoji',
           'headings',
@@ -759,18 +826,33 @@ export default {
         },
 
         after: () => {
+          console.log('编辑器初始化完成，当前模式:', isEdit.value ? '编辑模式' : '新建模式');
+
           // 编辑模式下，设置编辑器内容
           if (currentPost.value.content) {
-            vditor.value.setValue(currentPost.value.content)
+            console.log('设置编辑器内容，长度:', currentPost.value.content.length);
+            vditor.value.setValue(currentPost.value.content);
+          } else {
+            console.log('没有内容需要设置，这是一篇新文章');
           }
 
-          // 内容加载完成后，关闭加载状态
+          // 无论是否有内容，都关闭加载状态
           setTimeout(() => {
             isLoading.value = false;
             console.log('编辑器内容加载完成，关闭加载状态');
           }, 500); // 延迟500ms确保内容渲染完成
         }
-      })
+      };
+
+      console.log('Vditor配置已准备好，开始创建实例');
+      vditor.value = new Vditor('vditor', options);
+      console.log('Vditor实例创建成功');
+      } catch (error) {
+        console.error('初始化编辑器失败:', error);
+        message.error('编辑器初始化失败: ' + (error.message || '未知错误'));
+        // 确保关闭加载状态，即使初始化失败
+        isLoading.value = false;
+      }
     }
 
     // 添加标签
@@ -957,14 +1039,6 @@ export default {
         // 从URL中提取文件名
         const imagePath = currentPost.value.cover_image.split('/').pop();
         console.log('删除封面图:', imagePath);
-
-        // 正确处理token格式
-        const lowerToken = token.toLowerCase();
-        let cleanToken = token;
-        if (lowerToken.includes('bearer')) {
-          cleanToken = token.replace(/^\s*bearer\s+/i, '');
-        }
-        const formattedToken = `Bearer ${cleanToken}`;
 
         // 调用API删除图片
         await postApi.deleteImage(imagePath);

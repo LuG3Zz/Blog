@@ -82,12 +82,22 @@
         <div class="mb-4">
           <label class="block text-sm font-medium mb-1">导航栏文字</label>
           <div v-for="(value, key) in navItems" :key="key" class="flex items-center mb-2">
-            <span class="w-1/3">{{ key }}:</span>
+            <span class="w-1/4">{{ key }}:</span>
             <input
               v-model="navItems[key]"
               type="text"
-              class="w-2/3 px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+              class="w-2/4 px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
             >
+            <div class="w-1/4 pl-4">
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  v-model="navVisible[key]"
+                  class="form-checkbox h-5 w-5 text-blue-600"
+                >
+                <span class="text-sm">显示</span>
+              </label>
+            </div>
           </div>
         </div>
       </div>
@@ -268,6 +278,16 @@ export default {
       Login: '登录'
     })
 
+    // 导航栏显示控制
+    const navVisible = reactive({
+      Home: true,
+      ArticleList: true,
+      CategoryList: true,
+      MemoList: true,
+      About: true,
+      Login: true
+    })
+
     // 文件选择器相关
     const currentFileField = ref('')
     const showFileSelector = ref(false)
@@ -295,6 +315,17 @@ export default {
             }
           })
         }
+
+        // 填充导航栏显示控制
+        if (response.nav_visible && typeof response.nav_visible === 'object') {
+          Object.keys(response.nav_visible).forEach(key => {
+            if (navVisible[key] !== undefined) {
+              navVisible[key] = response.nav_visible[key]
+            }
+          })
+        } else {
+          console.log('后端未返回导航显示控制设置或格式不正确，使用默认值')
+        }
       } catch (err) {
         console.error('获取系统设置失败:', err)
         error.value = '获取系统设置失败，请稍后重试'
@@ -313,6 +344,9 @@ export default {
 
         // 添加导航栏文字
         submitData.nav_text = { ...navItems }
+
+        // 添加导航栏显示控制
+        submitData.nav_visible = { ...navVisible }
 
         // 发送请求
         await siteSettingsApi.updateSiteSettings(submitData)
@@ -351,6 +385,7 @@ export default {
       error,
       formData,
       navItems,
+      navVisible,
       fetchSettings,
       saveSettings,
       openFileManager,

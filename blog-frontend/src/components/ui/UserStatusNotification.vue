@@ -70,7 +70,7 @@ function cn(...classes: (string | undefined | null | false)[]): string {
 }
 
 // 默认头像
-const DEFAULT_AVATAR = '/assets/default-avatar.png';
+const DEFAULT_AVATAR = '/images/default-avatar.jpg';
 
 type NotificationProps = {
   name: string;

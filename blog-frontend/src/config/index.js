@@ -29,10 +29,10 @@ export const WEBSOCKET = {
 };
 
 // 默认头像
-export const DEFAULT_AVATAR = '/assets/default-avatar.png';
+export const DEFAULT_AVATAR = '/images/default-avatar.jpg';
 
 // 默认封面图
-export const DEFAULT_COVER = '/assets/default-cover.jpg';
+export const DEFAULT_COVER = '/images/default-thumbnail.jpg';
 
 // 分页配置
 export const PAGINATION = {

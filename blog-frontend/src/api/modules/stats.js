@@ -70,17 +70,35 @@ export const getUserActivity = (params = {}) => {
  * 获取活动热力图数据
  * @param {Object} params - 查询参数
  * @param {number} [params.days=365] - 查询天数范围，范围1-730
- * @param {string} [params.action_type] - 活动类型过滤，例如 'article', 'comment', 'like'
+ * @param {string} [params.action_type] - 活动类型过滤，例如 'article', 'comment', 'like', 'memo'
  * @param {number} [params.user_id] - 用户ID过滤
  * @returns {Promise} 返回热力图数据
  */
 export const getActivityHeatmap = (params = {}) => {
+  // 构建请求参数，只包含非空值
+  const requestParams = {};
+
+  // 添加天数参数
+  if (params.days) {
+    requestParams.days = params.days;
+  } else {
+    requestParams.days = 365;
+  }
+
+  // 添加活动类型参数（如果有）
+  if (params.action_type) {
+    requestParams.action_type = params.action_type;
+  }
+
+  // 添加用户ID参数（如果有）
+  if (params.user_id) {
+    requestParams.user_id = params.user_id;
+  }
+
+  console.log('获取活动热力图数据，参数:', JSON.stringify(requestParams));
+
   return apiClient.get(API_PATHS.STATS.ACTIVITY_HEATMAP, {
-    params: {
-      days: params.days || 365,
-      action_type: params.action_type || null,
-      user_id: params.user_id || null
-    }
+    params: requestParams
   });
 };
 

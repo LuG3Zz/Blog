@@ -179,8 +179,39 @@ class IPLocationService:
             # 移除"中国"前缀
             parts = [p for p in parts if p != '中国']
 
-            # 提供更详细的地理位置信息
-            if len(parts) >= 3:  # 有省市区三级信息
+            # 定义国外地区列表
+            foreign_countries = [
+                '新加坡', '美国', '日本', '韩国', '英国', '法国', '德国', '加拿大', '澳大利亚',
+                '俄罗斯', '印度', '巴西', '墨西哥', '南非', '阿联酋', '沙特', '泰国', '越南',
+                '马来西亚', '印尼', '菲律宾', '荷兰', '比利时', '瑞士', '瑞典', '挪威', '芬兰',
+                '丹麦', '意大利', '西班牙', '葡萄牙', '希腊', '土耳其', '以色列', '埃及'
+            ]
+
+            # 检查是否为国外IP
+            is_foreign = False
+            country_name = ""
+            if parts and parts[0] in foreign_countries:
+                is_foreign = True
+                country_name = parts[0]
+                logger.debug(f"检测到国外IP: {ip_address}, 国家: {country_name}, 原始数据: {region_str}")
+
+            # 对国外IP进行特殊处理
+            if is_foreign:
+                # 只保留国家名称，或者国家+地区
+                if len(parts) >= 2:
+                    # 如果第二部分是方向词（东、南、西、北等）
+                    if any(direction in parts[1] for direction in ['东', '南', '西', '北', '中']):
+                        location = f"{country_name}"
+                        logger.debug(f"国外IP处理: 检测到方向词，仅保留国家名称: {location}")
+                    else:
+                        # 否则保留第二部分作为地区
+                        location = f"{country_name} {parts[1]}"
+                        logger.debug(f"国外IP处理: 保留国家和地区: {location}")
+                else:
+                    location = country_name
+                    logger.debug(f"国外IP处理: 仅有国家信息: {location}")
+            # 中国IP地址处理
+            elif len(parts) >= 3:  # 有省市区三级信息
                 # 对于直辖市，格式为"北京市 xx区"
                 if parts[0] in ['北京', '上海', '天津', '重庆']:
                     # 确保直辖市名称后面有"市"

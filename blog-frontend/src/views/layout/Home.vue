@@ -151,53 +151,81 @@ export default {
 
     // 处理活动数据，确保符合热力图组件需要的格式
     const processActivityData = (activityData) => {
-      if (!activityData) return []
+      if (!activityData) {
+        console.log('活动数据为空，返回空数组');
+        return [];
+      }
+
+      console.log('处理活动数据:', typeof activityData, activityData);
 
       // 如果数据已经包含 values 属性，说明是从 activity-heatmap 接口获取的
       if (activityData && activityData.values && Array.isArray(activityData.values)) {
-        return activityData.values
+        console.log('数据包含values属性，直接返回values数组');
+        return activityData.values;
       }
 
       // 如果是数组，检查是否已经是正确的格式
       if (Array.isArray(activityData)) {
         // 检查数组中的项是否有 date 和 count 属性
         if (activityData.length > 0 && 'date' in activityData[0] && 'count' in activityData[0]) {
-          return activityData
+          console.log('数据已经是正确的格式，直接返回');
+          return activityData;
         }
 
+        console.log('转换活动数据数组为热力图格式');
         // 如果是活动数据数组，需要转换为热力图格式
-        const activityMap = {}
+        const activityMap = {};
 
         activityData.forEach(activity => {
           try {
             // 确保 created_at 是有效的日期字符串
-            if (!activity.created_at) return
+            if (!activity.created_at) {
+              console.log('活动缺少created_at字段，跳过');
+              return;
+            }
 
             // 尝试解析日期
-            const dateObj = new Date(activity.created_at)
+            const dateObj = new Date(activity.created_at);
 
             // 检查日期是否有效
-            if (isNaN(dateObj.getTime())) return
-
-            const date = dateObj.toISOString().split('T')[0]
-            if (!activityMap[date]) {
-              activityMap[date] = 0
+            if (isNaN(dateObj.getTime())) {
+              console.log('无效的日期:', activity.created_at);
+              return;
             }
-            activityMap[date]++
+
+            const date = dateObj.toISOString().split('T')[0];
+            if (!activityMap[date]) {
+              activityMap[date] = 0;
+            }
+            activityMap[date]++;
           } catch (error) {
+            console.error('处理活动数据时出错:', error);
             // 跳过无效的活动数据
           }
-        })
+        });
 
         // 转换为热力图所需的格式
-        return Object.entries(activityMap).map(([date, count]) => ({
+        const result = Object.entries(activityMap).map(([date, count]) => ({
           date,
           count
-        }))
+        }));
+
+        console.log('转换后的热力图数据:', result.length, '条记录');
+        return result;
       }
 
+      // 处理可能的对象格式
+      if (typeof activityData === 'object' && activityData !== null) {
+        console.log('尝试从对象中提取活动数据');
+        // 尝试从对象中提取数据
+        if (activityData.data && Array.isArray(activityData.data)) {
+          return processActivityData(activityData.data);
+        }
+      }
+
+      console.warn('数据格式不符合预期，返回空数组:', activityData);
       // 如果数据格式不符合预期，返回空数组
-      return []
+      return [];
     }
 
     // 获取社交媒体数据

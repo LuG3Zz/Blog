@@ -6,11 +6,11 @@
       </router-link>
     </div>
     <div class="flex gap-6">
-      <router-link to="/" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors uppercase font-medium" :class="{ 'active': $route.path === '/' }">{{ navItems.Home || '首页' }}</router-link>
-      <router-link to="/articles" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors uppercase font-medium" :class="{ 'active': $route.path.includes('/article') }">{{ navItems.ArticleList || '文章' }}</router-link>
-      <router-link to="/categories" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors uppercase font-medium" :class="{ 'active': $route.path.includes('/categories') }">{{ navItems.CategoryList || '分类' }}</router-link>
-      <router-link to="/memos" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors uppercase font-medium" :class="{ 'active': $route.path.includes('/memos') }">{{ navItems.MemoList || '动态' }}</router-link>
-      <router-link to="/about" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors uppercase font-medium" :class="{ 'active': $route.path === '/about' }">{{ navItems.About || '关于' }}</router-link>
+      <router-link v-if="navVisibility.Home" to="/" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors uppercase font-medium" :class="{ 'active': $route.path === '/' }">{{ navItems.Home || '首页' }}</router-link>
+      <router-link v-if="navVisibility.ArticleList" to="/articles" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors uppercase font-medium" :class="{ 'active': $route.path.includes('/article') }">{{ navItems.ArticleList || '文章' }}</router-link>
+      <router-link v-if="navVisibility.CategoryList" to="/categories" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors uppercase font-medium" :class="{ 'active': $route.path.includes('/categories') }">{{ navItems.CategoryList || '分类' }}</router-link>
+      <router-link v-if="navVisibility.MemoList" to="/memos" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors uppercase font-medium" :class="{ 'active': $route.path.includes('/memos') }">{{ navItems.MemoList || '动态' }}</router-link>
+      <router-link v-if="navVisibility.About" to="/about" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors uppercase font-medium" :class="{ 'active': $route.path === '/about' }">{{ navItems.About || '关于' }}</router-link>
     </div>
     <div class="flex items-center gap-4">
       <!-- 搜索按钮 -->
@@ -29,7 +29,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
         </svg>
       </button>
-      <router-link v-if="!isLoggedIn" to="/login" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors uppercase font-medium">{{ navItems.Login || '登录' }}</router-link>
+      <router-link v-if="!isLoggedIn && navVisibility.Login" to="/login" class="text-primary dark:text-dark-secondary hover:text-gray-400 transition-colors uppercase font-medium">{{ navItems.Login || '登录' }}</router-link>
       <!-- 如果已登录但正在加载用户信息，显示加载状态 -->
       <div v-else-if="isLoadingUserInfo" class="flex items-center gap-2 text-primary dark:text-dark-secondary">
         <div class="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center overflow-hidden animate-pulse">
@@ -347,8 +347,37 @@ export default {
       Home: '首页',
       ArticleList: '文章',
       CategoryList: '分类',
+      MemoList: '备忘录',
       About: '关于',
       Login: '登录'
+    })
+
+    // 获取导航栏显示控制
+    const navVisibility = computed(() => {
+      // 获取设置中的导航显示控制
+      const navVisible = siteSettingsStore.navVisible || {}
+
+      // 默认值，确保所有导航项都有默认值
+      const defaultVisible = {
+        Home: true,
+        ArticleList: true,
+        CategoryList: true,
+        MemoList: true,
+        About: true,
+        Login: true
+      }
+
+      // 检查 navVisible 是否为空对象或 null/undefined
+      const isEmptyNavVisible = !navVisible || Object.keys(navVisible).length === 0
+
+      // 如果 navVisible 为空，只使用默认值
+      if (isEmptyNavVisible) {
+        console.log('使用默认导航显示设置')
+        return defaultVisible
+      }
+
+      // 合并默认值和设置值
+      return { ...defaultVisible, ...navVisible }
     })
 
     return {
@@ -365,7 +394,8 @@ export default {
       fetchUserInfo, // 导出获取用户信息的函数，便于手动刷新
       handleAvatarError, // 导出头像错误处理函数
       siteTitle,
-      navItems
+      navItems,
+      navVisibility
     }
   }
 }

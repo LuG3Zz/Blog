@@ -14,6 +14,7 @@ class SiteSettings(Base):
     site_title = Column(String(100), nullable=False, default="BrownLu的博客")
     site_subtitle = Column(String(200), nullable=True, default="与你共享美好生活")
     nav_text = Column(JSON, nullable=True)  # 导航栏文字，存储为JSON
+    nav_visible = Column(JSON, nullable=True)  # 导航栏项目显示控制，存储为JSON
     banner_image = Column(String(255), nullable=True)  # 首页banner图片URL
     footer_text = Column(String(255), nullable=True)  # 页脚文字
     logo_image = Column(String(255), nullable=True)  # 网站logo图片URL
@@ -58,5 +59,19 @@ class SiteSettings(Base):
                 result["nav_text"] = None
         else:
             result["nav_text"] = None
+
+        # 处理nav_visible字段
+        if self.nav_visible:
+            if isinstance(self.nav_visible, dict):
+                result["nav_visible"] = self.nav_visible
+            elif isinstance(self.nav_visible, str):
+                try:
+                    result["nav_visible"] = json.loads(self.nav_visible)
+                except json.JSONDecodeError:
+                    result["nav_visible"] = None
+            else:
+                result["nav_visible"] = None
+        else:
+            result["nav_visible"] = None
 
         return result

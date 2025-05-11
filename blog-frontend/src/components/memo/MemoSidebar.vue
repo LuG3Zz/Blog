@@ -204,7 +204,7 @@
     <div class="p-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0" v-if="isLoggedIn">
       <div class="flex items-center space-x-2">
         <img
-          :src="userAvatar || '/images/default-avatar.png'"
+          :src="userAvatar || '/images/default-avatar.jpg'"
           alt="用户头像"
           class="w-7 h-7 rounded-full"
         >
